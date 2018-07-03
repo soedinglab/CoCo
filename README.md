@@ -1,0 +1,2 @@
+# COCO
+COnsensus COmputation
