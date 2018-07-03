@@ -1,0 +1,1 @@
+/usr/bin/c++    -msse4.1   CMakeFiles/coco.dir/main.cpp.o  -o coco lib/gatb-core/gatb-core/lib/libgatbcore.a -ldl -lpthread -lz lib/gatb-core/gatb-core/lib/libhdf5.a -lm /usr/lib/x86_64-linux-gnu/libz.so -ldl 
