@@ -1,11 +1,28 @@
 cmake_minimum_required(VERSION 3.4)
 project(COCO)
 
+#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
+
+#set(VERSION_OVERRIDE "" CACHE STRNG "Override version string in help and usage messages")
+
+#if (VERSION_OVERRIDE)
+#    target_compile_definitions(version PRIVATE -DGIT_SHA1=${VERSION_OVERRIDE})
+#else()
+#    include(GetGitRevisionDescription)
+#    get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+#    target_compile_definitions(version PRIVATE -DGIT_SHA1=${GIT_SHA1})
+#endif()
+
+include(GetGitRevisionDescription)
+get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+add_definitions("-DGIT_SHA1=${GIT_SHA1}")
+
 
 #set(COCO_SOURCE_DIR src)
 set(coco_source_files

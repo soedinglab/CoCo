@@ -15,27 +15,34 @@
 
 #include "src/ToolInfo.h"
 #ifndef EXIT
-#define EXIT(exitCode) do { int __status = (exitCode); std::cerr.flush(); std::cout.flush(); exit(__status); } while(0)
+#define EXIT(exitCode) do { int __status = (exitCode);\
+                            std::cerr.flush(); std::cout.flush();\
+                            exit(__status); } while(0)
 #endif
+
+
+#ifdef GIT_SHA1
+#define str2(s) #s
+#define str(s) str2(s)
+    const char *version = str(GIT_SHA1);
+#undef str
+#undef str2
+#else
+    const char *version = "UNKNOWN";
+#endif
+
 
 const char* binary_name = "coco";
 const char* tool_name = "COCO";
-const char* tool_introduction = "COnsensus COmputation";
+const char* tool_introduction = "COCO is an open-source software suite for "\
+                                "different COnsensus COmputation applications "\
+                                "on short reads";
 const char* main_author = "Annika Seidel (annika.seidel@mpibpc.mpg.de)";
 
 extern int pcreads(int argc, const char **argv, const struct ToolInfo* tool);
 extern int pcoverage(int argc, const char **argv, const struct ToolInfo* tool);
 
 //Parameters& par = Parameters::getInstance();
-struct ToolInfo tool1 = {"pcoverage", pcoverage, "calculates for every read an estimated value for "\
-                                        "the population coverage",
-                "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-                "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile1.hdf5>...<i:kmer-countFileN.hdf5>",
-               };
-struct ToolInfo tool2 = {"pcreads", pcreads, "calculates for every read the consensus read",
-                     "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-                     "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>",
-                    };
 
 std::vector<struct ToolInfo> tools =
 {
@@ -61,19 +68,36 @@ struct ToolInfo *getToolInfo(const char *name)
   return NULL;
 }
 
+void printUsage()
+{
+  std::stringstream usage;
+  usage << tool_introduction << "\n\n";
+  usage << tool_name << " Version: " << version << "\n";
+  usage << "© " << main_author << "\n\n";
+
+  for (size_t j = 0; j < tools.size(); j++)
+  {
+    struct ToolInfo &t = tools[j];
+    usage << "  " + std::string(t.cmd) << "\t"\
+          << t.descriptShort << "\n";
+  }
+
+  std::cerr << usage.str() << "\n";
+}
+
 int main(int argc, const char * argv[])
 {
   //TODO: check 64 system, avx2, sse3
 
   if (argc < 2)
-  {
-    //TODO: print usage
+  {;
+    printUsage();
     return(EXIT_FAILURE);
   }
 
   if (argv[1][0] == '-' && argv[1][1] == 'h')
   {
-    //TODO: print help
+    printUsage(); //TODO: usage extend for help
     return(EXIT_SUCCESS);
   }
 
@@ -85,7 +109,8 @@ int main(int argc, const char * argv[])
   }
   else
   {
-    //TODO: invalid command, print usage + help
+    std::cerr << "\nInvalid Command: " << argv[1] << "\n";
+    printUsage();
     return(EXIT_FAILURE);
   }
 
