@@ -6,6 +6,7 @@
 #include <cstdio>
 #include "ToolInfo.h"
 #include "options.h"
+#include "types.h"
 
 int pcoverage(int argc, const char **argv, const ToolInfo* tool)
 {
@@ -15,5 +16,6 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
   printf("argument: sampleList: %s\n", opt.sampleListFile);
   printf("argument: kmerWeight: %u\n", opt.kmerWeight);
 
+  initialize();
   return 0;
 }
