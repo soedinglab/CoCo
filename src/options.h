@@ -5,8 +5,11 @@
 
 #include <cstddef>
 #include <vector>
+#include <string>
 #include <typeinfo>
 #include "ToolInfo.h"
+
+enum coco_tools{PCOVERAGE=1, PCREADS=2};
 
 struct cocoOption;
 #define OPTION(x) const static int x##_ID = __COUNTER__; \
@@ -20,11 +23,12 @@ struct cocoOption {
   const std::type_info &type;
   void *value;
   bool isSet;
+  unsigned long required;
 
   cocoOption(int uid, const char *n, const char *dp,
          const char *descr, const std::type_info &ty,
-         void *val):
-         uniqid(uid), name(n), display(dp), description(descr), type(ty),value(val),isSet(false){}
+         void *val, unsigned long required):
+         name(n), uniqid(uid), display(dp), description(descr), type(ty),value(val),isSet(false),required(required){}
 };
 
 
@@ -57,7 +61,7 @@ public:
 
   const char* sampleListFile;
   const char* kmerCountListFile;
-  const char *readAvgLenFile;
+  const char* readAvgLenFile;
   unsigned int kmerWeight;
 
   std::vector<cocoOption> empty;

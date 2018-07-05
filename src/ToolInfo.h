@@ -13,6 +13,7 @@ typedef struct ToolInfo {
     const char *descriptLong;
     const char *author;
     const char *usage;
+    unsigned int toolNum;
 } ToolInfo;
 
 #endif // TOOL

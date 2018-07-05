@@ -55,11 +55,13 @@ std::vector<struct ToolInfo> tools =
    "of reads through many samples enable binning steps",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
    "--sampleList <fileWithSampleNamesofS> --kmerCountList<fileWithSampleNamesofT>",
+   PCOVERAGE //tool enum in option.h
   },
   {"pcreads", pcreads, &opt.pcreadsWorkflow, "calculates for every read the "\
    "consensus read", "TODO: long discreption",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-   "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>"
+   "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>",
+   PCREADS //tool enum in option.h
   },
 };
 

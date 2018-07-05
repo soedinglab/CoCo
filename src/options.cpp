@@ -1,6 +1,5 @@
 #include <iostream>
 #include <sstream>
-#include <string>
 #include <getopt.h>
 #include "options.h"
 #include "util.h"
@@ -10,20 +9,20 @@ Options* Options::instance = NULL;
 Options::Options():
   OP_SAMPLE_LIST(OP_SAMPLE_LIST_ID,"sampleList", "--sampleList",
   "name of the file, which contains a list of fasta files line by line",
-  typeid(std::string), (void *) &sampleListFile)
+  typeid(std::string), (void *) &sampleListFile, PCOVERAGE|PCREADS)
   ,
   OP_KC_LIST(OP_KC_LIST_ID,"kmerCountList", "--kmerCountList ",
   "name of the file, which contains k-mer/count files line by line, format: hdf5",
-  typeid(std::string),  (void *) &kmerCountListFile)
+  typeid(std::string),  (void *) &kmerCountListFile, PCOVERAGE)
   ,
   OP_READ_AVERAGELEN_LIST(OP_READ_AVERAGELEN_LIST_ID,"readAvgLenList",
   "--readAvgLenList", "name of the file, which contains a list of the "\
   "average readlength (consider only reads with length > k) per k-mer/count "\
-  "file", typeid(std::string),  (void *) &readAvgLenFile)
+  "file", typeid(std::string),  (void *) &readAvgLenFile, PCOVERAGE|PCREADS)
   ,
   OP_KMER_WEIGHT(OP_KMER_WEIGHT_ID,"kmerWeight",
   "--kmerWeight", "number of informative positions in a k-mer pattern, "
-  "default: 27", typeid(int),  (void *) &kmerWeight)
+  "default: 27", typeid(int),  (void *) &kmerWeight, PCOVERAGE|PCREADS)
 {
   if (instance)
   {
@@ -76,6 +75,8 @@ void Options::parseOptions(int argc, const char *argv[],
 {
   std::vector<cocoOption>& options = *tool.opt;
   int opt, longIndex = 0;
+  //Save toolnum here for later use when checking required arguments
+  unsigned long toolNum = (unsigned long) tool.toolNum;
   extern char *optarg;
 
   static const struct option longOpts[] = {
@@ -91,6 +92,8 @@ void Options::parseOptions(int argc, const char *argv[],
   {
      switch(opt)
      {
+        fprintf(stderr, "longidx=%d", longIndex);
+        fprintf(stderr, "processing %s\n", longOpts[longIndex].name);
         case 'h':
           printToolUsage(tool, EXTENDED);
           EXIT(EXIT_SUCCESS);
@@ -165,7 +168,25 @@ void Options::parseOptions(int argc, const char *argv[],
     }
   }
 
-  //TODO: check parameter count, superflous parameter?
+  if (optind != argc)
+  {
+    fprintf(stderr, "ERROR: Superfluous Argument %s\n", argv[optind]);
+    printToolUsage(tool, SIMPLE);
+    EXIT(EXIT_FAILURE);
+  }
   //TODO: check requiered parameter
+  for(cocoOption option: options)
+  {
+    //Check if option is required for current tool
+    if(toolNum & option.required)
+    {
+      //If required and not set -> Error
+      if(!option.isSet)
+      {
+        fprintf(stderr, "ERROR: Option %s is required for %s\n", option.display, tool.cmd);
+        EXIT(EXIT_FAILURE);
+      }
+    }
+  }
   //TODO: flag für print Parameter
 }
