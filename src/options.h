@@ -59,9 +59,9 @@ public:
                        int parseFlags = 0,
                        int outputFlags = 0);*/
 
-  const char* sampleListFile;
-  const char* kmerCountListFile;
-  const char* readAvgLenFile;
+  std::string sampleListFile;
+  std::string kmerCountListFile;
+  std::string readAvgLenFile;
   unsigned int kmerWeight;
 
   std::vector<cocoOption> empty;

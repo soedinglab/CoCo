@@ -43,9 +43,6 @@ Options::Options():
 
 void Options::setDefaults()
 {
-  sampleListFile = NULL;
-  kmerCountListFile = NULL;
-  readAvgLenFile = NULL;
   kmerWeight = 27;
 }
 
