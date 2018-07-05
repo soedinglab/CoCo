@@ -7,5 +7,10 @@
                             exit(__status); } while(0)
 #endif
 
+enum UsageMode {
+  SIMPLE=0,
+  EXTENDED
+};
+
 #endif // UTIL
 

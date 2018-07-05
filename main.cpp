@@ -42,12 +42,19 @@ extern int pcoverage(int argc, const char **argv, const struct ToolInfo* tool);
 Options& opt = Options::getInstance();
 std::vector<struct ToolInfo> tools =
 {
-  {"pcoverage", pcoverage, &opt.pcoverageWorkflow,"calculates for every read an estimated value for "\
-                           "the population coverage",
+  {"pcoverage", pcoverage, &opt.pcoverageWorkflow,"estimates for every read "\
+   "a population coverage value in one or multiple samples",
+   "calculates for every read in a given set of samples S={s_1,...,s_n} an "\
+   "estimated value for the population coverage in one or multiple samples "\
+   "t_1,...,t_m. In general {t1,...,tm,} is a subset of S. Provide for every "
+   "sample in S the reads in a fasta/fastq format and for every sample in T a "\
+   "kmer-count File in hdf5 format. Further use case: abundance profiles "\
+   "of reads through many samples enable binning steps",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-   "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile1.hdf5>...<i:kmer-countFileN.hdf5>",
+   "--sampleList <fileWithSampleNamesofS> --kmerCountList<fileWithSampleNamesofT>",
   },
-  {"pcreads", pcreads, &opt.pcreadsWorkflow, "calculates for every read the consensus read",
+  {"pcreads", pcreads, &opt.pcreadsWorkflow, "calculates for every read the "\
+   "consensus read", "TODO: long discreption",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
    "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>"
   },
@@ -64,7 +71,7 @@ struct ToolInfo *getToolInfo(const char *name)
   return NULL;
 }
 
-void printUsage()
+void printUsage(const int mode=SIMPLE)
 {
   std::stringstream usage;
   usage << tool_introduction << "\n\n";
@@ -79,7 +86,9 @@ void printUsage()
           << t.descriptShort << "\n";
   }
 
-  fprintf(stderr,"%s\n", usage.str());
+  //TODO: add EXTENDED mode for special tools, show when -h/--help is used
+
+  std::cerr << usage.str() << "\n";
 }
 
 int main(int argc, const char * argv[])
@@ -88,13 +97,14 @@ int main(int argc, const char * argv[])
 
   if (argc < 2)
   {
-    printUsage();
+    printUsage(SIMPLE);
     return(EXIT_FAILURE);
   }
 
-  if (argv[1][0] == '-' && argv[1][1] == 'h')
+  if ((argv[1][0] == '-' && argv[1][1] == 'h') ||
+      strcmp(argv[1], "--help")==0)
   {
-    printUsage(); //TODO: usage extend for help
+    printUsage(EXTENDED); //TODO: usage extend for help
     return(EXIT_SUCCESS);
   }
 
@@ -108,7 +118,7 @@ int main(int argc, const char * argv[])
   else
   {
     fprintf(stderr ,"Invalid Command: %s\n", argv[1]);
-    printUsage();
+    printUsage(SIMPLE);
     return(EXIT_FAILURE);
   }
 

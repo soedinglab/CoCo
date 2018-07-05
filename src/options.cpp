@@ -1,4 +1,6 @@
 #include <iostream>
+#include <sstream>
+#include <string>
 #include <getopt.h>
 #include "options.h"
 #include "util.h"
@@ -47,6 +49,27 @@ void Options::setDefaults()
   kmerWeight = 27;
 }
 
+void printToolUsage(const ToolInfo &tool, const int FLAG)
+{
+  std::stringstream usage;
+  usage << "coco " << tool.cmd << "\n";
+  usage << tool.descriptLong << "\n\n";
+  usage << "© " << tool.author << "\n\n";
+
+  usage << "Usage: coco " << tool.cmd << " " << tool.usage << "\n\n";
+
+  if (FLAG == EXTENDED)
+  {
+    const std::vector<cocoOption>& options = *tool.opt;
+    for (size_t idx = 0; idx < options.size(); idx++)
+    {
+      //TODO: layout, maxwidth + 2 space in the beginning
+      usage << options[idx].display << "\t" << options[idx].description << "\n";
+    }
+  }
+  std::cerr << usage.str() << "\n";
+}
+
 void Options::parseOptions(int argc, const char *argv[],
                            const ToolInfo& tool)
 {
@@ -68,8 +91,7 @@ void Options::parseOptions(int argc, const char *argv[],
      switch(opt)
      {
         case 'h':
-          //TODO: usage
-          printf("usage\n");
+          printToolUsage(tool, EXTENDED);
           EXIT(EXIT_SUCCESS);
         case 0:
         {
@@ -78,13 +100,18 @@ void Options::parseOptions(int argc, const char *argv[],
           {
              if (optname.compare("--help") == 0)
              {
-                //TODO: usage
+                printToolUsage(tool, EXTENDED);
                 EXIT(EXIT_SUCCESS);
              }
 
              if(optname.compare(options[idx].name) == 0)
              {
-               //TODO: is_set?
+               if (options[idx].isSet)
+               {
+                 fprintf(stderr, "Duplicate option %s\n\n",options[idx].display);
+                 printToolUsage(tool,SIMPLE);
+                 EXIT(EXIT_FAILURE);
+               }
 
                if (typeid(std::string) == options[idx].type)
                {
@@ -99,19 +126,21 @@ void Options::parseOptions(int argc, const char *argv[],
                  {
                    std::string * currVal = ((std::string *)options[idx].value);
                    currVal->assign( val );
-                   //TODO: set is_set true
+                   options[idx].isSet = true;
                  }
                }
                else if (typeid(int) == options[idx].type)
                {
-                 *((int *) options[idx].value) = atoi(optarg);
-
-                 if (*((int *)options[idx].value) == 0)
+                 int val = atoi(optarg);
+                 if (val == 0)
                  {
                    fprintf(stderr, "Invalid argument %s for option %s\n",
                                    optarg, options[idx].display);
                    EXIT(EXIT_FAILURE);
                  }
+                 *((int *) options[idx].value) = val;
+                 options[idx].isSet = true;
+
                }
                else
                {
@@ -120,7 +149,6 @@ void Options::parseOptions(int argc, const char *argv[],
                  EXIT(EXIT_FAILURE);
                }
                continue;
-               //TODO: check and store optarg value
              }
            }
           //assert(false); //TODO
@@ -129,11 +157,13 @@ void Options::parseOptions(int argc, const char *argv[],
 
        case '?':
          /* error message already printed by getopt function*/
+         printToolUsage(tool, SIMPLE);
          EXIT(EXIT_FAILURE);
        default:
          abort ();
     }
   }
-  //TODO: check parameter count
+
+  //TODO: check parameter count or required paraemter
   //TODO: flag für print Parameter
 }

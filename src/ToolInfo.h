@@ -10,6 +10,7 @@ typedef struct ToolInfo {
     int (*callerFunction)(int, const char **, const struct ToolInfo*);
     std::vector<cocoOption>* opt;
     const char *descriptShort;
+    const char *descriptLong;
     const char *author;
     const char *usage;
 } ToolInfo;
