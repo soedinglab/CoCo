@@ -1,14 +1,18 @@
 #ifndef TOOL
 #define TOOL
 
-struct ToolInfo {
+#include <vector>
+
+struct cocoOption;
+
+typedef struct ToolInfo {
     const char *cmd;
     int (*callerFunction)(int, const char **, const struct ToolInfo*);
-    //std::vector<cocoParameter>* params;
+    std::vector<cocoOption>* opt;
     const char *descriptShort;
     const char *author;
     const char *usage;
-};
+} ToolInfo;
 
 #endif // TOOL
 

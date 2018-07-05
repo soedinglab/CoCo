@@ -1,4 +1,4 @@
-// Written by Annika Seidel
+//Copyright (C) 2018 Written by Annika Seidel
 
 #include <algorithm>
 #include <chrono>
@@ -13,12 +13,9 @@
 #include <gatb/gatb_core.hpp>
 #include "kseq.h"
 
+#include "src/util.h"
+#include "src/options.h"
 #include "src/ToolInfo.h"
-#ifndef EXIT
-#define EXIT(exitCode) do { int __status = (exitCode);\
-                            std::cerr.flush(); std::cout.flush();\
-                            exit(__status); } while(0)
-#endif
 
 
 #ifdef GIT_SHA1
@@ -42,16 +39,15 @@ const char* main_author = "Annika Seidel (annika.seidel@mpibpc.mpg.de)";
 extern int pcreads(int argc, const char **argv, const struct ToolInfo* tool);
 extern int pcoverage(int argc, const char **argv, const struct ToolInfo* tool);
 
-//Parameters& par = Parameters::getInstance();
-
+Options& opt = Options::getInstance();
 std::vector<struct ToolInfo> tools =
 {
-  {"pcoverage", pcoverage, "calculates for every read an estimated value for "\
+  {"pcoverage", pcoverage, &opt.pcoverageWorkflow,"calculates for every read an estimated value for "\
                            "the population coverage",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
    "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile1.hdf5>...<i:kmer-countFileN.hdf5>",
   },
-  {"pcreads", pcreads, "calculates for every read the consensus read",
+  {"pcreads", pcreads, &opt.pcreadsWorkflow, "calculates for every read the consensus read",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
    "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>"
   },
@@ -82,7 +78,7 @@ void printUsage()
           << t.descriptShort << "\n";
   }
 
-  std::cerr << usage.str() << "\n";
+  fprintf(stderr,"%s\n", usage.str());
 }
 
 int main(int argc, const char * argv[])
@@ -90,7 +86,7 @@ int main(int argc, const char * argv[])
   //TODO: check 64 system, avx2, sse3
 
   if (argc < 2)
-  {;
+  {
     printUsage();
     return(EXIT_FAILURE);
   }
@@ -105,11 +101,12 @@ int main(int argc, const char * argv[])
   struct ToolInfo *tool;
   if((tool = getToolInfo(argv[1]))!=NULL)
   {
-    EXIT(tool->callerFunction(argc-2, argv+2, tool));
+    fprintf(stdout, "execute tool: %s\n", tool->cmd);
+    EXIT(tool->callerFunction(argc-1, argv+1, tool));
   }
   else
   {
-    std::cerr << "\nInvalid Command: " << argv[1] << "\n";
+    fprintf(stderr ,"Invalid Command: %s\n", argv[1]);
     printUsage();
     return(EXIT_FAILURE);
   }
