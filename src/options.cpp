@@ -25,7 +25,8 @@ Options::Options():
   "--kmerWeight", "number of informative positions in a k-mer pattern, "
   "default: 27", typeid(int),  (void *) &kmerWeight)
 {
-  if (instance) {
+  if (instance)
+  {
     std::cerr << "Parameter instance already exists!\n";
     abort();
   }
@@ -164,6 +165,7 @@ void Options::parseOptions(int argc, const char *argv[],
     }
   }
 
-  //TODO: check parameter count or required paraemter
+  //TODO: check parameter count, superflous parameter?
+  //TODO: check requiered parameter
   //TODO: flag für print Parameter
 }

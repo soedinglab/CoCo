@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2018 Annika Seidel <annika.seidel@mpibpc.mpg.de>
+ *
+ */
+
 #include <cstdio>
 #include "ToolInfo.h"
 

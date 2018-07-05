@@ -1,3 +1,5 @@
+/* Option handling for COCO tools/workflows */
+
 #ifndef OPTIONS_H
 #define OPTIONS_H
 
@@ -26,6 +28,8 @@ struct cocoOption {
 };
 
 
+/* general class <Options>, provides vector of <cocoOption>s for different
+ * COCO workflows */
 class Options
 {
 public:

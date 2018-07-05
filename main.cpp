@@ -1,4 +1,7 @@
-//Copyright (C) 2018 Written by Annika Seidel
+/*
+ * Copyright (C) 2018 Annika Seidel <annika.seidel@mpibpc.mpg.de>
+ *
+ */
 
 #include <algorithm>
 #include <chrono>
