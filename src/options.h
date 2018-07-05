@@ -53,6 +53,8 @@ public:
 
   const char* sampleListFile;
   const char* kmerCountListFile;
+  const char *readAvgLenFile;
+  unsigned int kmerWeight;
 
   std::vector<cocoOption> empty;
   std::vector<cocoOption> pcoverageWorkflow;
@@ -60,6 +62,8 @@ public:
 
   OPTION(OP_SAMPLE_LIST)
   OPTION(OP_KC_LIST)
+  OPTION(OP_READ_AVERAGELEN_LIST)
+  OPTION(OP_KMER_WEIGHT)
 
 protected:
     Options();

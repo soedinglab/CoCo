@@ -71,6 +71,7 @@ void printUsage()
   usage << tool_name << " Version: " << version << "\n";
   usage << "© " << main_author << "\n\n";
 
+  usage << "available tools:\n";
   for (size_t j = 0; j < tools.size(); j++)
   {
     struct ToolInfo &t = tools[j];
