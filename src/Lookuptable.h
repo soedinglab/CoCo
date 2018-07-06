@@ -6,9 +6,10 @@
 
 #include <cstdlib>
 #include "mathsupport.h"
+#include "kmer.h"
 
 /* k-mer-index = (first p bits << I) | (last I bits) */
-#define LOGINDEXSIZE 30 /* p bits, gurantee 8GB for indexGridTable*/
+#define LOGINDEXSIZE 30 /* p bits, gurantee ~8GB for indexGridTable*/
 #define LOGOFFSETSIZE 24 /* I bits */
 
 class Lookuptable
@@ -17,7 +18,7 @@ class Lookuptable
 private:
 
   size_t *indexGridTable;
-  size_t indexGridTableSize = ipow(2,LOGINDEXSIZE);
+  size_t indexGridTableSize = ipow(2,LOGINDEXSIZE)+1;
   struct __attribute__((__packed__)) IndexEntry {
     unsigned int indexOffset : LOGOFFSETSIZE;
     unsigned int count;
@@ -28,13 +29,27 @@ private:
   IndexEntry * offsetTable;
   size_t numberItems;
   size_t maxNumberItems;
+  //TODO: size_t countThreeshold
+
+  size_t _offsetmask;
+  size_t _indexmask;
+
+  inline size_t getGridPosition(kmerType kmer) const;
+  inline size_t getOffset(kmerType kmer) const;
 
 public:
 
   Lookuptable(){};
 
-  Lookuptable(const size_t kmerWeight,
+  Lookuptable(const size_t ksize,
               const size_t nbItems);
+
+  ~Lookuptable();
+
+  void assignKmertoGrid(kmerType kmer);
+  void setupIndexGridTable();
+  size_t addElement(kmerType kmer, unsigned int count);
+  void finalSetupTables(bool resize, size_t countThreeshold=1);
 };
 
 #endif // LOOKUPTABLE_H
