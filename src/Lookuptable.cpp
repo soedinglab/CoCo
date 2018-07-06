@@ -5,9 +5,9 @@
 #include "util.h"
 
 
-Lookuptable::Lookuptable(const size_t ksize, const size_t nbItems)
+Lookuptable::Lookuptable(const size_t nbItems)
 {
-  assert(LOGINDEXSIZE+LOGOFFSETSIZE == 2*ksize);
+  // TODO: assert(LOGINDEXSIZE+LOGOFFSETSIZE == 2*ksize);
 
   indexGridTable = (size_t *) calloc(indexGridTableSize, sizeof(size_t));
   offsetTable = (IndexEntry *) calloc(nbItems, sizeof(IndexEntry));
@@ -91,7 +91,7 @@ size_t Lookuptable::addElement(kmerType kmer, unsigned int count)
   return writingPosition;
 }
 
-void Lookuptable::finalSetupTables(bool resize, size_t countThreeshold)
+void Lookuptable::finalSetupTables(size_t countThreeshold)
 {
 
   size_t prev = 0,
@@ -117,10 +117,6 @@ void Lookuptable::finalSetupTables(bool resize, size_t countThreeshold)
 
   assert(writepos <= numberItems);
   numberItems = writepos;
-
-  if (resize)
-  {
-    maxNumberItems = numberItems;
-    offsetTable = (IndexEntry *) realloc(offsetTable, maxNumberItems*sizeof(IndexEntry));
-  }
+  maxNumberItems = numberItems;
+  offsetTable = (IndexEntry *) realloc(offsetTable, maxNumberItems*sizeof(IndexEntry));
 }

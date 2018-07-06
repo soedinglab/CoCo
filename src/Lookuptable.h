@@ -41,15 +41,14 @@ public:
 
   Lookuptable(){};
 
-  Lookuptable(const size_t ksize,
-              const size_t nbItems);
+  Lookuptable(const size_t nbItems);
 
   ~Lookuptable();
 
   void assignKmertoGrid(kmerType kmer);
   void setupIndexGridTable();
   size_t addElement(kmerType kmer, unsigned int count);
-  void finalSetupTables(bool resize, size_t countThreeshold=1);
+  void finalSetupTables(size_t countThreeshold=1);
 };
 
 #endif // LOOKUPTABLE_H
