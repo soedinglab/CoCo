@@ -9,7 +9,6 @@ Lookuptable::Lookuptable(const size_t ksize, const size_t nbItems)
 {
   assert(LOGINDEXSIZE+LOGOFFSETSIZE == 2*ksize);
 
-  //TODO: store one more grid entry?
   indexGridTable = (size_t *) calloc(indexGridTableSize, sizeof(size_t));
   offsetTable = (IndexEntry *) calloc(nbItems, sizeof(IndexEntry));
   maxNumberItems = nbItems;

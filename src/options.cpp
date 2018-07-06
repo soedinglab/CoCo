@@ -167,7 +167,7 @@ void Options::parseOptions(int argc, const char *argv[],
 
   if (optind != argc)
   {
-    fprintf(stderr, "ERROR: Superfluous Argument %s\n", argv[optind]);
+    fprintf(stderr, "ERROR: Superfluous Argument %s\n\n", argv[optind]);
     printToolUsage(tool, SIMPLE);
     EXIT(EXIT_FAILURE);
   }
