@@ -22,7 +22,7 @@ Options::Options():
   ,
   OP_KMER_WEIGHT(OP_KMER_WEIGHT_ID,"kmerWeight",
   "--kmerWeight", "number of informative positions in a k-mer pattern, "
-  "default: 27", typeid(int),  (void *) &kmerWeight, PCOVERAGE|PCREADS)
+  "default: 27", typeid(int),  (void *) &kmerWeight,0)
 {
   if (instance)
   {
