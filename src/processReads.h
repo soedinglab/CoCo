@@ -5,6 +5,7 @@
 #include "Lookuptable.h"
 #include "KmerTranslator.h"
 #include "kseq.h"
+#include "util.h"
 
 KSEQ_INIT(int, read)
 
@@ -22,7 +23,7 @@ FILE* openFileOrDie(const char *fileName, const char * mode)
   {
     fprintf(stderr, "ERROR: opening failed for file %s\n", fileName);
     perror(fileName);
-    exit(EXIT_FAILURE);
+    EXIT(EXIT_FAILURE);
   }
   return file;
 }

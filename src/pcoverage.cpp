@@ -174,12 +174,21 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     //TODO: new translator if (translator->getSpan() != kmerSize)
 
     unsigned long avgLen = stol(*jt);
-    float corrFactor = kmerSize/(avgLen-kmerSize+1);
+    float corrFactor = (float)(avgLen)/(avgLen-kmerSize+1);
 
     /* build lookuptale */
     Lookuptable* lookuptable = buildLookuptable(*storage, *translator, 0, corrFactor);
-
-    std::string resultFileName = "populationCoverages";
+    if (lookuptable == NULL)
+    {
+      fprintf(stderr,"Generating lookuptable based on %s failed\n",
+              it->c_str());
+      return EXIT_FAILURE;
+    }
+    string filename = *it;
+    size_t lastdot = filename.find_last_of(".");
+    if (lastdot != std::string::npos)
+      filename=filename.substr(0, lastdot);
+    string resultFilename=(string("coverage.")+string(basename(filename.c_str()))+string(".txt"));
     if (opt.threads == 1)
     {
       process_sampleList(sampleList, resultFileName, lookuptable, translator);
@@ -190,6 +199,7 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
                                  lookuptable, translator, opt.threads);
     }
     //TODO: correction factor, check retval
+
 
     delete lookuptable;
   }

@@ -74,7 +74,7 @@ size_t Lookuptable::addElement(kmerType kmer, unsigned int count)
     prevWritingPosition = indexGridTable[gridPosition-1];
   for (size_t pos = prevWritingPosition; pos < writingPosition; pos++)
   {
-    if (offsetTable[pos].indexOffset == offset)
+    if (offsetTable[pos].count != 0 && offsetTable[pos].indexOffset == offset)
     {
       offsetTable[pos].count += count;
       return pos;
@@ -133,7 +133,6 @@ unsigned int Lookuptable::getCount (const kmerType kmer) const
 
   const std::pair<size_t, size_t> grid = getIndexGridRange(kmer);
   const size_t kmerOffset = getOffset(kmer);
-
   size_t pos = grid.first;
   size_t endPos = pos + grid.second;
   //use != instead of < to save sort step
