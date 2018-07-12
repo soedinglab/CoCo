@@ -83,8 +83,8 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     //TODO: new translator if (translator->getSpan() != kmerSize)
 
     unsigned long avgLen = stol(*jt);
-    float corrFactor = kmerSize/(avgLen-kmerSize+1);
-
+    float corrFactor = (float)(avgLen)/(avgLen-kmerSize+1);
+    printf("corrFactor: %f\n", corrFactor);
     /* build lookuptale */
     Lookuptable* lookuptable = buildLookuptable(*storage, *translator, 0, corrFactor);
     for (vector<string>::iterator sampleIt = sampleList->begin() ; sampleIt != sampleList->end(); ++sampleIt)
