@@ -191,11 +191,11 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     string resultFilename=(string("coverage.")+string(basename(filename.c_str()))+string(".txt"));
     if (opt.threads == 1)
     {
-      process_sampleList(sampleList, resultFileName, lookuptable, translator);
+      process_sampleList(sampleList, resultFilename, lookuptable, translator);
     }
     else
     {
-      process_sampleList_threads(sampleList, resultFileName,
+      process_sampleList_threads(sampleList, resultFilename,
                                  lookuptable, translator, opt.threads);
     }
     //TODO: correction factor, check retval
