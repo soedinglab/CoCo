@@ -31,7 +31,7 @@ int processReadFile(const char* readFilename,
   FILE *readFile = openFileOrDie(readFilename, "r");
   kseq_t *seq = kseq_init(fileno(readFile));
 
-  FILE *resultFile = openFileOrDie(resultFilename, "a");
+  FILE *resultFile = openFileOrDie(resultFilename, "w");
   CountProfile countprofile(&translator, &lookuptable);
 
   /* iterate over every single read  */
