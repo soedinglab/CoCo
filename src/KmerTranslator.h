@@ -19,6 +19,8 @@ public:
   kmerType kmer2minPackedKmer(const spacedKmerType kmer) const;
   unsigned short getSpan() const;
   unsigned short getWeight() const;
+
+  friend class CountProfile;
 };
 
 #endif // KMERTRANSLATOR_H

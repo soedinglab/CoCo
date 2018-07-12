@@ -120,3 +120,28 @@ void Lookuptable::finalSetupTables(size_t countThreeshold)
   maxNumberItems = numberItems;
   offsetTable = (IndexEntry *) realloc(offsetTable, maxNumberItems*sizeof(IndexEntry));
 }
+
+inline std::pair<size_t, size_t> Lookuptable::getIndexGridRange(kmerType kmer) const
+{
+    size_t gridPosition = getGridPosition(kmer);
+    size_t indexGridSize = indexGridTable[gridPosition + 1] -
+                           indexGridTable[gridPosition];
+    return std::make_pair(indexGridTable[gridPosition], indexGridSize);
+}
+
+unsigned int Lookuptable::getCount (const kmerType kmer) const
+{
+
+  const std::pair<size_t, size_t> grid = getIndexGridRange(kmer);
+  const size_t kmerOffset = getOffset(kmer);
+
+  size_t pos = grid.first;
+  size_t endPos = pos + grid.second;
+
+  //use != instead of < to save sort step
+  for(; pos < endPos && (offsetTable[pos].indexOffset != kmerOffset
+                         || offsetTable[pos].count == 0); pos++ ){
+  }
+
+  return (pos != endPos) ? offsetTable[pos].count : 0;
+}

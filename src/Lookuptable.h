@@ -36,6 +36,7 @@ private:
 
   inline size_t getGridPosition(kmerType kmer) const;
   inline size_t getOffset(kmerType kmer) const;
+  inline std::pair<size_t, size_t> getIndexGridRange(kmerType kmer) const;
 
 public:
 
@@ -49,6 +50,8 @@ public:
   void setupIndexGridTable();
   size_t addElement(kmerType kmer, unsigned int count);
   void finalSetupTables(size_t countThreeshold=1);
+
+  unsigned int getCount (const kmerType kmer) const;
 };
 
 #endif // LOOKUPTABLE_H

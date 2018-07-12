@@ -17,7 +17,7 @@ void initialize()
 
   for (unsigned int i = 0; i <= 'Z'; ++i)
   {
-    res2int[i]=-1;
+    res2int[i]= -1;
   }
   for (unsigned int i = 0; i < alphabetSize; ++i)
   {

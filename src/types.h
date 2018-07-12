@@ -1,6 +1,10 @@
 #ifndef TYPES
 #define TYPES
 
+#include <string>
+
+typedef std::string SeqType;
+
 // one character representation: A < C < T < G
 const unsigned int alphabetSize = 4;
 extern char int2res[alphabetSize];

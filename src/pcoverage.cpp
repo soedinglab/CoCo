@@ -6,21 +6,37 @@
 #include <cstdio>
 #include <stdexcept>
 #include <vector>
+#include <gatb/gatb_core.hpp>
+
 #include "ToolInfo.h"
 #include "options.h"
 #include "types.h"
 #include "KmerTranslator.h"
 #include "Lookuptable.h"
 #include "preprocessing.h"
+#include "processReads.h"
+
+vector<string> getFileList(const char *fileListFilename)
+{
+  vector<string> fileList;
+  string line;
+  ifstream fp;
+  fp.open(fileListFilename);
+  while (getline (fp,line))
+    fileList.push_back(line);
+  fp.close();
+
+  return fileList;
+}
 
 int pcoverage(int argc, const char **argv, const ToolInfo* tool)
 {
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);
 
-  printf("argument: sampleList: %s\n", opt.sampleListFile.c_str());
-  printf("argument: kmerCountList: %s\n", opt.kmerCountListFile.c_str());
-  printf("argument: kmerWeight: %u\n", opt.kmerWeight);
+  printf("sampleList: %s\n", opt.sampleListFile.c_str());
+  printf("kmerCountList: %s\n", opt.kmerCountListFile.c_str());
+  printf("kmerWeight: %u\n", opt.kmerWeight);
 
   // TODO:check parameter and if files exists
 
@@ -37,18 +53,11 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
 
   KmerTranslator *translator = NULL;
 
-  /* get kmer-count files */
-  const char * kmerCountListFile = opt.kmerCountListFile.c_str();
-  vector<string> kmerCountList;
-  string line;
-  ifstream kmerCountListfp;
-  kmerCountListfp.open(kmerCountListFile);
-  while (getline (kmerCountListfp,line))
-    kmerCountList.push_back(line);
-  kmerCountListfp.close();
+  /* get kmer-count and sample files */
+  vector<string> kmerCountList = getFileList(opt.kmerCountListFile.c_str());
+  vector<string> sampleList = getFileList(opt.sampleListFile.c_str());
 
-
-  for (std::vector<string>::iterator it = kmerCountList.begin() ; it != kmerCountList.end(); ++it)
+  for (vector<string>::iterator it = kmerCountList.begin() ; it != kmerCountList.end(); ++it)
   {
     /* get dsk kmer-count storage */
     Storage* storage = StorageFactory(STORAGE_HDF5).load(*it);
@@ -75,7 +84,16 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     /* build lookuptale */
     Lookuptable* lookuptable = buildLookuptable(*storage, *translator, 0);
 
-    //TODO: algorithm
+    for (vector<string>::iterator sampleIt = sampleList.begin() ; sampleIt != sampleList.end(); ++sampleIt)
+    {
+      const char* resultFilename = "populationCoverages.txt";
+      int retval = processReadFile((const char*)*sampleIt->c_str(),
+                                   (const char*) resultFilename,
+                                   *lookuptable,
+                                   *translator);
+    }
+
+    //TODO: correction factor, check retval
 
     delete lookuptable;
   }
