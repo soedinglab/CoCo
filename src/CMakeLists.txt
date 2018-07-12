@@ -10,6 +10,8 @@ set(coco_header_files
   ${CMAKE_CURRENT_SOURCE_DIR}/kmer.h
   ${CMAKE_CURRENT_SOURCE_DIR}/preprocessing.h
   ${CMAKE_CURRENT_SOURCE_DIR}/KmerTranslator.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/CountProfile.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/processReads.h
   PARENT_SCOPE
   )
 
@@ -23,6 +25,7 @@ set(coco_source_files
   ${CMAKE_CURRENT_SOURCE_DIR}/kmer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Lookuptable.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/KmerTranslator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/CountProfile.cpp
   PARENT_SCOPE
         )
 
