@@ -23,6 +23,9 @@ Options::Options():
   OP_KMER_WEIGHT(OP_KMER_WEIGHT_ID,"kmerWeight",
   "--kmerWeight", "number of informative positions in a k-mer pattern, "
   "default: 27", typeid(int),  (void *) &kmerWeight,0)
+  ,
+  OP_THREADS(OP_THREADS_ID, "nThreads", "--nThreads", "number of threasd to use"
+             "default: 1", typeid(int), (void *)&threads, 0)
 {
   if (instance)
   {
@@ -36,7 +39,7 @@ Options::Options():
   pcoverageWorkflow.push_back(OP_KC_LIST);
   pcoverageWorkflow.push_back(OP_READ_AVERAGELEN_LIST);
   pcoverageWorkflow.push_back(OP_KMER_WEIGHT);
-
+  pcoverageWorkflow.push_back(OP_THREADS);
   setDefaults();
 }
 
@@ -44,6 +47,7 @@ Options::Options():
 void Options::setDefaults()
 {
   kmerWeight = 27;
+  threads = 1;
 }
 
 void printToolUsage(const ToolInfo &tool, const int FLAG)
@@ -82,6 +86,7 @@ void Options::parseOptions(int argc, const char *argv[],
       {"kmerCountList", required_argument, NULL, 0},
       {"readAvgLenList", required_argument, NULL, 0},
       {"kmerWeight", required_argument, NULL, 0},
+      {"nThreads", required_argument, NULL, 0},
       { NULL, no_argument, NULL, 0 }
   };
 

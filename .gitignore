@@ -37,3 +37,4 @@ build/
 *.creator.user
 *.files
 *.includes
+*.user

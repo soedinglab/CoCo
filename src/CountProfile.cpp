@@ -41,7 +41,7 @@ void CountProfile::fill(const SeqType seq, const char* readName)
     compute c_i = max{s_{i-j} : b_j=1 and 0 ≤ j <= k-1} */
 
   size_t seqlen = seq.size();
-  assert(seqlen > kmerSpan);
+  assert(seqlen >= kmerSpan);
   this->readName = (char*) readName;
   this->profileLength = seqlen;
   this->populationCoverage = 0;

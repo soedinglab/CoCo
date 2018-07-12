@@ -67,11 +67,13 @@ public:
   std::vector<cocoOption> empty;
   std::vector<cocoOption> pcoverageWorkflow;
   std::vector<cocoOption> pcreadsWorkflow;
+  unsigned int threads;
 
   OPTION(OP_SAMPLE_LIST)
   OPTION(OP_KC_LIST)
   OPTION(OP_READ_AVERAGELEN_LIST)
   OPTION(OP_KMER_WEIGHT)
+  OPTION(OP_THREADS)
 
 protected:
     Options();

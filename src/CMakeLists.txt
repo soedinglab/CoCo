@@ -12,6 +12,7 @@ set(coco_header_files
   ${CMAKE_CURRENT_SOURCE_DIR}/KmerTranslator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/CountProfile.h
   ${CMAKE_CURRENT_SOURCE_DIR}/processReads.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/filehandling.h
   PARENT_SCOPE
   )
 

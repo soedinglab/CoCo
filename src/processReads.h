@@ -8,6 +8,11 @@
 
 KSEQ_INIT(int, read)
 
+FILE* openFileOrDie(std::string fileName, const char * mode)
+{
+  return openFileOrDie(fileName.c_str(), mode);
+}
+
 FILE* openFileOrDie(const char *fileName, const char * mode)
 {
 
@@ -67,6 +72,15 @@ int processReadFile(const char* readFilename,
   fclose(readFile);
   fclose(resultFile);
   return EXIT_SUCCESS;
+}
+
+int processReadFile(string readFilename,
+                    string resultFilename,
+                    const Lookuptable &lookuptable,
+                    const KmerTranslator &translator)
+{
+  return processReadFile(readFilename.c_str(), resultFilename.c_str(),
+                         lookuptable, translator);
 }
 
 #endif // PROCESSREADS
