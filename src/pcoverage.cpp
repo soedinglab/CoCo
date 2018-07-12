@@ -16,14 +16,14 @@
 #include "preprocessing.h"
 #include "processReads.h"
 
-vector<string> getFileList(const char *fileListFilename)
+vector<string> *getFileList(const char *fileListFilename)
 {
-  vector<string> fileList;
+  vector<string> *fileList = new vector<string>();
   string line;
   ifstream fp;
   fp.open(fileListFilename);
   while (getline (fp,line))
-    fileList.push_back(line);
+    fileList->push_back(line);
   fp.close();
 
   return fileList;
@@ -54,9 +54,11 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
   KmerTranslator *translator = NULL;
 
   /* get kmer-count and sample files */
-  vector<string> kmerCountList = getFileList(opt.kmerCountListFile.c_str());
-  vector<string> sampleList = getFileList(opt.sampleListFile.c_str());
-  for (vector<string>::iterator it = kmerCountList.begin() ; it != kmerCountList.end(); ++it)
+  vector<string> *kmerCountList = getFileList(opt.kmerCountListFile.c_str());
+  vector<string> *sampleList = getFileList(opt.sampleListFile.c_str());
+  vector<string> *readAvgLenList = getFileList(opt.readAvgLenFile.c_str());
+
+  for (vector<string>::iterator it = kmerCountList->begin(), jt=readAvgLenList->begin(); it != kmerCountList->end(); ++it, ++jt)
   {
     /* get dsk kmer-count storage */
     Storage* storage = StorageFactory(STORAGE_HDF5).load(*it);
@@ -80,13 +82,16 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     }
     //TODO: new translator if (translator->getSpan() != kmerSize)
 
+    unsigned long avgLen = stol(*jt);
+    float corrFactor = kmerSize/(avgLen-kmerSize+1);
+
     /* build lookuptale */
-    Lookuptable* lookuptable = buildLookuptable(*storage, *translator, 0);
-    for (vector<string>::iterator sampleIt = sampleList.begin() ; sampleIt != sampleList.end(); ++sampleIt)
+    Lookuptable* lookuptable = buildLookuptable(*storage, *translator, 0, corrFactor);
+    for (vector<string>::iterator sampleIt = sampleList->begin() ; sampleIt != sampleList->end(); ++sampleIt)
     {
       const char* resultFilename = "populationCoverages.txt";
-      int retval = processReadFile((const char*) sampleIt->c_str(),
-                                   (const char*) resultFilename,
+      int retval = processReadFile(sampleIt->c_str(),
+                                   resultFilename,
                                    *lookuptable,
                                    *translator);
     }
@@ -96,6 +101,8 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     delete lookuptable;
   }
 
+  delete sampleList;
+  delete kmerCountList;
   delete translator;
 
   return EXIT_SUCCESS;

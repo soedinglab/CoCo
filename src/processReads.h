@@ -32,8 +32,7 @@ int processReadFile(const char* readFilename,
 
   FILE *resultFile = openFileOrDie(resultFilename, "w");
   CountProfile countprofile(&translator, &lookuptable);
-  //TODO LOCAL(countprofile);
-  printf("iterate over read\n");
+
   /* iterate over every single read  */
   while (kseq_read(seq) >= 0)
   {
@@ -45,7 +44,7 @@ int processReadFile(const char* readFilename,
     unsigned int kmerSpan = translator.getSpan();
     if(len < kmerSpan)
     {
-      //fprintf(stderr, "WARNING: read %lu is too short!\n", readIdx);
+      fprintf(stderr, "WARNING: read %s is too short!\n", readName);
       continue;
     }
 
@@ -59,8 +58,9 @@ int processReadFile(const char* readFilename,
     countprofile.fill(seqStr, readName);
 
     /* estimate population coverage */
-    uint32_t popCoverage = countprofile.calcPopulationCoverage();
-    fprintf(resultFile, "%s\t%u\n", readName, popCoverage);
+    float popCoverage = countprofile.calcPopulationCoverage() * lookuptable.getCorrFactor();
+    fprintf(resultFile, "%s\t%f\n", readName, popCoverage );
+    //TODO: function pointer for what to do with countProfile
 
   }
   kseq_destroy(seq);

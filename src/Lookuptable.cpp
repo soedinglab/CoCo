@@ -5,7 +5,7 @@
 #include "util.h"
 
 
-Lookuptable::Lookuptable(const size_t nbItems)
+Lookuptable::Lookuptable(const size_t nbItems, float corrFactor)
 {
   // TODO: assert(LOGINDEXSIZE+LOGOFFSETSIZE == 2*ksize);
 
@@ -13,6 +13,7 @@ Lookuptable::Lookuptable(const size_t nbItems)
   offsetTable = (IndexEntry *) calloc(nbItems, sizeof(IndexEntry));
   maxNumberItems = nbItems;
   numberItems = 0;
+  this->corrFactor = corrFactor;
 
   /* set masks */
   _indexmask = (ipow(2,LOGINDEXSIZE)-1) << LOGOFFSETSIZE;
@@ -141,4 +142,9 @@ unsigned int Lookuptable::getCount (const kmerType kmer) const
   }
 
   return (pos != endPos) ? offsetTable[pos].count : 0;
+}
+
+float Lookuptable::getCorrFactor() const
+{
+  return corrFactor;
 }

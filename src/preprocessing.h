@@ -10,7 +10,8 @@ typedef Kmer<>::Count Count;
 
 Lookuptable* buildLookuptable(Storage &storage,
                               const KmerTranslator &translator,
-                              size_t minCount)
+                              size_t minCount,
+                              float corrFactor)
 {
   //retrieve the partition holding the couples [kmer,abundance]
   Group& dskGroup = storage.getGroup("dsk");
@@ -24,7 +25,7 @@ Lookuptable* buildLookuptable(Storage &storage,
   assert(span == kmerSize);
 
   // create lookuptable
-  Lookuptable *lookuptable = new Lookuptable(solidKmers.getNbItems());
+  Lookuptable *lookuptable = new Lookuptable(solidKmers.getNbItems(), corrFactor);
   // fill lookuptable
   {
     Iterator<Count>* it = solidKmers.iterator();  LOCAL (it);

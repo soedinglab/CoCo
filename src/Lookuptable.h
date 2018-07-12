@@ -29,6 +29,7 @@ private:
   IndexEntry * offsetTable;
   size_t numberItems;
   size_t maxNumberItems;
+  float corrFactor;
   //TODO: size_t countThreeshold
 
   size_t _offsetmask;
@@ -42,7 +43,7 @@ public:
 
   Lookuptable(){};
 
-  Lookuptable(const size_t nbItems);
+  Lookuptable(size_t nbItems, float corrFactor);
 
   ~Lookuptable();
 
@@ -50,6 +51,7 @@ public:
   void setupIndexGridTable();
   size_t addElement(kmerType kmer, unsigned int count);
   void finalSetupTables(size_t countThreeshold=1);
+  float getCorrFactor() const;
 
   unsigned int getCount (const kmerType kmer) const;
 };
