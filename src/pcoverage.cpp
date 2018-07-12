@@ -84,19 +84,34 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
 
     unsigned long avgLen = stol(*jt);
     float corrFactor = (float)(avgLen)/(avgLen-kmerSize+1);
-    printf("corrFactor: %f\n", corrFactor);
+
     /* build lookuptale */
     Lookuptable* lookuptable = buildLookuptable(*storage, *translator, 0, corrFactor);
-    for (vector<string>::iterator sampleIt = sampleList->begin() ; sampleIt != sampleList->end(); ++sampleIt)
+    if(lookuptable != NULL)
     {
-      const char* resultFilename = "populationCoverages.txt";
-      int retval = processReadFile(sampleIt->c_str(),
-                                   resultFilename,
-                                   *lookuptable,
-                                   *translator);
-    }
+      for (vector<string>::iterator sampleIt = sampleList->begin() ; sampleIt != sampleList->end(); ++sampleIt)
+      {
+        string filename = *it;
+        size_t lastdot = filename.find_last_of(".");
+        if (lastdot != std::string::npos)
+          filename=filename.substr(0, lastdot);
+        string resultFilename=(string("coverage.")+string(basename(filename.c_str()))+string(".txt"));
+        //std::cout <<test<<std::endl;
+        //const char* resultFilename = test.c_str();//(string("coverage.")+*it+string(".txt")).c_str();
+        int retval = processReadFile(sampleIt->c_str(),
+                                     resultFilename.c_str(),
+                                     *lookuptable,
+                                     *translator);
+      }
 
-    //TODO: correction factor, check retval
+      //TODO: check retval
+    }
+    else
+    {
+      fprintf(stderr,"Generating lookuptable based on %s failed\n",
+              it->c_str());
+      return EXIT_FAILURE;
+    }
 
     delete lookuptable;
   }

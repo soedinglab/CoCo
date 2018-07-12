@@ -1,6 +1,8 @@
 #ifndef UTIL
 #define UTIL
 
+#define DEBUG
+
 #ifndef EXIT
 #define EXIT(exitCode) do { int __status = (exitCode);\
                             std::cerr.flush(); std::cout.flush();\

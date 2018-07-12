@@ -5,6 +5,7 @@
 #include "Lookuptable.h"
 #include "KmerTranslator.h"
 #include "kseq.h"
+#include "util.h"
 
 KSEQ_INIT(int, read)
 
@@ -17,7 +18,7 @@ FILE* openFileOrDie(const char *fileName, const char * mode)
   {
     fprintf(stderr, "ERROR: opening failed for file %s\n", fileName);
     perror(fileName);
-    exit(EXIT_FAILURE);
+    EXIT(EXIT_FAILURE);
   }
   return file;
 }
@@ -30,7 +31,7 @@ int processReadFile(const char* readFilename,
   FILE *readFile = openFileOrDie(readFilename, "r");
   kseq_t *seq = kseq_init(fileno(readFile));
 
-  FILE *resultFile = openFileOrDie(resultFilename, "w");
+  FILE *resultFile = openFileOrDie(resultFilename, "a");
   CountProfile countprofile(&translator, &lookuptable);
 
   /* iterate over every single read  */

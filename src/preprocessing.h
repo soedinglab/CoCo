@@ -5,8 +5,55 @@
 
 #include <gatb/gatb_core.hpp>
 #include "Lookuptable.h"
+#include "util.h"
 
 typedef Kmer<>::Count Count;
+
+bool isValid(const Lookuptable &lookuptable,
+              Partition<Count> &solidKmers,
+              Kmer<>::ModelCanonical &model,
+              const KmerTranslator &translator,
+              unsigned short threeshold)
+{
+
+  Iterator<Count>* it = solidKmers.iterator();  LOCAL (it);
+
+  for (it->first(); !it->isDone(); it->next())
+  {
+    const Count& count = it->item();
+    kmerType packedKmer =
+        translator.kmer2minPackedKmer(largeInt2uint128(count.value));
+    //TODO: packedKmer as string
+    unsigned int lookupCount = lookuptable.getCount(packedKmer);
+    std::string kmer = model.toString(count.value);
+
+    //std::cout << lookupCount << "\t" << count.abundance << std::endl;
+    
+    // abundance < threeshold:
+    // kmer should not exist in lookuptable, except different kmers match to
+    // the same packedKmer by using spacemask
+    if (count.abundance < threeshold && lookupCount!=0 && lookupCount < threeshold)
+    {
+
+      std::cerr << "ERROR: count value " << lookupCount
+                << "found for packed kmer "
+                << packedKmer << "generated from " << kmer
+                << " is smaller than threeshold" << threeshold << std::endl;
+      return false;
+    }
+
+    // check count values
+    if (count.abundance > threeshold && count.abundance > lookupCount)
+    {
+      std::cerr << "ERROR: check lookuptable counts failed, value " << lookupCount
+                << " for packed kmer " << packedKmer << "generated from"
+                << kmer << "is smaller than count.abundance="
+                << count.abundance << "found in h5 file " << std::endl;
+      return false;
+    }
+  }
+  return true;
+}
 
 Lookuptable* buildLookuptable(Storage &storage,
                               const KmerTranslator &translator,
@@ -61,10 +108,15 @@ Lookuptable* buildLookuptable(Storage &storage,
 
     //TODO: sort elements per grid
 
-    //TODO: valid check
+#ifdef DEBUG
+    if(!isValid(*lookuptable,solidKmers,model,translator,minCount))
+      return NULL;
+#endif
   }
   return lookuptable;
 }
+
+
 
 #endif // PREPROCESSING
 
