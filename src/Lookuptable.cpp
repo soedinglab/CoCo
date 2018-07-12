@@ -57,12 +57,10 @@ void Lookuptable::setupIndexGridTable()
 
 size_t Lookuptable::addElement(kmerType kmer, unsigned int count)
 {
-
   size_t prevWritingPosition=0;
   const size_t gridPosition = getGridPosition(kmer);
   const size_t writingPosition = indexGridTable[gridPosition];
   const size_t offset = getOffset(kmer);
-
   if(writingPosition >= this->maxNumberItems)
   {
     std::cerr << "Lookuptable addElement overflows. Current write position is "
@@ -137,7 +135,6 @@ unsigned int Lookuptable::getCount (const kmerType kmer) const
 
   size_t pos = grid.first;
   size_t endPos = pos + grid.second;
-
   //use != instead of < to save sort step
   for(; pos < endPos && (offsetTable[pos].indexOffset != kmerOffset
                          || offsetTable[pos].count == 0); pos++ ){

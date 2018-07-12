@@ -43,5 +43,5 @@ kmerType KmerTranslator::kmer2packedKmer(const spacedKmerType kmer) const
 kmerType KmerTranslator::kmer2minPackedKmer(const spacedKmerType kmer) const
 {
   kmerType packedKmer = kmer2packedKmer(kmer);
-  return(minIndex(packedKmer, span));
+  return(minIndex(packedKmer, weight));
 }

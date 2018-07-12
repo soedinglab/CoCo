@@ -33,7 +33,7 @@ int processReadFile(const char* readFilename,
   FILE *resultFile = openFileOrDie(resultFilename, "w");
   CountProfile countprofile(&translator, &lookuptable);
   //TODO LOCAL(countprofile);
-
+  printf("iterate over read\n");
   /* iterate over every single read  */
   while (kseq_read(seq) >= 0)
   {

@@ -86,14 +86,14 @@ void CountProfile::fill(const SeqType seq, const char* readName)
       // get abundance for packed k-mer, started at position idx in
       // current read
       kmerType packedKmer = translator->kmer2minPackedKmer(kmer);
-      uint32_t count = lookuptable->getCount(kmer);
-
+      uint32_t count = lookuptable->getCount(packedKmer);
       // update c_i for all previous positions j with b_j=1 and 0 ≤ j ≤ k-1
       // maximizing over abundance value
       for(size_t jdx = 0; jdx < kmerWeight; jdx++)
       {
         size_t pos = idx-(kmerSpan-translator->_maskArray[jdx]-1);
         profile[pos].count = std::max(count, profile[pos].count);
+        //printf("profile[%u].count=%u\n", pos, profile[pos].count);
       }
     }
   }

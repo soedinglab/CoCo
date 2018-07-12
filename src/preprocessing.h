@@ -52,7 +52,6 @@ Lookuptable* buildLookuptable(Storage &storage,
       kmerType packedKmer =
           translator.kmer2minPackedKmer(largeInt2uint128(count.value));
       //TODO: duplicate code, better solution?
-
       lookuptable->addElement(packedKmer, count.abundance);
     }
 

@@ -56,7 +56,6 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
   /* get kmer-count and sample files */
   vector<string> kmerCountList = getFileList(opt.kmerCountListFile.c_str());
   vector<string> sampleList = getFileList(opt.sampleListFile.c_str());
-
   for (vector<string>::iterator it = kmerCountList.begin() ; it != kmerCountList.end(); ++it)
   {
     /* get dsk kmer-count storage */
@@ -83,11 +82,10 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
 
     /* build lookuptale */
     Lookuptable* lookuptable = buildLookuptable(*storage, *translator, 0);
-
     for (vector<string>::iterator sampleIt = sampleList.begin() ; sampleIt != sampleList.end(); ++sampleIt)
     {
       const char* resultFilename = "populationCoverages.txt";
-      int retval = processReadFile((const char*)*sampleIt->c_str(),
+      int retval = processReadFile((const char*) sampleIt->c_str(),
                                    (const char*) resultFilename,
                                    *lookuptable,
                                    *translator);

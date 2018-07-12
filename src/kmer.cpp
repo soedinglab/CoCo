@@ -54,7 +54,7 @@ kmerType revComplement(const kmerType kmer, const unsigned short kmerSize)
   revCompKmer = revComplement_intr(kmer, kmerSize);
 #else
   kmerType kmer_cp = kmer;
-  kmerType mask = (uint64_t) 3;
+  kmerType mask = (kmerType) 3;
 
   for (int idx = 0; idx < kmerSize; idx++){
     kmerType nuc = (kmer_cp & mask);
