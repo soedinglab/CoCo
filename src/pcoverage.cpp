@@ -4,6 +4,7 @@
  */
 
 #include <cstdio>
+#include <fcntl.h>
 #include <mutex>
 #include <stdexcept>
 #include <thread>
@@ -39,7 +40,7 @@ void thread_runner(int id, vector<string> *sampleList, std::string outdir,
                    Lookuptable *lookuptable, KmerTranslator *translator)
 {
   std::string sampleFileName;
-  string outfilename;
+  string tempResultFileName;
   while(!sampleList->empty())
   {
     {
@@ -53,29 +54,76 @@ void thread_runner(int id, vector<string> *sampleList, std::string outdir,
         return;
       }
       sampleFileName = sampleList->back();
-      auto path_end = sampleFileName.find_last_of("/");
-
-      if(path_end != std::string::npos)
-      {
-        outfilename = sampleFileName.substr(path_end+1);
-      }
-      else
-      {
-        outfilename = sampleFileName;
-      }
       sampleList->pop_back();
-      std::cout << "thread " << id << " ready for action, working on "
-                << sampleFileName << " outfilename: " << outfilename
-                << std::endl << std::flush;
       sampleList_mutex.unlock();
+
+      tempResultFileName = outdir+basename(sampleFileName.c_str());
+
+      std::cout << "thread " << id << " ready for action, working on "
+                << sampleFileName << " outfilename: " << tempResultFileName
+                << std::endl << std::flush;
     }
-    processReadFile(sampleFileName, outdir + outfilename,
+    processReadFile(sampleFileName, tempResultFileName,
                     *lookuptable, *translator);
 
   }
-  return;
+
   //FILE * outfile = openFileOrDie(outdir + sampleFileName, "w");
   //fprintf(outfile, "thread %d working on it\n", id);
+
+}
+
+void concatenate_read_files(vector<string> *sampleList,
+                            std::string resultFileName,
+                            std::string tmpOutDir)
+{
+  //Open Result File
+  char buf[BUFSIZ];
+  size_t size;
+  int resultFile = open(resultFileName.c_str(),
+                  O_WRONLY | O_CREAT | O_TRUNC, 0660);
+  if (resultFile == -1)
+  {
+    fprintf(stderr, "Error when trying to open file %s:\n%s\n",
+            resultFileName.c_str(), strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+  // Write header
+  if (write(resultFile, "#read_index\tpop_coverage\n", 25) == -1)
+  {
+    fprintf(stderr, "Error when writing to file %s:\n%s\n",
+            resultFileName.c_str(), strerror(errno));
+    close(resultFile);
+    exit(EXIT_FAILURE);
+  }
+
+  //Iterate tmp resultFiles and copy to resultFile
+  for(string sampleFileName: *sampleList)
+  {
+    string s_filename = tmpOutDir + sampleFileName;
+
+    int source = open(s_filename.c_str(), O_RDONLY, 0);
+    if (source == -1)
+    {
+      fprintf(stderr, "ERROR: Opening result file %s failed:\n%s\n",
+              s_filename.c_str(), strerror(errno));
+      exit(EXIT_FAILURE);
+    }
+    while ((size = read(source, buf, BUFSIZ)) > 0)
+    {
+      if(write(resultFile, buf, size) == -1)
+      {
+        fprintf(stderr, "Error when writing to file %s: \n%s\n",
+                resultFileName.c_str(), strerror(errno));
+        close(source);
+        close(resultFile);
+        exit(EXIT_FAILURE);
+      }
+    }
+    close(source);
+    remove(s_filename.c_str());
+  }
+  close(resultFile);
 
 }
 
@@ -99,7 +147,10 @@ void process_sampleList_threads(vector<string> *sampleList,
   for(int i = 0; i < num_threads; i++)
   {
     threads[i]->join();
+    delete threads[i];
   }
+  delete[] threads;
+  concatenate_read_files(sampleList,resultFileName, outdir);
 }
 
 void process_sampleList(vector<string> *sampleList, std::string resultFileName,
@@ -198,8 +249,6 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
       process_sampleList_threads(sampleList, resultFilename,
                                  lookuptable, translator, opt.threads);
     }
-    //TODO: correction factor, check retval
-
 
     delete lookuptable;
   }

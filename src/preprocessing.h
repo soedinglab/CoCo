@@ -43,7 +43,7 @@ bool isValid(const Lookuptable &lookuptable,
     }
 
     // check count values
-    if (count.abundance > threeshold && count.abundance > lookupCount)
+    if ((unsigned)count.abundance > threeshold && (unsigned)count.abundance > lookupCount)
     {
       std::cerr << "ERROR: check lookuptable counts failed, value " << lookupCount
                 << " for packed kmer " << packedKmer << "generated from"
@@ -66,10 +66,8 @@ Lookuptable* buildLookuptable(Storage &storage,
   string kmerSizeStr = dskGroup.getProperty ("kmer_size");
   unsigned int kmerSize = atoi(kmerSizeStr.c_str());
 
-  unsigned short span = translator.getSpan();
-  unsigned short weight = translator.getWeight();
 
-  assert(span == kmerSize);
+  assert(translator.getSpan() == kmerSize);
 
   // create lookuptable
   Lookuptable *lookuptable = new Lookuptable(solidKmers.getNbItems(), corrFactor);
