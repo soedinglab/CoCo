@@ -36,7 +36,7 @@ kmerType KmerTranslator::kmer2packedKmer(const spacedKmerType kmer) const
        j++;
      }
    }
-
+   
    return packedKmer;
 }
 

@@ -93,7 +93,7 @@ void CountProfile::fill(const SeqType seq, const char* readName)
       {
         size_t pos = idx-(kmerSpan-translator->_maskArray[jdx]-1);
         profile[pos].count = std::max(count, profile[pos].count);
-        //printf("profile[%u].count=%u\n", pos, profile[pos].count);
+        
       }
     }
   }

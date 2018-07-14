@@ -28,7 +28,7 @@ Lookuptable::~Lookuptable()
 
 inline size_t Lookuptable::getGridPosition(kmerType kmer) const
 {
-  return (kmer & _indexmask) >> LOGINDEXSIZE;
+  return (kmer & _indexmask) >> LOGOFFSETSIZE;
 }
 
 inline size_t Lookuptable::getOffset(kmerType kmer) const
@@ -62,20 +62,19 @@ size_t Lookuptable::addElement(kmerType kmer, unsigned int count)
   const size_t gridPosition = getGridPosition(kmer);
   const size_t writingPosition = indexGridTable[gridPosition];
   const size_t offset = getOffset(kmer);
+  /* if kmer already in lookuptable, increase only count field */
+  if (gridPosition >0)
+    prevWritingPosition = indexGridTable[gridPosition-1];
   if(writingPosition >= this->maxNumberItems)
   {
     std::cerr << "Lookuptable addElement overflows. Current write position is "
               << writingPosition << std::endl;
     EXIT(EXIT_FAILURE);
   }
-
-  /* if kmer already in lookuptable, increase only count field */
-  if (gridPosition >0)
-    prevWritingPosition = indexGridTable[gridPosition-1];
   for (size_t pos = prevWritingPosition; pos < writingPosition; pos++)
   {
     if (offsetTable[pos].count != 0 && offsetTable[pos].indexOffset == offset)
-    {
+    {      
       offsetTable[pos].count += count;
       return pos;
     }

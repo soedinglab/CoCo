@@ -59,7 +59,7 @@ void thread_runner(int id, vector<string> *sampleList, std::string outdir,
 
       tempResultFileName = outdir+basename(sampleFileName.c_str());
 
-      std::cout << "thread " << id << " ready for action, working on "
+      std::cout << "thread " << id << " working on "
                 << sampleFileName << " outfilename: " << tempResultFileName
                 << std::endl << std::flush;
     }
@@ -67,9 +67,6 @@ void thread_runner(int id, vector<string> *sampleList, std::string outdir,
                     *lookuptable, *translator);
 
   }
-
-  //FILE * outfile = openFileOrDie(outdir + sampleFileName, "w");
-  //fprintf(outfile, "thread %d working on it\n", id);
 
 }
 
@@ -88,6 +85,7 @@ void concatenate_read_files(vector<string> *sampleList,
             resultFileName.c_str(), strerror(errno));
     exit(EXIT_FAILURE);
   }
+  /*
   // Write header
   if (write(resultFile, "#read_index\tpop_coverage\n", 25) == -1)
   {
@@ -95,7 +93,7 @@ void concatenate_read_files(vector<string> *sampleList,
             resultFileName.c_str(), strerror(errno));
     close(resultFile);
     exit(EXIT_FAILURE);
-  }
+  }*/
 
   //Iterate tmp resultFiles and copy to resultFile
   for(string sampleFileName: *sampleList)
@@ -225,7 +223,8 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     //TODO: new translator if (translator->getSpan() != kmerSize)
 
     unsigned long avgLen = stol(*jt);
-    float corrFactor = (float)(avgLen)/(avgLen-kmerSize+1);
+    
+    float corrFactor = (avgLen==kmerSize)?1:(avgLen)/(avgLen-kmerSize+1);
 
     /* build lookuptale */
     Lookuptable* lookuptable = buildLookuptable(*storage, *translator, 0, corrFactor);
