@@ -102,7 +102,8 @@ void CountProfile::fill(const SeqType seq, const char* readName)
 size_t CountProfile::calcPopulationCoverage()
 {
   //copy max count values
-  uint32_t max_count[profileLength];
+  uint32_t *max_count = new uint32_t[profileLength];
+  
   for(size_t idx = 0; idx < profileLength; idx++)
   {
     max_count[idx] = profile[idx].count;
@@ -114,5 +115,6 @@ size_t CountProfile::calcPopulationCoverage()
   // 67% quantile
   populationCoverage = max_count[(uint32_t)(0.67*(double)this->profileLength)];
 
+  delete[] max_count;
   return populationCoverage;
 }
