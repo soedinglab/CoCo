@@ -118,3 +118,12 @@ size_t CountProfile::calcPopulationCoverage()
   delete[] max_count;
   return populationCoverage;
 }
+
+void CountProfile::showProfile(std::ostream &os) const
+{
+  for (size_t idx=0; idx < profileLength; idx++)
+  {
+    os << profile[idx].readPos << '\t'
+       << profile[idx].count << std::endl;
+  }
+}
