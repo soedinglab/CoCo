@@ -21,6 +21,7 @@
 
 int showProfile(CountProfile &countprofile, FILE *resultFile)
 {
+  fprintf(resultFile,"#%s\n", countprofile.getReadName());
   countprofile.showProfile(resultFile);
 
 }
