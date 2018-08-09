@@ -34,13 +34,21 @@ Options::Options():
   }
   instance = this;
 
+  setDefaults();
+
   //pcoverage
   pcoverageWorkflow.push_back(OP_SAMPLE_LIST);
   pcoverageWorkflow.push_back(OP_KC_LIST);
   pcoverageWorkflow.push_back(OP_READ_AVERAGELEN_LIST);
   pcoverageWorkflow.push_back(OP_KMER_WEIGHT);
   pcoverageWorkflow.push_back(OP_THREADS);
-  setDefaults();
+
+  //profile
+  profileWorkflow.push_back(OP_SAMPLE_LIST);
+  profileWorkflow.push_back(OP_KC_LIST);
+  //TODO? profileWorkflow.push_back(OP_READ_AVERAGELEN_LIST);
+  profileWorkflow.push_back(OP_KMER_WEIGHT);
+
 }
 
 

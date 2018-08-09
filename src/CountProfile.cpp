@@ -119,11 +119,10 @@ size_t CountProfile::calcPopulationCoverage()
   return populationCoverage;
 }
 
-void CountProfile::showProfile(std::ostream &os) const
+void CountProfile::showProfile(FILE *fp) const
 {
   for (size_t idx=0; idx < profileLength; idx++)
   {
-    os << profile[idx].readPos << '\t'
-       << profile[idx].count << std::endl;
+    fprintf(fp,"%u\t%u\n", profile[idx].readPos, profile[idx].count);
   }
 }

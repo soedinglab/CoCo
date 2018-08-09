@@ -20,6 +20,7 @@ set(coco_source_files
   ${coco_source_files}
   ${CMAKE_CURRENT_SOURCE_DIR}/pcoverage.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/pcreads.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/profile.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/options.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/types.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/uint128.cpp
@@ -27,6 +28,9 @@ set(coco_source_files
   ${CMAKE_CURRENT_SOURCE_DIR}/Lookuptable.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/KmerTranslator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/CountProfile.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/processReads.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/preprocessing.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/filehandling.cpp
   PARENT_SCOPE
         )
 

@@ -49,6 +49,10 @@ public:
     /* destructor */
     ~CountProfile();
 
+    /* getter */
+    char *getReadName(){return (this->readName);}
+    float getCorrFactor(){return (this->lookuptable->getCorrFactor());}
+
     /* create and store count profiles of <seq> */
     void fill(const SeqType seq, const char *readName);
 
@@ -58,7 +62,7 @@ public:
     /* show tab-based table of readPos and abundance.
        abundance means here the maximal abundance of all spaced k-mers,
        which overlap readPos with a match */
-    void showProfile(std::ostream &os=std::cout) const;
+    void showProfile(FILE *fp=stdout) const;
 
    //TODO: function: clear, correct
 };

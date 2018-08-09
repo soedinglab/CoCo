@@ -16,6 +16,7 @@
 #include "types.h"
 #include "KmerTranslator.h"
 #include "Lookuptable.h"
+#include "CountProfile.h"
 #include "preprocessing.h"
 #include "processReads.h"
 #include "filehandling.h"
@@ -23,17 +24,13 @@
 std::mutex sampleList_mutex;
 std::chrono::milliseconds interval(100);
 
-vector<string> *getFileList(const char *fileListFilename)
-{
-  vector<string> *fileList = new vector<string>();
-  string line;
-  ifstream fp;
-  fp.open(fileListFilename);
-  while (getline (fp,line))
-    fileList->push_back(line);
-  fp.close();
 
-  return fileList;
+
+int writePopulationCoverage(CountProfile &countprofile, FILE *resultFile)
+{
+  /* estimate population coverage */
+  float popCoverage = countprofile.calcPopulationCoverage() * countprofile.getCorrFactor();
+  fprintf(resultFile, "%s\t%f\n", countprofile.getReadName(), popCoverage );
 }
 
 void thread_runner(int id, vector<string> *sampleList, std::string outdir,
@@ -64,7 +61,7 @@ void thread_runner(int id, vector<string> *sampleList, std::string outdir,
                 << std::endl << std::flush;
     }
     processReadFile(sampleFileName, tempResultFileName,
-                    *lookuptable, *translator);
+                    *lookuptable, *translator,writePopulationCoverage);
 
   }
 
@@ -159,23 +156,7 @@ void process_sampleList_threads(vector<string> *sampleList,
   concatenate_read_files(sampleList,resultFileName, outdir);
 }
 
-void process_sampleList(vector<string> *sampleList, std::string resultFileName,
-                        Lookuptable *lookuptable,\
-                        KmerTranslator *translator)
-{
-  for (vector<string>::iterator sampleIt = sampleList->begin() ; sampleIt != sampleList->end(); ++sampleIt)
-  {
 
-    int retval = processReadFile(sampleIt->c_str(),
-                                 resultFileName.c_str(),
-                                 *lookuptable,
-                                 *translator);
-    if (retval != EXIT_SUCCESS)
-    {
-      std::cerr << "ERROR processing read file " << *sampleIt << std::endl;
-    }
-  }
-}
 
 int pcoverage(int argc, const char **argv, const ToolInfo* tool)
 {
@@ -252,7 +233,8 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     string resultFilename=(string("coverage.")+string(basename(filename.c_str()))+string(".txt"));
     if (opt.threads == 1)
     {
-      process_sampleList(sampleList, resultFilename, lookuptable, translator);
+      process_sampleList(sampleList, resultFilename, lookuptable, translator,
+                         writePopulationCoverage);
     }
     else
     {

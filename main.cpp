@@ -41,6 +41,7 @@ const char* main_author = "Annika Seidel (annika.seidel@mpibpc.mpg.de)";
 
 extern int pcreads(int argc, const char **argv, const struct ToolInfo* tool);
 extern int pcoverage(int argc, const char **argv, const struct ToolInfo* tool);
+extern int profile(int argc, const char **argv, const struct ToolInfo* tool);
 
 Options& opt = Options::getInstance();
 std::vector<struct ToolInfo> tools =
@@ -59,6 +60,13 @@ std::vector<struct ToolInfo> tools =
   },
   {"pcreads", pcreads, &opt.pcreadsWorkflow, "calculates for every read the "\
    "consensus read", "TODO: long discreption",
+   "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
+   "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>",
+   PCREADS //tool enum in option.h
+  },
+  {"countprofile", profile, &opt.profileWorkflow, "write for every read the "\
+   "the maximized spaced k-mer count profile in a seperated file",
+   "TODO: long discreption",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
    "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>",
    PCREADS //tool enum in option.h

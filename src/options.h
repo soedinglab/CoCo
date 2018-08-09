@@ -9,7 +9,7 @@
 #include <typeinfo>
 #include "ToolInfo.h"
 
-enum coco_tools{PCOVERAGE=1, PCREADS=2};
+enum coco_tools{PCOVERAGE=1, PCREADS=2, COUNTPROFILE=3};
 
 struct cocoOption;
 #define OPTION(x) const static int x##_ID = __COUNTER__; \
@@ -67,6 +67,7 @@ public:
   std::vector<cocoOption> empty;
   std::vector<cocoOption> pcoverageWorkflow;
   std::vector<cocoOption> pcreadsWorkflow;
+  std::vector<cocoOption> profileWorkflow;
   unsigned int threads;
 
   OPTION(OP_SAMPLE_LIST)
