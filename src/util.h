@@ -1,7 +1,7 @@
 #ifndef UTIL
 #define UTIL
 
-#define DEBUG
+//#define DEBUG
 
 #ifndef EXIT
 #define EXIT(exitCode) do { int __status = (exitCode);\

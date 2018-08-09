@@ -59,7 +59,7 @@ void thread_runner(int id, vector<string> *sampleList, std::string outdir,
 
       tempResultFileName = outdir+basename(sampleFileName.c_str());
 
-      std::cout << "thread " << id << " working on "
+      std::cerr << "thread " << id << " working on "
                 << sampleFileName << " outfilename: " << tempResultFileName
                 << std::endl << std::flush;
     }
@@ -75,6 +75,7 @@ void concatenate_read_files(vector<string> *sampleList,
                             std::string tmpOutDir)
 {
   //Open Result File
+  fprintf(stderr, "start concatenate read files to final results\n");
   char buf[BUFSIZ];
   size_t size;
   int resultFile = open(resultFileName.c_str(),
@@ -98,7 +99,7 @@ void concatenate_read_files(vector<string> *sampleList,
   //Iterate tmp resultFiles and copy to resultFile
   for(string sampleFileName: *sampleList)
   {
-    string s_filename = tmpOutDir + sampleFileName;
+    string s_filename = tmpOutDir + basename(sampleFileName.c_str());
 
     int source = open(s_filename.c_str(), O_RDONLY, 0);
     if (source == -1)
@@ -132,9 +133,16 @@ void process_sampleList_threads(vector<string> *sampleList,
                                 int num_threads)
 {
   vector<string> *cp_sampleList = new vector<string>(*sampleList);
-  std::cout << "processing with " << num_threads << " threads" << std::endl
-            << std::flush;
-  string outdir = "tmp/";
+  //std::cout << "processing with " << num_threads << " threads" << std::endl
+  //          << std::flush;
+ 
+  //TODO: next lines as function! 
+  string filename = resultFileName.c_str();
+  size_t lastdot = filename.find_last_of(".");
+    if (lastdot != std::string::npos)
+      filename=filename.substr(0, lastdot);
+
+  string outdir = string("tmp/tmp_") + basename(filename.c_str()) + "/";
   _mkdir(outdir);
   std::thread **threads = new std::thread*[num_threads];
   for(int i = 0; i < num_threads; i++)
@@ -223,9 +231,11 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     //TODO: new translator if (translator->getSpan() != kmerSize)
 
     unsigned long avgLen = stol(*jt);
-    
-    float corrFactor = (avgLen==kmerSize)?1:(avgLen)/(avgLen-kmerSize+1);
+   
+    //TODO: handle mathematical cases 
+    float corrFactor = (avgLen==kmerSize)?1:(float)(avgLen)/(avgLen-kmerSize+1);
 
+    fprintf(stderr, "preprocessing...\n");
     /* build lookuptale */
     Lookuptable* lookuptable = buildLookuptable(*storage, *translator, 0, corrFactor);
     if (lookuptable == NULL)
@@ -234,6 +244,7 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
               it->c_str());
       return EXIT_FAILURE;
     }
+    fprintf(stderr, "finished build lookuptable\n");
     string filename = *it;
     size_t lastdot = filename.find_last_of(".");
     if (lastdot != std::string::npos)
@@ -245,6 +256,7 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     }
     else
     {
+      fprintf(stderr, "start process sampleList\n");
       process_sampleList_threads(sampleList, resultFilename,
                                  lookuptable, translator, opt.threads);
     }

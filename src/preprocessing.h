@@ -68,7 +68,7 @@ Lookuptable* buildLookuptable(Storage &storage,
 
 
   assert(translator.getSpan() == kmerSize);
-
+  fprintf(stderr, "start create lookuptable\n");
   // create lookuptable
   Lookuptable *lookuptable = new Lookuptable(solidKmers.getNbItems(), corrFactor);
   // fill lookuptable
@@ -76,6 +76,7 @@ Lookuptable* buildLookuptable(Storage &storage,
     Iterator<Count>* it = solidKmers.iterator();  LOCAL (it);
     typename Kmer<>::ModelCanonical model(kmerSize);
 
+     fprintf(stderr, "start count kmers - construct grids\n");
     // construct grids: count kmers per grid, increase grid values in doing so
     for (it->first(); !it->isDone(); it->next())
     {
@@ -89,6 +90,7 @@ Lookuptable* buildLookuptable(Storage &storage,
     // shift grid value to grid start positions
     lookuptable->setupIndexGridTable();
 
+    fprintf(stderr, "start fill lookuptable\n");
     // add elements, increase grid values in doing so
     for (it->first(); !it->isDone(); it->next())
     {
@@ -101,6 +103,7 @@ Lookuptable* buildLookuptable(Storage &storage,
       lookuptable->addElement(packedKmer, count.abundance);
     }
 
+    fprintf(stderr, "start final setup for lookuptable\n");
     // shift grid value to grid start positions back
     lookuptable->finalSetupTables(minCount);
 
