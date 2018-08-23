@@ -17,7 +17,7 @@
 
 struct __attribute__((__packed__)) CountProfileEntry {
   uint8_t  nuc : 3;        /* nucleotid in 2 bit representation */
-  uint16_t readPos : 10 ;  /* position in read */
+  uint32_t readPos;        /* position in read or contig */
   uint32_t count;          /* max count of spaced k-mers matching <readPos> */
 };
 
