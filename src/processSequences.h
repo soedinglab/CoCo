@@ -14,17 +14,17 @@ FILE* openFileOrDie(std::string fileName, const char * mode);
 FILE* openFileOrDie(const char *fileName, const char * mode);
 
 
-int processReadFile(const char* readFilename,
-                    const char* resultFilename,
-                    const Lookuptable &lookuptable,
-                    const KmerTranslator &translator,
-                    int (*processCountProfile)(CountProfile &, FILE*));
+int processSeqFile(const char* seqFilename,
+                   const char* resultFilename,
+                   const Lookuptable &lookuptable,
+                   const KmerTranslator &translator,
+                   int (*processCountProfile)(CountProfile &, FILE*));
 
-int processReadFile(string readFilename,
-                    string resultFilename,
-                    const Lookuptable &lookuptable,
-                    const KmerTranslator &translator,
-                    int (*processCountProfile)(CountProfile &, FILE*));
+int processSeqFile(string seqFilename,
+                   string resultFilename,
+                   const Lookuptable &lookuptable,
+                   const KmerTranslator &translator,
+                   int (*processCountProfile)(CountProfile &, FILE*));
 
 void process_sampleList(vector<string> *sampleList, std::string resultFileName,
                         Lookuptable *lookuptable,\

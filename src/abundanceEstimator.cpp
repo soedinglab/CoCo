@@ -18,7 +18,7 @@
 #include "Lookuptable.h"
 #include "CountProfile.h"
 #include "preprocessing.h"
-#include "processReads.h"
+#include "processSequences.h"
 #include "filehandling.h"
 
 std::mutex sampleList_mutex;
@@ -60,7 +60,7 @@ void thread_runner(int id, vector<string> *sampleList, std::string outdir,
                 << sampleFileName << " outfilename: " << tempResultFileName
                 << std::endl << std::flush;
     }
-    processReadFile(sampleFileName, tempResultFileName,
+    processSeqFile(sampleFileName, tempResultFileName,
                     *lookuptable, *translator,writePopulationCoverage);
 
   }
@@ -158,13 +158,13 @@ void process_sampleList_threads(vector<string> *sampleList,
 
 
 
-int pcoverage(int argc, const char **argv, const ToolInfo* tool)
+int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
 {
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);
   printf("threads %u\n", opt.threads);
-  printf("sampleList: %s\n", opt.sampleFile.c_str());
-  printf("kmerCountFile: %s\n", opt.kmerCountFile.c_str());
+  printf("seqFile: %s\n", opt.seqFile.c_str());
+  printf("kcFile: %s\n", opt.kcFile.c_str());
   printf("kmerWeight: %u\n", opt.kmerWeight);
 
   // TODO:check parameter and if files exists
@@ -183,9 +183,9 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
   KmerTranslator *translator = NULL;
 
   /* get kmer-count and sample files */
-  string kmerCountFile = opt.kmerCountFile;
+  string kmerCountFile = opt.kcFile;
   //vector<string> *sampleList = getFileList(opt.sampleListFile.c_str());
-  string sampleFile = opt.sampleFile;
+  string seqFile = opt.seqFile;
   //uint8_t readAvgLenList = opt.readAvgLen;
 
   //for (vector<string>::iterator it = kmerCountList->begin(), jt=readAvgLenList->begin(); it != kmerCountList->end(); ++it, ++jt)
@@ -237,14 +237,14 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
       /*process_sampleList(sampleList, resultFilename, lookuptable, translator,
                          writePopulationCoverage);
       */
-      int retval = processReadFile(sampleFile,
-                                   resultFilename.c_str(),
-                                   *lookuptable,
-                                   *translator,
-                                   writePopulationCoverage);
+      int retval = processSeqFile(seqFile,
+                                  resultFilename.c_str(),
+                                  *lookuptable,
+                                  *translator,
+                                  writePopulationCoverage);
       if (retval != EXIT_SUCCESS)
       {
-        std::cerr << "ERROR processing read file " << sampleFile << std::endl;
+        std::cerr << "ERROR processing read file " << seqFile << std::endl;
       }
     }
     else

@@ -7,18 +7,18 @@
 Options* Options::instance = NULL;
 
 Options::Options():
-  OP_SAMPLE_FILE(OP_SAMPLE_FILE_ID,"sampleFile", "--sampleFile",
-  "name of the file, which contains a list of fasta files line by line",
-  typeid(std::string), (void *) &sampleFile, PCOVERAGE|PCREADS)
+  OP_SEQ_FILE(OP_SEQ_FILE_ID,"seqFile", "--seqFile",
+  "sequence file (reads or contigs in fasta format",
+  typeid(std::string), (void *) &seqFile, ABUNDANCE_ESTIMATOR|PCREADS)
   ,
-  OP_KC_LIST(OP_KC_LIST_ID,"kmerCountFile", "--kmerCountFile ",
-  "name of kmer/count file, format: hdf5",
-  typeid(std::string),  (void *) &kmerCountFile, PCOVERAGE)
+  OP_KC_FILE(OP_KC_FILE_ID,"kcFile", "--kcFile ",
+  "kmer/count file in hdf5 format",
+  typeid(std::string),  (void *) &kcFile, ABUNDANCE_ESTIMATOR)
   ,
-  OP_READ_AVERAGELEN(OP_READ_AVERAGELEN_ID,"readAvgLen",
-  "--readAvgLen", "average readlength (please consider only reads with length > k) "\
-  "of reads used for kmerCountFile"\
-  "file", typeid(int),  (void *) &readAvgLen, PCOVERAGE|PCREADS)
+  OP_AVERAGE_LENGTH(OP_AVERAGE_LENGTH_ID,"avgLength",
+  "--avgLength", "average length of sequences used for generating kcFile "
+                 "(please consider only sequences with length > kmerSize)",
+  typeid(int),  (void *) &readAvgLen, ABUNDANCE_ESTIMATOR|PCREADS)
   ,
   OP_KMER_WEIGHT(OP_KMER_WEIGHT_ID,"kmerWeight",
   "--kmerWeight", "number of informative positions in a k-mer pattern, "
@@ -36,16 +36,16 @@ Options::Options():
 
   setDefaults();
 
-  //pcoverage
-  pcoverageWorkflow.push_back(OP_SAMPLE_FILE);
-  pcoverageWorkflow.push_back(OP_KC_LIST);
-  pcoverageWorkflow.push_back(OP_READ_AVERAGELEN);
-  pcoverageWorkflow.push_back(OP_KMER_WEIGHT);
-  pcoverageWorkflow.push_back(OP_THREADS);
+  //abundanceEstimator
+  abundanceEstimatorWorkflow.push_back(OP_SEQ_FILE);
+  abundanceEstimatorWorkflow.push_back(OP_KC_FILE);
+  abundanceEstimatorWorkflow.push_back(OP_AVERAGE_LENGTH);
+  abundanceEstimatorWorkflow.push_back(OP_KMER_WEIGHT);
+  abundanceEstimatorWorkflow.push_back(OP_THREADS);
 
   //profile
-  profileWorkflow.push_back(OP_SAMPLE_FILE);
-  profileWorkflow.push_back(OP_KC_LIST);
+  profileWorkflow.push_back(OP_SEQ_FILE);
+  profileWorkflow.push_back(OP_KC_FILE);
   //TODO? profileWorkflow.push_back(OP_READ_AVERAGELEN_LIST);
   profileWorkflow.push_back(OP_KMER_WEIGHT);
 
@@ -55,7 +55,7 @@ Options::Options():
 void Options::setDefaults()
 {
   kmerWeight = 27;
-  threads = 1;
+  threads = 1; //TODO:
 }
 
 void printToolUsage(const ToolInfo &tool, const int FLAG)
@@ -90,9 +90,9 @@ void Options::parseOptions(int argc, const char *argv[],
 
   static const struct option longOpts[] = {
       {"help", no_argument, NULL, 'h' },
-      {"sampleFile", required_argument, NULL, 0},
-      {"kmerCountFile", required_argument, NULL, 0},
-      {"readAvgLen", required_argument, NULL, 0},
+      {"seqFile", required_argument, NULL, 0},
+      {"kcFile", required_argument, NULL, 0},
+      {"avgLength", required_argument, NULL, 0},
       {"kmerWeight", required_argument, NULL, 0},
       {"nThreads", required_argument, NULL, 0},
       { NULL, no_argument, NULL, 0 }

@@ -36,31 +36,31 @@ const char* binary_name = "coco";
 const char* tool_name = "COCO";
 const char* tool_introduction = "COCO is an open-source software suite for "\
                                 "different COnsensus COmputation applications "\
-                                "on short reads";
+                                "on short reads and contigs";
 const char* main_author = "Annika Seidel (annika.seidel@mpibpc.mpg.de)";
 
+extern int abundanceEstimator(int argc, const char **argv, const struct ToolInfo* tool);
 extern int pcreads(int argc, const char **argv, const struct ToolInfo* tool);
-extern int pcoverage(int argc, const char **argv, const struct ToolInfo* tool);
 extern int profile(int argc, const char **argv, const struct ToolInfo* tool);
 
 Options& opt = Options::getInstance();
 std::vector<struct ToolInfo> tools =
 {
-  {"pcoverage", pcoverage, &opt.pcoverageWorkflow,"estimates for every sequence "\
-   "(reads or contigs) a estimated abundance value in one or multiple samples.\n\n",
-   "Calculates for every sequence in a given file of concatenated samples "
-   "S={s_1,...,s_n} an estimated value for the abundance in one or multiple samples "\
-   "t_1,...,t_m. In general {t1,...,tm,} is a subset of S. Provide for every "
-   "sample in S the reads or contigs in a concatenated fasta/fastq format and "
-   "for every sample in T a kmer-count File in hdf5 format.\n\n"
+  {"abundanceEstimator", abundanceEstimator, &opt.abundanceEstimatorWorkflow,
+   "estimates for every sequence (reads or contig) in <infile> an abundance "
+   "value for a sample based on its k-mer/count statistic <kcfile> .\n\n",
+   "Calculates for every sequence in a given file <inFile> of concatenated samples "
+   "S={s_1,...,s_n} an estimated value for the abundance in sample t. "\
+   "In general t is a subset of S. Provide for every sample in S the reads or "
+   "contigs in a concatenated fasta/fastq format and for sample t the kmer-count"
+   "file in hdf5 format.\n\n"
    "Further use case: abundance values of reads or contigs through many samples "
    "enable binning steps. Call tool several times with same sequence file but "
-   "different h5 sample files or use the tool with the multi h5 option (TODO!!!) "
-   "to get abundance values across many samples. Join them with TODO to one big"
-   "matrix abundance file and provide this for the binning step",
+   "different h5 sample files to get abundance values across many samples. "
+   "Join the results to one big matrix abundance file and provide this for the binning step",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-   "--sampleList <fileWithSampleNamesofS> --kmerCountList<fileWithSampleNamesofT>",
-   PCOVERAGE //tool enum in option.h
+   "--inFile <arg> --kcFile <arg>",
+   ABUNDANCE_ESTIMATOR //tool enum in option.h
   },
   {"pcreads", pcreads, &opt.pcreadsWorkflow, "calculates for every read the "\
    "consensus read", "TODO: long discreption",

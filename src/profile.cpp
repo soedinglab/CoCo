@@ -16,7 +16,7 @@
 #include "Lookuptable.h"
 #include "CountProfile.h"
 #include "preprocessing.h"
-#include "processReads.h"
+#include "processSequences.h"
 #include "filehandling.h"
 
 int showProfile(CountProfile &countprofile, FILE *resultFile)
@@ -30,8 +30,8 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
 {
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);
-  printf("sampleList: %s\n", opt.sampleFile.c_str());
-  printf("kmerCountList: %s\n", opt.kmerCountFile.c_str());
+  printf("seqFile: %s\n", opt.seqFile.c_str());
+  printf("kmerCounFile: %s\n", opt.kcFile.c_str());
   printf("kmerWeight: %u\n", opt.kmerWeight);
 
   // TODO:check parameter and if files exists
@@ -51,9 +51,9 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
 
   /* get kmer-count and sample files */
   //vector<string> *kmerCountList = getFileList(opt.kmerCountListFile.c_str());
-  string kmerCountFile = opt.kmerCountFile;
+  string kmerCountFile = opt.kcFile;
   //vector<string> *sampleList = getFileList(opt.sampleListFile.c_str());
-  string sampleFile = opt.sampleFile;
+  string seqFile = opt.seqFile;
 
   //for (vector<string>::iterator it = kmerCountList->begin(); it != kmerCountList->end(); ++it)
   //{
@@ -96,7 +96,7 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
     string resultFilename=(string("count_profile.")+string(basename(filename.c_str()))+string(".txt"));
 
     //process_sampleList(sampleList, resultFilename, lookuptable, translator,showProfile);
-    processReadFile(sampleFile, resultFilename, *lookuptable, *translator,showProfile);
+    processSeqFile(seqFile, resultFilename, *lookuptable, *translator,showProfile);
     delete lookuptable;
   //}
 

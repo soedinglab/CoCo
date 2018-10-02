@@ -1,4 +1,4 @@
-#include "processReads.h"
+#include "processSequences.h"
 #include "CountProfile.h"
 #include "Lookuptable.h"
 #include "KmerTranslator.h"
@@ -28,14 +28,14 @@ FILE* openFileOrDie(const char *fileName, const char * mode)
 
 
 
-int processReadFile(const char* readFilename,
-                    const char* resultFilename,
-                    const Lookuptable &lookuptable,
-                    const KmerTranslator &translator,
-                    int (*processCountProfile)(CountProfile &, FILE*))
+int processSeqFile(const char* seqFilename,
+                   const char* resultFilename,
+                   const Lookuptable &lookuptable,
+                   const KmerTranslator &translator,
+                   int (*processCountProfile)(CountProfile &, FILE*))
 {
-  FILE *readFile = openFileOrDie(readFilename, "r");
-  kseq_t *seq = kseq_init(fileno(readFile));
+  FILE *seqFile = openFileOrDie(seqFilename, "r");
+  kseq_t *seq = kseq_init(fileno(seqFile));
 
   FILE *resultFile = openFileOrDie(resultFilename, "w");
   CountProfile countprofile(&translator, &lookuptable);
@@ -69,19 +69,19 @@ int processReadFile(const char* readFilename,
 
   }
   kseq_destroy(seq);
-  fclose(readFile);
+  fclose(seqFile);
   fclose(resultFile);
   return EXIT_SUCCESS;
 }
 
-int processReadFile(string readFilename,
-                    string resultFilename,
-                    const Lookuptable &lookuptable,
-                    const KmerTranslator &translator,
-                    int (*processCountProfile)(CountProfile &, FILE*))
+int processSeqFile(string seqFilename,
+                   string resultFilename,
+                   const Lookuptable &lookuptable,
+                   const KmerTranslator &translator,
+                   int (*processCountProfile)(CountProfile &, FILE*))
 {
-  return processReadFile(readFilename.c_str(), resultFilename.c_str(),
-                         lookuptable, translator,processCountProfile);
+  return processSeqFile(seqFilename.c_str(), resultFilename.c_str(),
+                        lookuptable, translator,processCountProfile);
 }
 
 void process_sampleList(vector<string> *sampleList, std::string resultFileName,
@@ -92,7 +92,7 @@ void process_sampleList(vector<string> *sampleList, std::string resultFileName,
   for (vector<string>::iterator sampleIt = sampleList->begin() ; sampleIt != sampleList->end(); ++sampleIt)
   {
 
-    int retval = processReadFile(sampleIt->c_str(),
+    int retval = processSeqFile(sampleIt->c_str(),
                                  resultFileName.c_str(),
                                  *lookuptable,
                                  *translator,
