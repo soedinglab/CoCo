@@ -163,7 +163,7 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);
   printf("threads %u\n", opt.threads);
-  printf("sampleList: %s\n", opt.sampleListFile.c_str());
+  printf("sampleList: %s\n", opt.sampleFile.c_str());
   printf("kmerCountFile: %s\n", opt.kmerCountFile.c_str());
   printf("kmerWeight: %u\n", opt.kmerWeight);
 
@@ -184,7 +184,8 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
 
   /* get kmer-count and sample files */
   string kmerCountFile = opt.kmerCountFile;
-  vector<string> *sampleList = getFileList(opt.sampleListFile.c_str());
+  //vector<string> *sampleList = getFileList(opt.sampleListFile.c_str());
+  string sampleFile = opt.sampleFile;
   //uint8_t readAvgLenList = opt.readAvgLen;
 
   //for (vector<string>::iterator it = kmerCountList->begin(), jt=readAvgLenList->begin(); it != kmerCountList->end(); ++it, ++jt)
@@ -233,20 +234,32 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     string resultFilename=(string("coverage.")+string(basename(filename.c_str()))+string(".txt"));
     if (opt.threads == 1)
     {
-      process_sampleList(sampleList, resultFilename, lookuptable, translator,
+      /*process_sampleList(sampleList, resultFilename, lookuptable, translator,
                          writePopulationCoverage);
+      */
+      int retval = processReadFile(sampleFile,
+                                   resultFilename.c_str(),
+                                   *lookuptable,
+                                   *translator,
+                                   writePopulationCoverage);
+      if (retval != EXIT_SUCCESS)
+      {
+        std::cerr << "ERROR processing read file " << sampleFile << std::endl;
+      }
     }
     else
     {
-      fprintf(stderr, "start process sampleList\n");
+      std::cerr << "ERROR: NOT IMPLEMENTED YET" <<std::endl;
+      return EXIT_FAILURE;
+      /*fprintf(stderr, "start process sampleList\n");
       process_sampleList_threads(sampleList, resultFilename,
-                                 lookuptable, translator, opt.threads);
+                                 lookuptable, translator, opt.threads);*/
     }
 
     delete lookuptable;
   //}
 
-  delete sampleList;
+  //delete sampleList;
   //delete kmerCountList;
   delete translator;
 

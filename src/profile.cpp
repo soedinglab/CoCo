@@ -30,7 +30,7 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
 {
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);
-  printf("sampleList: %s\n", opt.sampleListFile.c_str());
+  printf("sampleList: %s\n", opt.sampleFile.c_str());
   printf("kmerCountList: %s\n", opt.kmerCountFile.c_str());
   printf("kmerWeight: %u\n", opt.kmerWeight);
 
@@ -52,7 +52,8 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
   /* get kmer-count and sample files */
   //vector<string> *kmerCountList = getFileList(opt.kmerCountListFile.c_str());
   string kmerCountFile = opt.kmerCountFile;
-  vector<string> *sampleList = getFileList(opt.sampleListFile.c_str());
+  //vector<string> *sampleList = getFileList(opt.sampleListFile.c_str());
+  string sampleFile = opt.sampleFile;
 
   //for (vector<string>::iterator it = kmerCountList->begin(); it != kmerCountList->end(); ++it)
   //{
@@ -94,11 +95,12 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
       filename=filename.substr(0, lastdot);
     string resultFilename=(string("count_profile.")+string(basename(filename.c_str()))+string(".txt"));
 
-    process_sampleList(sampleList, resultFilename, lookuptable, translator,showProfile);
+    //process_sampleList(sampleList, resultFilename, lookuptable, translator,showProfile);
+    processReadFile(sampleFile, resultFilename, *lookuptable, *translator,showProfile);
     delete lookuptable;
   //}
 
-  delete sampleList;
+  //delete sampleList;
   //delete kmerCountList;
   delete translator;
 

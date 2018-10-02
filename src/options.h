@@ -59,7 +59,7 @@ public:
                        int parseFlags = 0,
                        int outputFlags = 0);*/
 
-  std::string sampleListFile;
+  std::string sampleFile;
   std::string kmerCountFile;
   unsigned int readAvgLen;
   unsigned int kmerWeight;
@@ -70,7 +70,7 @@ public:
   std::vector<cocoOption> profileWorkflow;
   unsigned int threads;
 
-  OPTION(OP_SAMPLE_LIST)
+  OPTION(OP_SAMPLE_FILE)
   OPTION(OP_KC_LIST)
   OPTION(OP_READ_AVERAGELEN)
   OPTION(OP_KMER_WEIGHT)

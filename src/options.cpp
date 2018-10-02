@@ -7,9 +7,9 @@
 Options* Options::instance = NULL;
 
 Options::Options():
-  OP_SAMPLE_LIST(OP_SAMPLE_LIST_ID,"sampleList", "--sampleList",
+  OP_SAMPLE_FILE(OP_SAMPLE_FILE_ID,"sampleFile", "--sampleFile",
   "name of the file, which contains a list of fasta files line by line",
-  typeid(std::string), (void *) &sampleListFile, PCOVERAGE|PCREADS)
+  typeid(std::string), (void *) &sampleFile, PCOVERAGE|PCREADS)
   ,
   OP_KC_LIST(OP_KC_LIST_ID,"kmerCountFile", "--kmerCountFile ",
   "name of kmer/count file, format: hdf5",
@@ -37,14 +37,14 @@ Options::Options():
   setDefaults();
 
   //pcoverage
-  pcoverageWorkflow.push_back(OP_SAMPLE_LIST);
+  pcoverageWorkflow.push_back(OP_SAMPLE_FILE);
   pcoverageWorkflow.push_back(OP_KC_LIST);
   pcoverageWorkflow.push_back(OP_READ_AVERAGELEN);
   pcoverageWorkflow.push_back(OP_KMER_WEIGHT);
   pcoverageWorkflow.push_back(OP_THREADS);
 
   //profile
-  profileWorkflow.push_back(OP_SAMPLE_LIST);
+  profileWorkflow.push_back(OP_SAMPLE_FILE);
   profileWorkflow.push_back(OP_KC_LIST);
   //TODO? profileWorkflow.push_back(OP_READ_AVERAGELEN_LIST);
   profileWorkflow.push_back(OP_KMER_WEIGHT);
@@ -90,7 +90,7 @@ void Options::parseOptions(int argc, const char *argv[],
 
   static const struct option longOpts[] = {
       {"help", no_argument, NULL, 'h' },
-      {"sampleList", required_argument, NULL, 0},
+      {"sampleFile", required_argument, NULL, 0},
       {"kmerCountFile", required_argument, NULL, 0},
       {"readAvgLen", required_argument, NULL, 0},
       {"kmerWeight", required_argument, NULL, 0},
