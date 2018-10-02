@@ -60,8 +60,8 @@ public:
                        int outputFlags = 0);*/
 
   std::string sampleListFile;
-  std::string kmerCountListFile;
-  std::string readAvgLenFile;
+  std::string kmerCountFile;
+  unsigned int readAvgLen;
   unsigned int kmerWeight;
 
   std::vector<cocoOption> empty;
@@ -72,7 +72,7 @@ public:
 
   OPTION(OP_SAMPLE_LIST)
   OPTION(OP_KC_LIST)
-  OPTION(OP_READ_AVERAGELEN_LIST)
+  OPTION(OP_READ_AVERAGELEN)
   OPTION(OP_KMER_WEIGHT)
   OPTION(OP_THREADS)
 

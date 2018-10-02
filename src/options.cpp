@@ -11,14 +11,14 @@ Options::Options():
   "name of the file, which contains a list of fasta files line by line",
   typeid(std::string), (void *) &sampleListFile, PCOVERAGE|PCREADS)
   ,
-  OP_KC_LIST(OP_KC_LIST_ID,"kmerCountList", "--kmerCountList ",
-  "name of the file, which contains k-mer/count files line by line, format: hdf5",
-  typeid(std::string),  (void *) &kmerCountListFile, PCOVERAGE)
+  OP_KC_LIST(OP_KC_LIST_ID,"kmerCountFile", "--kmerCountFile ",
+  "name of kmer/count file, format: hdf5",
+  typeid(std::string),  (void *) &kmerCountFile, PCOVERAGE)
   ,
-  OP_READ_AVERAGELEN_LIST(OP_READ_AVERAGELEN_LIST_ID,"readAvgLenList",
-  "--readAvgLenList", "name of the file, which contains a list of the "\
-  "average readlength (consider only reads with length > k) per k-mer/count "\
-  "file", typeid(std::string),  (void *) &readAvgLenFile, PCOVERAGE|PCREADS)
+  OP_READ_AVERAGELEN(OP_READ_AVERAGELEN_ID,"readAvgLen",
+  "--readAvgLen", "average readlength (please consider only reads with length > k) "\
+  "of reads used for kmerCountFile"\
+  "file", typeid(int),  (void *) &readAvgLen, PCOVERAGE|PCREADS)
   ,
   OP_KMER_WEIGHT(OP_KMER_WEIGHT_ID,"kmerWeight",
   "--kmerWeight", "number of informative positions in a k-mer pattern, "
@@ -39,7 +39,7 @@ Options::Options():
   //pcoverage
   pcoverageWorkflow.push_back(OP_SAMPLE_LIST);
   pcoverageWorkflow.push_back(OP_KC_LIST);
-  pcoverageWorkflow.push_back(OP_READ_AVERAGELEN_LIST);
+  pcoverageWorkflow.push_back(OP_READ_AVERAGELEN);
   pcoverageWorkflow.push_back(OP_KMER_WEIGHT);
   pcoverageWorkflow.push_back(OP_THREADS);
 
@@ -91,8 +91,8 @@ void Options::parseOptions(int argc, const char *argv[],
   static const struct option longOpts[] = {
       {"help", no_argument, NULL, 'h' },
       {"sampleList", required_argument, NULL, 0},
-      {"kmerCountList", required_argument, NULL, 0},
-      {"readAvgLenList", required_argument, NULL, 0},
+      {"kmerCountFile", required_argument, NULL, 0},
+      {"readAvgLen", required_argument, NULL, 0},
       {"kmerWeight", required_argument, NULL, 0},
       {"nThreads", required_argument, NULL, 0},
       { NULL, no_argument, NULL, 0 }

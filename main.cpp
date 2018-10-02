@@ -46,14 +46,18 @@ extern int profile(int argc, const char **argv, const struct ToolInfo* tool);
 Options& opt = Options::getInstance();
 std::vector<struct ToolInfo> tools =
 {
-  {"pcoverage", pcoverage, &opt.pcoverageWorkflow,"estimates for every read "\
-   "a population coverage value in one or multiple samples",
-   "calculates for every read in a given set of samples S={s_1,...,s_n} an "\
-   "estimated value for the population coverage in one or multiple samples "\
+  {"pcoverage", pcoverage, &opt.pcoverageWorkflow,"estimates for every sequence "\
+   "(reads or contigs) a estimated abundance value in one or multiple samples.\n\n",
+   "Calculates for every sequence in a given file of concatenated samples "
+   "S={s_1,...,s_n} an estimated value for the abundance in one or multiple samples "\
    "t_1,...,t_m. In general {t1,...,tm,} is a subset of S. Provide for every "
-   "sample in S the reads in a fasta/fastq format and for every sample in T a "\
-   "kmer-count File in hdf5 format. Further use case: abundance profiles "\
-   "of reads through many samples enable binning steps",
+   "sample in S the reads or contigs in a concatenated fasta/fastq format and "
+   "for every sample in T a kmer-count File in hdf5 format.\n\n"
+   "Further use case: abundance values of reads or contigs through many samples "
+   "enable binning steps. Call tool several times with same sequence file but "
+   "different h5 sample files or use the tool with the multi h5 option (TODO!!!) "
+   "to get abundance values across many samples. Join them with TODO to one big"
+   "matrix abundance file and provide this for the binning step",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
    "--sampleList <fileWithSampleNamesofS> --kmerCountList<fileWithSampleNamesofT>",
    PCOVERAGE //tool enum in option.h

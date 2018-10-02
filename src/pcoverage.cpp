@@ -164,7 +164,7 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
   opt.parseOptions(argc, argv, *tool);
   printf("threads %u\n", opt.threads);
   printf("sampleList: %s\n", opt.sampleListFile.c_str());
-  printf("kmerCountList: %s\n", opt.kmerCountListFile.c_str());
+  printf("kmerCountFile: %s\n", opt.kmerCountFile.c_str());
   printf("kmerWeight: %u\n", opt.kmerWeight);
 
   // TODO:check parameter and if files exists
@@ -183,14 +183,14 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
   KmerTranslator *translator = NULL;
 
   /* get kmer-count and sample files */
-  vector<string> *kmerCountList = getFileList(opt.kmerCountListFile.c_str());
+  string kmerCountFile = opt.kmerCountFile;
   vector<string> *sampleList = getFileList(opt.sampleListFile.c_str());
-  vector<string> *readAvgLenList = getFileList(opt.readAvgLenFile.c_str());
+  //uint8_t readAvgLenList = opt.readAvgLen;
 
-  for (vector<string>::iterator it = kmerCountList->begin(), jt=readAvgLenList->begin(); it != kmerCountList->end(); ++it, ++jt)
-  {
+  //for (vector<string>::iterator it = kmerCountList->begin(), jt=readAvgLenList->begin(); it != kmerCountList->end(); ++it, ++jt)
+  //{
     /* get dsk kmer-count storage */
-    Storage* storage = StorageFactory(STORAGE_HDF5).load(*it);
+    Storage* storage = StorageFactory(STORAGE_HDF5).load(kmerCountFile);
     LOCAL (storage);
 
     string kmerSizeStr = storage->getGroup("dsk").getProperty ("kmer_size");
@@ -201,7 +201,7 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     {
       fprintf(stderr, "kmerSize %u used in hdf5 file %s is not supported yet.\n"
               "For now only dsk output with kmerSize 41 is supported\n",
-              kmerSize, it->c_str());
+              kmerSize, kmerCountFile.c_str());
       return EXIT_FAILURE;
     }
 
@@ -211,7 +211,7 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     }
     //TODO: new translator if (translator->getSpan() != kmerSize)
 
-    unsigned long avgLen = stol(*jt);
+    unsigned long avgLen = opt.readAvgLen;//stol(*jt);
    
     //TODO: handle mathematical cases 
     float corrFactor = (avgLen==kmerSize)?1:(float)(avgLen)/(avgLen-kmerSize+1);
@@ -222,11 +222,11 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     if (lookuptable == NULL)
     {
       fprintf(stderr,"Generating lookuptable based on %s failed\n",
-              it->c_str());
+              kmerCountFile.c_str());
       return EXIT_FAILURE;
     }
     fprintf(stderr, "finished build lookuptable\n");
-    string filename = *it;
+    string filename = kmerCountFile;
     size_t lastdot = filename.find_last_of(".");
     if (lastdot != std::string::npos)
       filename=filename.substr(0, lastdot);
@@ -244,10 +244,10 @@ int pcoverage(int argc, const char **argv, const ToolInfo* tool)
     }
 
     delete lookuptable;
-  }
+  //}
 
   delete sampleList;
-  delete kmerCountList;
+  //delete kmerCountList;
   delete translator;
 
   return EXIT_SUCCESS;

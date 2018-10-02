@@ -31,7 +31,7 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);
   printf("sampleList: %s\n", opt.sampleListFile.c_str());
-  printf("kmerCountList: %s\n", opt.kmerCountListFile.c_str());
+  printf("kmerCountList: %s\n", opt.kmerCountFile.c_str());
   printf("kmerWeight: %u\n", opt.kmerWeight);
 
   // TODO:check parameter and if files exists
@@ -50,13 +50,14 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
   KmerTranslator *translator = NULL;
 
   /* get kmer-count and sample files */
-  vector<string> *kmerCountList = getFileList(opt.kmerCountListFile.c_str());
+  //vector<string> *kmerCountList = getFileList(opt.kmerCountListFile.c_str());
+  string kmerCountFile = opt.kmerCountFile;
   vector<string> *sampleList = getFileList(opt.sampleListFile.c_str());
 
-  for (vector<string>::iterator it = kmerCountList->begin(); it != kmerCountList->end(); ++it)
-  {
+  //for (vector<string>::iterator it = kmerCountList->begin(); it != kmerCountList->end(); ++it)
+  //{
     /* get dsk kmer-count storage */
-    Storage* storage = StorageFactory(STORAGE_HDF5).load(*it);
+    Storage* storage = StorageFactory(STORAGE_HDF5).load(kmerCountFile);
     LOCAL (storage);
 
     string kmerSizeStr = storage->getGroup("dsk").getProperty ("kmer_size");
@@ -67,7 +68,7 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
     {
       fprintf(stderr, "kmerSize %u used in hdf5 file %s is not supported yet.\n"
               "For now only dsk output with kmerSize 41 is supported\n",
-              kmerSize, it->c_str());
+              kmerSize, kmerCountFile.c_str());
       return EXIT_FAILURE;
     }
 
@@ -83,11 +84,11 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
     if (lookuptable == NULL)
     {
       fprintf(stderr,"Generating lookuptable based on %s failed\n",
-              it->c_str());
+              kmerCountFile.c_str());
       return EXIT_FAILURE;
     }
     fprintf(stderr, "finished build lookuptable\n");
-    string filename = *it;
+    string filename = kmerCountFile;
     size_t lastdot = filename.find_last_of(".");
     if (lastdot != std::string::npos)
       filename=filename.substr(0, lastdot);
@@ -95,10 +96,10 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
 
     process_sampleList(sampleList, resultFilename, lookuptable, translator,showProfile);
     delete lookuptable;
-  }
+  //}
 
   delete sampleList;
-  delete kmerCountList;
+  //delete kmerCountList;
   delete translator;
 
   return EXIT_SUCCESS;
