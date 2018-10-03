@@ -26,6 +26,8 @@ int processSeqFile(string seqFilename,
                    const KmerTranslator &translator,
                    int (*processCountProfile)(CountProfile &, FILE*));
 
+int processSeqFileParallel(const char* seqFilename, int threadNum);
+
 void process_sampleList(vector<string> *sampleList, std::string resultFileName,
                         Lookuptable *lookuptable,\
                         KmerTranslator *translator,

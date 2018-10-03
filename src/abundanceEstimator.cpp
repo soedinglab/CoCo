@@ -249,8 +249,9 @@ int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
     }
     else
     {
-      std::cerr << "ERROR: NOT IMPLEMENTED YET" <<std::endl;
-      return EXIT_FAILURE;
+      //std::cerr << "ERROR: NOT IMPLEMENTED YET" <<std::endl;
+      //return EXIT_FAILURE;
+      processSeqFileParallel(seqFile.c_str(), opt.threads);
       /*fprintf(stderr, "start process sampleList\n");
       process_sampleList_threads(sampleList, resultFilename,
                                  lookuptable, translator, opt.threads);*/

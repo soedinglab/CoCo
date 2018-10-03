@@ -1,3 +1,4 @@
+#include <thread>
 #include "processSequences.h"
 #include "CountProfile.h"
 #include "Lookuptable.h"
@@ -26,6 +27,97 @@ FILE* openFileOrDie(const char *fileName, const char * mode)
   return file;
 }
 
+int testpara(size_t id, const char* seqFilename, size_t chunkStart, size_t chunkEnd)
+{
+  FILE *seqFile = openFileOrDie(seqFilename, "r");
+  fseek(seqFile, chunkStart, SEEK_SET);
+  int fd = fileno(seqFile);
+  kseq_t *seq = kseq_init(fileno(seqFile));
+  FILE *resultFile = openFileOrDie(std::to_string(id), "w");
+
+  /* iterate over every single read  */
+  while (kseq_read(seq) >= 0)
+  {
+    fprintf(resultFile, "%s\n",seq->name.s);
+    fprintf(resultFile, "%s\n", seq->seq.s);
+    fprintf(resultFile, "%u\n", lseek(fd,0,SEEK_CUR));
+    if (lseek(fd,0,SEEK_CUR) > chunkEnd)
+      break;
+  }
+
+  kseq_destroy(seq);
+  fclose(seqFile);
+  fclose(resultFile);
+}
+
+
+int processSeqFileParallel(const char* seqFilename, int threadNum)
+{
+  FILE *seqFile = openFileOrDie(seqFilename, "r");
+  fseek(seqFile,0,SEEK_END);
+  uint64_t filesize = ftell(seqFile);
+  char buffer[4096];
+  size_t idx=0;
+  // chunksize as filesize divided by number of threads and then forced
+  // to a multiple of 4096 (= kseq buffersize)
+  uint64_t chunksize = (filesize/threadNum >> 12) << 12;
+
+  std::thread **threads = new std::thread*[threadNum];
+  uint64_t chunkStart = 0, chunkNextStart=0;
+  bool foundNextStart = true;
+  for(; idx < threadNum && foundNextStart; idx++)
+  {
+    //chunkEnd = chunkStart+chunksize;
+    //if (chunkEnd + 4096 < filesize)
+    {
+      fseek(seqFile, chunkStart+chunksize, SEEK_SET);
+      chunkNextStart = chunkStart+chunksize;
+      foundNextStart = false;
+
+      while(!foundNextStart)
+      {
+        size_t numElem = fread(buffer, sizeof(char), 4096, seqFile);
+        for(size_t jdx = 0; jdx < numElem-1; jdx++)
+        {
+          if (buffer[jdx] == '\n' &&
+              (buffer[jdx+1] == '>' || buffer[jdx+1] == '@'))
+          {
+            chunkNextStart += jdx+1;
+            foundNextStart = true;
+            break;
+          }
+        }
+        if (feof(seqFile))
+          break;
+
+        if (!foundNextStart)
+          chunkNextStart += 4096;
+      }
+    }
+
+    uint64_t chunkEnd = chunkStart+chunksize;
+    if(idx == threadNum-1)
+      chunkEnd=filesize;
+
+
+    std::cerr << "thread " << idx << " working on [" << chunkStart << ","
+              << chunkStart+chunksize << "]" << std::endl << std::flush;
+
+    threads[idx] = new std::thread(testpara, idx, seqFilename, chunkStart,
+                                   chunkEnd);/*, //tempResultFilename,
+                                   lookuptable, translator);//, processCountProfile);
+*/
+
+    chunkStart = chunkNextStart;
+  }
+  for(int i = 0; i < idx; i++)
+  {
+    threads[i]->join();
+    delete threads[i];
+  }
+  delete[] threads;
+}
+
 
 
 int processSeqFile(const char* seqFilename,
@@ -34,9 +126,9 @@ int processSeqFile(const char* seqFilename,
                    const KmerTranslator &translator,
                    int (*processCountProfile)(CountProfile &, FILE*))
 {
+
   FILE *seqFile = openFileOrDie(seqFilename, "r");
   kseq_t *seq = kseq_init(fileno(seqFile));
-
   FILE *resultFile = openFileOrDie(resultFilename, "w");
   CountProfile countprofile(&translator, &lookuptable);
 
