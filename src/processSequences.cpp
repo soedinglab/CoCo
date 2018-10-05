@@ -63,7 +63,8 @@ int processSeqFileParallel(const char* seqFilename, int threadNum)
   // chunksize as filesize divided by number of threads and then forced
   // to a multiple of 4096 (= kseq buffersize)
   uint64_t chunksize = (filesize/threadNum >> 12) << 12;
-
+  if (chunksize == 0)
+    chunksize=std::min(filesize,(uint64_t) 4096);
 
   //TODO: special case chunksize 0
 
