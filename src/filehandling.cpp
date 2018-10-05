@@ -27,6 +27,16 @@ void _mkdir(string &dir, mode_t)
   _mkdir(dir.c_str());
 }
 
+string get_filename(string wholeFilePath)
+{
+  string filename = wholeFilePath;
+  size_t lastdot = filename.find_last_of(".");
+  if (lastdot != std::string::npos)
+    filename = filename.substr(0, lastdot);
+
+  return string(basename(filename.c_str()));
+}
+
 vector<string> *getFileList(const char *fileListFilename)
 {
   vector<string> *fileList = new vector<string>();

@@ -38,9 +38,11 @@ int testpara(size_t id, const char* seqFilename, size_t chunkStart, size_t chunk
   /* iterate over every single read  */
   while (kseq_read(seq) >= 0)
   {
-    fprintf(resultFile, "%s\n",seq->name.s);
-    fprintf(resultFile, "%s\n", seq->seq.s);
-    fprintf(resultFile, "%u\n", lseek(fd,0,SEEK_CUR));
+
+    fprintf(resultFile, "@%s %s\n",seq->name.s,seq->comment.s);
+    fprintf(resultFile, "%s\n",seq->seq.s);
+    fprintf(resultFile, "+\n%s\n", seq->qual.s);
+    //fprintf(resultFile, "%u\n", lseek(fd,0,SEEK_CUR));
     if (lseek(fd,0,SEEK_CUR) > chunkEnd)
       break;
   }
@@ -56,11 +58,14 @@ int processSeqFileParallel(const char* seqFilename, int threadNum)
   FILE *seqFile = openFileOrDie(seqFilename, "r");
   fseek(seqFile,0,SEEK_END);
   uint64_t filesize = ftell(seqFile);
-  char buffer[4096];
+  char buffer[4096]; //TODO: macro, increase
   size_t idx=0;
   // chunksize as filesize divided by number of threads and then forced
   // to a multiple of 4096 (= kseq buffersize)
   uint64_t chunksize = (filesize/threadNum >> 12) << 12;
+
+
+  //TODO: special case chunksize 0
 
   std::thread **threads = new std::thread*[threadNum];
   uint64_t chunkStart = 0, chunkNextStart=0;
@@ -77,7 +82,7 @@ int processSeqFileParallel(const char* seqFilename, int threadNum)
       while(!foundNextStart)
       {
         size_t numElem = fread(buffer, sizeof(char), 4096, seqFile);
-        for(size_t jdx = 0; jdx < numElem-1; jdx++)
+        for(size_t jdx = 0; numElem !=0 && jdx < numElem-1; jdx++)
         {
           if (buffer[jdx] == '\n' &&
               (buffer[jdx+1] == '>' || buffer[jdx+1] == '@'))
@@ -116,6 +121,8 @@ int processSeqFileParallel(const char* seqFilename, int threadNum)
     delete threads[i];
   }
   delete[] threads;
+
+  //concatenate result files from threads temp results
 }
 
 

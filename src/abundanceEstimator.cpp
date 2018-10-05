@@ -26,11 +26,11 @@ std::chrono::milliseconds interval(100);
 
 
 
-int writePopulationCoverage(CountProfile &countprofile, FILE *resultFile)
+int writeAbundanceEstimation(CountProfile &countprofile, FILE *resultFile)
 {
   /* estimate population coverage */
-  float popCoverage = countprofile.calcPopulationCoverage() * countprofile.getCorrFactor();
-  fprintf(resultFile, "%s\t%f\n", countprofile.getReadName(), popCoverage );
+  float abundanceEstimation = countprofile.calc67quantile() * countprofile.getCorrFactor();
+  fprintf(resultFile, "%s\t%f\n", countprofile.getSeqName(), abundanceEstimation );
 }
 
 void thread_runner(int id, vector<string> *sampleList, std::string outdir,
@@ -61,7 +61,7 @@ void thread_runner(int id, vector<string> *sampleList, std::string outdir,
                 << std::endl << std::flush;
     }
     processSeqFile(sampleFileName, tempResultFileName,
-                    *lookuptable, *translator,writePopulationCoverage);
+                    *lookuptable, *translator,writeAbundanceEstimation);
 
   }
 
@@ -160,6 +160,7 @@ void process_sampleList_threads(vector<string> *sampleList,
 
 int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
 {
+  int retval = 0;
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);
   printf("threads %u\n", opt.threads);
@@ -227,21 +228,20 @@ int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
       return EXIT_FAILURE;
     }
     fprintf(stderr, "finished build lookuptable\n");
-    string filename = kmerCountFile;
-    size_t lastdot = filename.find_last_of(".");
-    if (lastdot != std::string::npos)
-      filename=filename.substr(0, lastdot);
-    string resultFilename=(string("coverage.")+string(basename(filename.c_str()))+string(".txt"));
+    string resultFilename = get_filename(seqFile) + string(".") +
+                            get_filename(kmerCountFile) + string(".abundance");
+
+    printf("resultFilename: %s\n", resultFilename.c_str());
     if (opt.threads == 1)
     {
       /*process_sampleList(sampleList, resultFilename, lookuptable, translator,
                          writePopulationCoverage);
       */
-      int retval = processSeqFile(seqFile,
-                                  resultFilename.c_str(),
-                                  *lookuptable,
-                                  *translator,
-                                  writePopulationCoverage);
+      retval = processSeqFile(seqFile,
+                              resultFilename,
+                              *lookuptable,
+                              *translator,
+                              writeAbundanceEstimation);
       if (retval != EXIT_SUCCESS)
       {
         std::cerr << "ERROR processing read file " << seqFile << std::endl;
@@ -264,5 +264,5 @@ int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
   //delete kmerCountList;
   delete translator;
 
-  return EXIT_SUCCESS;
+  return retval;
 }

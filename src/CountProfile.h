@@ -17,7 +17,7 @@
 
 struct __attribute__((__packed__)) CountProfileEntry {
   uint8_t  nuc : 3;        /* nucleotid in 2 bit representation */
-  uint32_t readPos;        /* position in read or contig */
+  uint32_t seqPos;        /* position in read or contig */
   uint32_t count;          /* max count of spaced k-mers matching <readPos> */
 };
 
@@ -29,14 +29,14 @@ class CountProfile
     const KmerTranslator*  translator;
     const Lookuptable*     lookuptable;
 
-    char *                 readName;             /* index of read */
+    char *                 seqName;              /* index of sequence */
     size_t                 maxprofileLength = 0, /* maximal length of profile,
                                                     corresponds to the allocated
                                                     size of <profile> */
                            profileLength = 0,    /* length of current profile,
                                                     corresponds to the used
                                                     size of <profile>*/
-                           populationCoverage = 0;
+                           abundanceEstimation = 0;
 
 public:
 
@@ -44,24 +44,24 @@ public:
     CountProfile(const KmerTranslator *translator, const Lookuptable *lookuptable);
 
     CountProfile(const KmerTranslator *translator, const Lookuptable *lookuptable,
-                 const SeqType seq, char *readName);
+                 const SeqType seq, char *seqdName);
 
     /* destructor */
     ~CountProfile();
 
     /* getter */
-    char *getReadName(){return (this->readName);}
+    char *getSeqName(){return (this->seqName);}
     float getCorrFactor(){return (this->lookuptable->getCorrFactor());}
 
     /* create and store count profiles of <seq> */
-    void fill(const SeqType seq, const char *readName);
+    void fill(const SeqType seq, const char *seqName);
 
-    /* set estimate of population coverage c_pop to 67% quantile  */
-    size_t calcPopulationCoverage();
+    /* set abundanceEstimation value c_pop to 67% quantile over count profile */
+    size_t calc67quantile();
 
-    /* show tab-based table of readPos and abundance.
-       abundance means here the maximal abundance of all spaced k-mers,
-       which overlap readPos with a match */
+    /* show tab-based table of seqPos and count.
+       count means here the maximal count of all spaced k-mers,
+       which overlap seqPos with a match */
     void showProfile(FILE *fp=stdout) const;
 
    //TODO: function: clear, correct

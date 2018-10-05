@@ -11,7 +11,7 @@ CountProfile::CountProfile(const KmerTranslator *translator,
 
 CountProfile::CountProfile(const KmerTranslator *translator,
                            const Lookuptable *lookuptable,
-                           const SeqType seq, char* readName)
+                           const SeqType seq, char* seqName)
 {
   // call constructor
   this->translator = translator;
@@ -21,7 +21,7 @@ CountProfile::CountProfile(const KmerTranslator *translator,
   this->maxprofileLength = seq.length();
   this->profileLength = seq.length();
   this->profile = new CountProfileEntry[profileLength];
-  this->fill(seq, readName);
+  this->fill(seq, seqName);
 }
 
 CountProfile::~CountProfile()
@@ -29,7 +29,7 @@ CountProfile::~CountProfile()
   delete[] this->profile;
 }
 
-void CountProfile::fill(const SeqType seq, const char* readName)
+void CountProfile::fill(const SeqType seq, const char* seqName)
 {
   assert(this->lookuptable != NULL);
   assert(this->translator != NULL);
@@ -42,9 +42,9 @@ void CountProfile::fill(const SeqType seq, const char* readName)
 
   size_t seqlen = seq.size();
   assert(seqlen >= kmerSpan);
-  this->readName = (char*) readName;
+  this->seqName = (char*) seqName;
   this->profileLength = seqlen;
-  this->populationCoverage = 0;
+  this->abundanceEstimation = 0;
 
 
   // check size of array and create new one in case of too small size
@@ -55,7 +55,7 @@ void CountProfile::fill(const SeqType seq, const char* readName)
     this->maxprofileLength = seqlen;
   }
 
-  // add new read -> store all nucleotids of current read, one per entry in
+  // add new sequence -> store all nucleotids of current sequence, one per entry in
   // <profiles>
   spacedKmerType kmer = 0, nStore = 0;
   for (size_t idx = 0; idx < seqlen; idx++)
@@ -74,7 +74,7 @@ void CountProfile::fill(const SeqType seq, const char* readName)
       this->profile[idx].nuc = alphabetSize;
     }
 
-    this->profile[idx].readPos = idx;
+    this->profile[idx].seqPos = idx;
     this->profile[idx].count = 0;
 
     if(idx >= kmerSpan-1)
@@ -84,7 +84,7 @@ void CountProfile::fill(const SeqType seq, const char* readName)
         continue;
 
       // get abundance for packed k-mer, started at position idx in
-      // current read
+      // current sequnece
       kmerType packedKmer = translator->kmer2minPackedKmer(kmer);
       uint32_t count = lookuptable->getCount(packedKmer);
       // update c_i for all previous positions j with b_j=1 and 0 ≤ j ≤ k-1
@@ -99,7 +99,7 @@ void CountProfile::fill(const SeqType seq, const char* readName)
   }
 }
 
-size_t CountProfile::calcPopulationCoverage()
+size_t CountProfile::calc67quantile()
 {
   //copy max count values
   uint32_t *max_count = new uint32_t[profileLength];
@@ -113,16 +113,16 @@ size_t CountProfile::calcPopulationCoverage()
   sort(max_count, max_count+profileLength);
 
   // 67% quantile
-  populationCoverage = max_count[(uint32_t)(0.67*(double)this->profileLength)];
+  abundanceEstimation = max_count[(uint32_t)(0.67*(double)this->profileLength)];
 
   delete[] max_count;
-  return populationCoverage;
+  return abundanceEstimation;
 }
 
 void CountProfile::showProfile(FILE *fp) const
 {
   for (size_t idx=0; idx < profileLength; idx++)
   {
-    fprintf(fp,"%u\t%u\n", profile[idx].readPos, profile[idx].count);
+    fprintf(fp,"%u\t%u\n", profile[idx].seqPos, profile[idx].count);
   }
 }

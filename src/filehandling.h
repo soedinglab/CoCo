@@ -13,6 +13,8 @@ void _mkdir(const char *dir, mode_t mode=S_IRWXU | S_IRWXG | S_IROTH);
 
 void _mkdir(std::string &dir, mode_t= S_IRWXU | S_IRWXG | S_IROTH);
 
+string get_filename(string wholeFilePath);
+
 vector<std::string> *getFileList(const char *fileListFilename);
 
 
