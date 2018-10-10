@@ -1,31 +1,13 @@
 #include <thread>
 #include "processSequences.h"
 #include "CountProfile.h"
-#include "Lookuptable.h"
+#include "filehandling.h"
 #include "KmerTranslator.h"
 #include "kseq.h"
+#include "Lookuptable.h"
 #include "util.h"
 
 KSEQ_INIT(int, read)
-
-FILE* openFileOrDie(std::string fileName, const char * mode)
-{
-  return openFileOrDie(fileName.c_str(), mode);
-}
-
-FILE* openFileOrDie(const char *fileName, const char * mode)
-{
-
-  FILE* file;
-  file = fopen(fileName, mode);
-  if(file == NULL)
-  {
-    fprintf(stderr, "ERROR: opening failed for file %s\n", fileName);
-    perror(fileName);
-    EXIT(EXIT_FAILURE);
-  }
-  return file;
-}
 
 int testpara(size_t id, const char* seqFilename, size_t chunkStart, size_t chunkEnd)
 {

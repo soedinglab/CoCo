@@ -8,12 +8,6 @@
 #include "util.h"
 
 
-
-FILE* openFileOrDie(std::string fileName, const char * mode);
-
-FILE* openFileOrDie(const char *fileName, const char * mode);
-
-
 int processSeqFile(const char* seqFilename,
                    const char* resultFilename,
                    const Lookuptable &lookuptable,

@@ -27,6 +27,25 @@ void _mkdir(string &dir, mode_t)
   _mkdir(dir.c_str());
 }
 
+
+FILE* openFileOrDie(std::string fileName, const char * mode)
+{
+  return openFileOrDie(fileName.c_str(), mode);
+}
+
+FILE* openFileOrDie(const char *fileName, const char * mode)
+{
+
+  FILE* file;
+  file = fopen(fileName, mode);
+  if(file == NULL)
+  {
+    fprintf(stderr, "ERROR: opening failed for file %s\n", fileName);
+    perror(fileName);
+  }
+  return file;
+}
+
 string get_filename(string wholeFilePath)
 {
   string filename = wholeFilePath;

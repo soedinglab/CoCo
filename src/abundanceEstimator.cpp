@@ -177,66 +177,63 @@ int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
   }
 
   initialize();
-
-  // TODO: organize following lines, for now first test of workflow
-
-
   KmerTranslator *translator = NULL;
+  Lookuptable* lookuptable = NULL;
+  // TODO: organize following lines (preprocessing funct), for now first test of workflow
+
+
+
 
   /* get kmer-count and sample files */
   string kmerCountFile = opt.kcFile;
-  //vector<string> *sampleList = getFileList(opt.sampleListFile.c_str());
   string seqFile = opt.seqFile;
-  //uint8_t readAvgLenList = opt.readAvgLen;
 
-  //for (vector<string>::iterator it = kmerCountList->begin(), jt=readAvgLenList->begin(); it != kmerCountList->end(); ++it, ++jt)
-  //{
-    /* get dsk kmer-count storage */
-    Storage* storage = StorageFactory(STORAGE_HDF5).load(kmerCountFile);
-    LOCAL (storage);
 
-    string kmerSizeStr = storage->getGroup("dsk").getProperty ("kmer_size");
-    unsigned int kmerSize = atoi(kmerSizeStr.c_str());
+  /* get dsk kmer-count storage */
+  Storage* storage = StorageFactory(STORAGE_HDF5).load(kmerCountFile);
+  LOCAL (storage);
+  string kmerSizeStr = storage->getGroup("dsk").getProperty ("kmer_size");
+  unsigned int kmerSize = atoi(kmerSizeStr.c_str());
 
-    /* just for now, implement other kmerSize later */
-    if (kmerSize != 41)
-    {
-      fprintf(stderr, "kmerSize %u used in hdf5 file %s is not supported yet.\n"
-              "For now only dsk output with kmerSize 41 is supported\n",
-              kmerSize, kmerCountFile.c_str());
-      return EXIT_FAILURE;
-    }
+  /* just for now, implement other kmerSize later */
+  if (kmerSize != 41)
+  {
+    fprintf(stderr, "kmerSize %u used in hdf5 file %s is not supported yet.\n"
+                    "For now only dsk output with kmerSize 41 is supported\n",
+            kmerSize, kmerCountFile.c_str());
+    return EXIT_FAILURE;
+  }
 
-    if (translator == NULL)
-    {
-      translator = new KmerTranslator(kmerSize, opt.kmerWeight);
-    }
-    //TODO: new translator if (translator->getSpan() != kmerSize)
+  translator = new KmerTranslator(kmerSize, opt.kmerWeight);
+  //TODO: check return
 
-    unsigned long avgLen = opt.readAvgLen;//stol(*jt);
+  unsigned long avgLen = opt.readAvgLen;//stol(*jt); //TODO float
+  //TODO: avglen optional?
    
-    //TODO: handle mathematical cases 
-    float corrFactor = (avgLen==kmerSize)?1:(float)(avgLen)/(avgLen-kmerSize+1);
+  //TODO: handle mathematical cases
+  float corrFactor = (avgLen==kmerSize)?1:(float)(avgLen)/(avgLen-kmerSize+1);
 
-    fprintf(stderr, "preprocessing...\n");
-    /* build lookuptale */
-    Lookuptable* lookuptable = buildLookuptable(*storage, *translator, 0, corrFactor);
-    if (lookuptable == NULL)
-    {
-      fprintf(stderr,"Generating lookuptable based on %s failed\n",
-              kmerCountFile.c_str());
-      return EXIT_FAILURE;
-    }
-    fprintf(stderr, "finished build lookuptable\n");
+  fprintf(stderr, "preprocessing...\n");
+  /* build lookuptale */
+  lookuptable = buildLookuptable(*storage, *translator, 0, corrFactor);
+  if (lookuptable == NULL)
+  {
+    fprintf(stderr,"Generating lookuptable based on %s failed\n",
+            kmerCountFile.c_str());
+    return EXIT_FAILURE;
+  }
+  fprintf(stderr, "finished build lookuptable\n");
+
+  /* process seq file */
+  if (retval == 0)
+  {
+
     string resultFilename = get_filename(seqFile) + string(".") +
                             get_filename(kmerCountFile) + string(".abundance");
 
     printf("resultFilename: %s\n", resultFilename.c_str());
     if (opt.threads == 1)
     {
-      /*process_sampleList(sampleList, resultFilename, lookuptable, translator,
-                         writePopulationCoverage);
-      */
       retval = processSeqFile(seqFile,
                               resultFilename,
                               *lookuptable,
@@ -244,7 +241,7 @@ int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
                               writeAbundanceEstimation);
       if (retval != EXIT_SUCCESS)
       {
-        std::cerr << "ERROR processing read file " << seqFile << std::endl;
+        std::cerr << "ERROR processing sequence file " << seqFile << std::endl;
       }
     }
     else
@@ -256,12 +253,9 @@ int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
       process_sampleList_threads(sampleList, resultFilename,
                                  lookuptable, translator, opt.threads);*/
     }
+  }
 
-    delete lookuptable;
-  //}
-
-  //delete sampleList;
-  //delete kmerCountList;
+  delete lookuptable;
   delete translator;
 
   return retval;
