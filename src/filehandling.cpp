@@ -1,4 +1,5 @@
 #include "filehandling.h"
+#include "util.h"
 
 void _mkdir(const char *dir, mode_t mode)
 {
@@ -42,6 +43,7 @@ FILE* openFileOrDie(const char *fileName, const char * mode)
   {
     fprintf(stderr, "ERROR: opening failed for file %s\n", fileName);
     perror(fileName);
+    EXIT(EXIT_FAILURE);
   }
   return file;
 }

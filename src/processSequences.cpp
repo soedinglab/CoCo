@@ -100,7 +100,7 @@ int processSeqFileParallel(string seqFilename,
     std::cerr << "thread " << threadID << " working on [" << chunkStart << ","
               << chunkStart+chunksize << "]" << std::endl << std::flush;
 
-    string tresultFilename = resultFilename + string(".temp") + std::to_string(threadID);
+    string tresultFilename = resultFilename + string(".temp") + std::to_string(threadID);//TODO:store name in dic?
     threads[threadID] = new std::thread(processSeqFile,
                                    seqFilename,
                                    tresultFilename,
@@ -112,14 +112,43 @@ int processSeqFileParallel(string seqFilename,
 
     chunkStart = chunkNextStart;
   }
-  for(int i = 0; i < threadID; i++)
+  threadNum=(threadID==0? 0: threadID-1);
+
+
+  for(threadID = 0; threadID < threadNum; threadID++)
   {
-    threads[i]->join();
-    delete threads[i];
+    threads[threadID]->join();
+    delete threads[threadID];
+    std::cerr << "thread " << threadID << "finished" << std::endl << std::flush;
   }
   delete[] threads;
+  fclose(seqFile);
 
-  //concatenate result files from threads temp results
+  //TODO: fopen or open, fread/fwrite or read/write
+  //concatenate result file from threads temp results
+  FILE *resultFile = openFileOrDie(resultFilename, "w");
+  for(threadID = 0; threadID < threadNum; threadID++)
+  {
+    std::cerr << "write temporary results of thread " << threadID << " to resultfile " << std::endl << std::flush;
+    size_t size;
+    char buf[BUFSIZ]; //TODO:change to using same buffer as above, or change above
+    FILE *source = openFileOrDie(resultFilename + string(".temp") + std::to_string(threadID), "r");
+    while ((size = fread(buf, sizeof(char), BUFSIZ, source)) > 0)
+    {
+      fwrite(buf, sizeof(char), size, resultFile);
+      if(ferror(resultFile))
+      {
+        fprintf(stderr, "Error when writing to file %s: \n%s\n",
+                resultFilename.c_str(), strerror(errno));
+        fclose(source);
+        fclose(resultFile);
+        exit(EXIT_FAILURE);//TODO
+      }
+    }
+    fclose(source);
+  }
+  std::cerr << "Finish resultfile " << resultFilename << std::endl << std::flush;
+  fclose(resultFile);
 }
 
 
@@ -133,7 +162,8 @@ int processSeqFile(string seqFilename,
                    size_t chunkEnd)
 {
 
-  FILE *seqFile = openFileOrDie(seqFilename, "r");
+  FILE *seqFile = openFileOrDie(seqFilename, "r");//TODO: lower level?
+  //TODO: check what happens if one thread have problems wit a file, kill whole process then
   int fd = fileno(seqFile);
   kseq_t *seq = kseq_init(fd);
   FILE *resultFile = openFileOrDie(resultFilename, "w");
