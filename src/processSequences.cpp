@@ -34,14 +34,22 @@ int testpara(size_t id, const char* seqFilename, size_t chunkStart, size_t chunk
   fclose(resultFile);
 }
 
-
-int processSeqFileParallel(const char* seqFilename, int threadNum)
+int processSeqFileParallel(string seqFilename,
+                           string resultFilename,
+                           const Lookuptable* lookuptable,
+                           const KmerTranslator* translator,
+                           int (*processCountProfile)(CountProfile &, FILE*),
+                           int threadNum)
 {
+
+ /* string outdir = string("tmp/");
+  _mkdir(outdir)*/
+
   FILE *seqFile = openFileOrDie(seqFilename, "r");
   fseek(seqFile,0,SEEK_END);
   uint64_t filesize = ftell(seqFile);
   char buffer[4096]; //TODO: macro, increase
-  size_t idx=0;
+
   // chunksize as filesize divided by number of threads and then forced
   // to a multiple of 4096 (= kseq buffersize)
   uint64_t chunksize = (filesize/threadNum >> 12) << 12;
@@ -53,7 +61,8 @@ int processSeqFileParallel(const char* seqFilename, int threadNum)
   std::thread **threads = new std::thread*[threadNum];
   uint64_t chunkStart = 0, chunkNextStart=0;
   bool foundNextStart = true;
-  for(; idx < threadNum && foundNextStart; idx++)
+  size_t threadID=0;
+  for(; threadID < threadNum && foundNextStart; threadID++)
   {
     //chunkEnd = chunkStart+chunksize;
     //if (chunkEnd + 4096 < filesize)
@@ -84,21 +93,26 @@ int processSeqFileParallel(const char* seqFilename, int threadNum)
     }
 
     uint64_t chunkEnd = chunkStart+chunksize;
-    if(idx == threadNum-1)
+    if(threadID == threadNum-1)
       chunkEnd=filesize;
 
 
-    std::cerr << "thread " << idx << " working on [" << chunkStart << ","
+    std::cerr << "thread " << threadID << " working on [" << chunkStart << ","
               << chunkStart+chunksize << "]" << std::endl << std::flush;
 
-    threads[idx] = new std::thread(testpara, idx, seqFilename, chunkStart,
-                                   chunkEnd);/*, //tempResultFilename,
-                                   lookuptable, translator);//, processCountProfile);
-*/
+    string tresultFilename = resultFilename + string(".temp") + std::to_string(threadID);
+    threads[threadID] = new std::thread(processSeqFile,
+                                   seqFilename,
+                                   tresultFilename,
+                                   lookuptable,
+                                   translator,
+                                   processCountProfile,
+                                   chunkStart,
+                                   chunkEnd);
 
     chunkStart = chunkNextStart;
   }
-  for(int i = 0; i < idx; i++)
+  for(int i = 0; i < threadID; i++)
   {
     threads[i]->join();
     delete threads[i];
@@ -110,17 +124,22 @@ int processSeqFileParallel(const char* seqFilename, int threadNum)
 
 
 
-int processSeqFile(const char* seqFilename,
-                   const char* resultFilename,
-                   const Lookuptable &lookuptable,
-                   const KmerTranslator &translator,
-                   int (*processCountProfile)(CountProfile &, FILE*))
+int processSeqFile(string seqFilename,
+                   string resultFilename,
+                   const Lookuptable *lookuptable,
+                   const KmerTranslator *translator,
+                   int (*processCountProfile)(CountProfile &, FILE*),
+                   size_t chunkStart,
+                   size_t chunkEnd)
 {
 
   FILE *seqFile = openFileOrDie(seqFilename, "r");
-  kseq_t *seq = kseq_init(fileno(seqFile));
+  int fd = fileno(seqFile);
+  kseq_t *seq = kseq_init(fd);
   FILE *resultFile = openFileOrDie(resultFilename, "w");
-  CountProfile countprofile(&translator, &lookuptable);
+  CountProfile countprofile(translator, lookuptable);
+
+  fseek(seqFile, chunkStart, SEEK_SET);
 
   /* iterate over every single read  */
   while (kseq_read(seq) >= 0)
@@ -130,7 +149,7 @@ int processSeqFile(const char* seqFilename,
     const char* readName = seq->name.s;
     SeqType seqStr; seqStr.reserve(len);
 
-    unsigned int kmerSpan = translator.getSpan();
+    unsigned int kmerSpan = translator->getSpan();
     if(len < kmerSpan)
     {
       fprintf(stderr, "WARNING: read %s is too short!\n", readName);
@@ -146,24 +165,17 @@ int processSeqFile(const char* seqFilename,
     /* fill profile */
     countprofile.fill(seqStr, readName);
 
+    /* use function pointer for what to do with countprofile */
     processCountProfile(countprofile, resultFile);
-    //TODO: function pointer for what to do with countProfile
+
+    if (lseek(fd,0,SEEK_CUR) > chunkEnd)
+       break;
 
   }
   kseq_destroy(seq);
   fclose(seqFile);
   fclose(resultFile);
   return EXIT_SUCCESS;
-}
-
-int processSeqFile(string seqFilename,
-                   string resultFilename,
-                   const Lookuptable &lookuptable,
-                   const KmerTranslator &translator,
-                   int (*processCountProfile)(CountProfile &, FILE*))
-{
-  return processSeqFile(seqFilename.c_str(), resultFilename.c_str(),
-                        lookuptable, translator,processCountProfile);
 }
 
 void process_sampleList(vector<string> *sampleList, std::string resultFileName,
@@ -176,8 +188,8 @@ void process_sampleList(vector<string> *sampleList, std::string resultFileName,
 
     int retval = processSeqFile(sampleIt->c_str(),
                                  resultFileName.c_str(),
-                                 *lookuptable,
-                                 *translator,
+                                 lookuptable,
+                                 translator,
                                  processCountProfile);
     if (retval != EXIT_SUCCESS)
     {

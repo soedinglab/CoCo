@@ -61,7 +61,7 @@ void thread_runner(int id, vector<string> *sampleList, std::string outdir,
                 << std::endl << std::flush;
     }
     processSeqFile(sampleFileName, tempResultFileName,
-                    *lookuptable, *translator,writeAbundanceEstimation);
+                    lookuptable, translator,writeAbundanceEstimation);
 
   }
 
@@ -169,6 +169,7 @@ int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
   printf("kmerWeight: %u\n", opt.kmerWeight);
 
   // TODO:check parameter and if files exists
+  // TODO: check resultfile already exists and tmp folder
 
   if(opt.kmerWeight != 27)
   {
@@ -228,16 +229,16 @@ int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
   if (retval == 0)
   {
 
-    string resultFilename = get_filename(seqFile) + string(".") +
-                            get_filename(kmerCountFile) + string(".abundance");
+    string resultFile = get_filename(seqFile) + string(".") +
+                        get_filename(kmerCountFile) + string(".abundance");
 
-    printf("resultFilename: %s\n", resultFilename.c_str());
+    printf("resultFilename: %s\n", resultFile.c_str());
     if (opt.threads == 1)
     {
       retval = processSeqFile(seqFile,
-                              resultFilename,
-                              *lookuptable,
-                              *translator,
+                              resultFile,
+                              lookuptable,
+                              translator,
                               writeAbundanceEstimation);
       if (retval != EXIT_SUCCESS)
       {
@@ -248,7 +249,13 @@ int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
     {
       //std::cerr << "ERROR: NOT IMPLEMENTED YET" <<std::endl;
       //return EXIT_FAILURE;
-      processSeqFileParallel(seqFile.c_str(), opt.threads);
+      retval = processSeqFileParallel(seqFile,
+                                      resultFile,
+                                      lookuptable,
+                                      translator,
+                                      writeAbundanceEstimation,
+                                      opt.threads);
+
       /*fprintf(stderr, "start process sampleList\n");
       process_sampleList_threads(sampleList, resultFilename,
                                  lookuptable, translator, opt.threads);*/

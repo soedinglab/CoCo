@@ -96,7 +96,7 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
     string resultFilename=(string("count_profile.")+string(basename(filename.c_str()))+string(".txt"));
 
     //process_sampleList(sampleList, resultFilename, lookuptable, translator,showProfile);
-    processSeqFile(seqFile, resultFilename, *lookuptable, *translator,showProfile);
+    processSeqFile(seqFile, resultFilename, lookuptable, translator,showProfile);
     delete lookuptable;
   //}
 

@@ -8,19 +8,21 @@
 #include "util.h"
 
 
-int processSeqFile(const char* seqFilename,
-                   const char* resultFilename,
-                   const Lookuptable &lookuptable,
-                   const KmerTranslator &translator,
-                   int (*processCountProfile)(CountProfile &, FILE*));
-
 int processSeqFile(string seqFilename,
                    string resultFilename,
-                   const Lookuptable &lookuptable,
-                   const KmerTranslator &translator,
-                   int (*processCountProfile)(CountProfile &, FILE*));
+                   const Lookuptable* lookuptable,
+                   const KmerTranslator* translator,
+                   int (*processCountProfile)(CountProfile &, FILE*),
+                   size_t chunkStart=0,
+                   size_t chunkEnd=std::numeric_limits<uint64_t>::max());
+//TODO: better way for handle chunEnd default?
 
-int processSeqFileParallel(const char* seqFilename, int threadNum);
+int processSeqFileParallel(string seqFilename,
+                           string resultFilename,
+                           const Lookuptable* lookuptable,
+                           const KmerTranslator* translator,
+                           int (*processCountProfile)(CountProfile &, FILE*),
+                           int threadNum);
 
 void process_sampleList(vector<string> *sampleList, std::string resultFileName,
                         Lookuptable *lookuptable,\
