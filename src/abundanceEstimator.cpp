@@ -5,7 +5,6 @@
 
 #include <cstdio>
 #include <fcntl.h>
-#include <mutex>
 #include <stdexcept>
 #include <thread>
 #include <vector>
@@ -21,9 +20,7 @@
 #include "processSequences.h"
 #include "filehandling.h"
 
-std::mutex sampleList_mutex;
 std::chrono::milliseconds interval(100);
-
 
 
 int writeAbundanceEstimation(CountProfile &countprofile, FILE *resultFile)
@@ -32,130 +29,6 @@ int writeAbundanceEstimation(CountProfile &countprofile, FILE *resultFile)
   float abundanceEstimation = countprofile.calc67quantile() * countprofile.getCorrFactor();
   fprintf(resultFile, "%s\t%f\n", countprofile.getSeqName(), abundanceEstimation );
 }
-
-void thread_runner(int id, vector<string> *sampleList, std::string outdir,
-                   Lookuptable *lookuptable, KmerTranslator *translator)
-{
-  std::string sampleFileName;
-  string tempResultFileName;
-  while(!sampleList->empty())
-  {
-    {
-      while(!sampleList_mutex.try_lock() && !sampleList->empty())
-      {
-        std::this_thread::sleep_for(interval);
-      }
-      if(sampleList->empty())
-      {
-        fprintf(stderr, "Thread %d exiting, nothing more to do\n", id);
-        return;
-      }
-      sampleFileName = sampleList->back();
-      sampleList->pop_back();
-      sampleList_mutex.unlock();
-
-      tempResultFileName = outdir+basename(sampleFileName.c_str());
-
-      std::cerr << "thread " << id << " working on "
-                << sampleFileName << " outfilename: " << tempResultFileName
-                << std::endl << std::flush;
-    }
-    processSeqFile(sampleFileName, tempResultFileName,
-                    lookuptable, translator,writeAbundanceEstimation);
-
-  }
-
-}
-
-void concatenate_read_files(vector<string> *sampleList,
-                            std::string resultFileName,
-                            std::string tmpOutDir)
-{
-  //Open Result File
-  fprintf(stderr, "start concatenate read files to final results\n");
-  char buf[BUFSIZ];
-  size_t size;
-  int resultFile = open(resultFileName.c_str(),
-                  O_WRONLY | O_CREAT | O_TRUNC, 0660);
-  if (resultFile == -1)
-  {
-    fprintf(stderr, "Error when trying to open file %s:\n%s\n",
-            resultFileName.c_str(), strerror(errno));
-    exit(EXIT_FAILURE);
-  }
-  /*
-  // Write header
-  if (write(resultFile, "#read_index\tpop_coverage\n", 25) == -1)
-  {
-    fprintf(stderr, "Error when writing to file %s:\n%s\n",
-            resultFileName.c_str(), strerror(errno));
-    close(resultFile);
-    exit(EXIT_FAILURE);
-  }*/
-
-  //Iterate tmp resultFiles and copy to resultFile
-  for(string sampleFileName: *sampleList)
-  {
-    string s_filename = tmpOutDir + basename(sampleFileName.c_str());
-
-    int source = open(s_filename.c_str(), O_RDONLY, 0);
-    if (source == -1)
-    {
-      fprintf(stderr, "ERROR: Opening result file %s failed:\n%s\n",
-              s_filename.c_str(), strerror(errno));
-      exit(EXIT_FAILURE);
-    }
-    while ((size = read(source, buf, BUFSIZ)) > 0)
-    {
-      if(write(resultFile, buf, size) == -1)
-      {
-        fprintf(stderr, "Error when writing to file %s: \n%s\n",
-                resultFileName.c_str(), strerror(errno));
-        close(source);
-        close(resultFile);
-        exit(EXIT_FAILURE);
-      }
-    }
-    close(source);
-    remove(s_filename.c_str());
-  }
-  close(resultFile);
-
-}
-
-void process_sampleList_threads(vector<string> *sampleList,
-                                std::string resultFileName,
-                                Lookuptable *lookuptable,
-                                KmerTranslator *translator,
-                                int num_threads)
-{
-  vector<string> *cp_sampleList = new vector<string>(*sampleList);
-  //std::cout << "processing with " << num_threads << " threads" << std::endl
-  //          << std::flush;
- 
-  //TODO: next lines as function! 
-  string filename = resultFileName.c_str();
-  size_t lastdot = filename.find_last_of(".");
-    if (lastdot != std::string::npos)
-      filename=filename.substr(0, lastdot);
-
-  string outdir = string("tmp/tmp_") + basename(filename.c_str()) + "/";
-  _mkdir(outdir);
-  std::thread **threads = new std::thread*[num_threads];
-  for(int i = 0; i < num_threads; i++)
-  {
-    threads[i] = new std::thread(thread_runner, i, cp_sampleList, outdir,
-                                 lookuptable, translator);
-  }
-  for(int i = 0; i < num_threads; i++)
-  {
-    threads[i]->join();
-    delete threads[i];
-  }
-  delete[] threads;
-  concatenate_read_files(sampleList,resultFileName, outdir);
-}
-
 
 
 int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
@@ -247,18 +120,12 @@ int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
     }
     else
     {
-      //std::cerr << "ERROR: NOT IMPLEMENTED YET" <<std::endl;
-      //return EXIT_FAILURE;
       retval = processSeqFileParallel(seqFile,
                                       resultFile,
                                       lookuptable,
                                       translator,
                                       writeAbundanceEstimation,
                                       opt.threads);
-
-      /*fprintf(stderr, "start process sampleList\n");
-      process_sampleList_threads(sampleList, resultFilename,
-                                 lookuptable, translator, opt.threads);*/
     }
   }
 
