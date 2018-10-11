@@ -112,9 +112,8 @@ int processSeqFileParallel(string seqFilename,
 
     chunkStart = chunkNextStart;
   }
-  threadNum=(threadID==0? 0: threadID-1);
-
-
+  
+  threadNum=threadID;
   for(threadID = 0; threadID < threadNum; threadID++)
   {
     threads[threadID]->join();
