@@ -69,19 +69,19 @@ int processSeqFile(string seqFilename,
 
 int concatenateThreadResults(string resultFilename, string tresultFilenamePrefix, int threadNum)
 {
-  //TODO: fopen or open, fread/fwrite or read/write
   //concatenate result file from threads temp results
   FILE *resultFile = openFileOrDie(resultFilename, "w");
+  int fd_resultFile = fileno(resultFile);
   for(size_t threadID = 0; threadID < threadNum; threadID++)
   {
     std::cerr << "write temporary results of thread " << threadID << " to resultfile " << std::endl << std::flush;
     size_t size;
     char buf[KS_BUFSIZE]; //TODO:change to using same buffer as kseq, or change kseq
     FILE *source = openFileOrDie(tresultFilenamePrefix + std::to_string(threadID), "r");
-    while ((size = fread(buf, sizeof(char), KS_BUFSIZE, source)) > 0)
+    int fd_source = fileno(source);
+    while ((size = read(fd_source, buf, KS_BUFSIZE)) > 0)
     {
-      fwrite(buf, sizeof(char), size, resultFile);
-      if(ferror(resultFile))
+      if(write(fd_resultFile, buf, size)==-1)
       {
         fprintf(stderr, "Error when writing to file %s: \n%s\n",
                 resultFilename.c_str(), strerror(errno));
@@ -108,8 +108,9 @@ int processSeqFileParallel(string seqFilename,
   _mkdir(outdir)*/
 
   FILE *seqFile = openFileOrDie(seqFilename, "r");
-  fseek(seqFile,0,SEEK_END);
-  uint64_t filesize = ftell(seqFile);
+  int fd = fileno(seqFile);
+  lseek(fd,0,SEEK_END);
+  uint64_t filesize = lseek(fd,0,SEEK_CUR);
 
   /* chunksize as filesize divided by number of threads and then forced
      to a multiple of KS_BUFSIZE (= kseq.h buffersize) */
@@ -129,13 +130,14 @@ int processSeqFileParallel(string seqFilename,
   for(; threadID < threadNum && foundNextStart; threadID++)
   {
     {
-      fseek(seqFile, chunkStart+chunksize, SEEK_SET);
+      lseek(fd, chunkStart+chunksize, SEEK_SET);
       chunkNextStart = chunkStart+chunksize;
       foundNextStart = false;
 
       while(!foundNextStart)
       {
-        size_t numElem = fread(buffer, sizeof(char), SEQ_BUFSIZE, seqFile);
+        size_t numElem = read(fd, buffer, SEQ_BUFSIZE);
+        //TODO: errno case numElem=-1
         for(size_t jdx = 0; numElem !=0 && jdx < numElem-1; jdx++)
         {
           if (buffer[jdx] == '\n' &&
@@ -146,13 +148,13 @@ int processSeqFileParallel(string seqFilename,
             break;
           }
         }
-        if (feof(seqFile))
+        if (numElem < SEQ_BUFSIZE) //eof
           break;
 
         /* if the buffer does not contain any start of a fasta/fastq entry,
          * increase start by the whole buffer size and read next 4096 elements*/
         if (!foundNextStart)
-          chunkNextStart += 4096;
+          chunkNextStart += SEQ_BUFSIZE;
       }
     }
 
