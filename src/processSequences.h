@@ -15,7 +15,6 @@ int processSeqFile(string seqFilename,
                    int (*processCountProfile)(CountProfile &, FILE*),
                    size_t chunkStart=0,
                    size_t chunkEnd=std::numeric_limits<uint64_t>::max());
-//TODO: better way for handle chunEnd default?
 
 int processSeqFileParallel(string seqFilename,
                            string resultFilename,

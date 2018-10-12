@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <thread>
 #include "processSequences.h"
 #include "CountProfile.h"
@@ -6,6 +7,8 @@
 #include "kseq.h"
 #include "Lookuptable.h"
 #include "util.h"
+
+#define SEQ_BUFSIZE 4096
 
 KSEQ_INIT(int, read)
 
@@ -73,9 +76,9 @@ int concatenateThreadResults(string resultFilename, string tresultFilenamePrefix
   {
     std::cerr << "write temporary results of thread " << threadID << " to resultfile " << std::endl << std::flush;
     size_t size;
-    char buf[BUFSIZ]; //TODO:change to using same buffer as kseq, or change kseq
+    char buf[KS_BUFSIZE]; //TODO:change to using same buffer as kseq, or change kseq
     FILE *source = openFileOrDie(tresultFilenamePrefix + std::to_string(threadID), "r");
-    while ((size = fread(buf, sizeof(char), BUFSIZ, source)) > 0)
+    while ((size = fread(buf, sizeof(char), KS_BUFSIZE, source)) > 0)
     {
       fwrite(buf, sizeof(char), size, resultFile);
       if(ferror(resultFile))
@@ -107,20 +110,20 @@ int processSeqFileParallel(string seqFilename,
   FILE *seqFile = openFileOrDie(seqFilename, "r");
   fseek(seqFile,0,SEEK_END);
   uint64_t filesize = ftell(seqFile);
-  char buffer[4096]; //TODO: macro, increase
 
   /* chunksize as filesize divided by number of threads and then forced
-     to a multiple of 4096 (= kseq buffersize) */
-  uint64_t chunksize = (filesize/threadNum >> 12) << 12;
+     to a multiple of KS_BUFSIZE (= kseq.h buffersize) */
+  uint64_t chunksize = ((uint64_t) ((filesize/threadNum)/KS_BUFSIZE))*KS_BUFSIZE;
   if (chunksize == 0)
-    chunksize=std::min(filesize,(uint64_t) 4096);
+    chunksize=std::min(filesize,(uint64_t) KS_BUFSIZE);
 
   /* calculate concrete chunkStart to make sure chunks are approximatly equal
    * in terms of bytes but don't break up fasta/fastq entries. Afterwards call
    * function processSeqFile for every thread on the specific chunk */
-  std::thread **threads = new std::thread*[threadNum];
+  char buffer[SEQ_BUFSIZE];
   uint64_t chunkStart = 0, chunkNextStart=0;
   bool foundNextStart = true;
+  std::thread **threads = new std::thread*[threadNum];
   size_t threadID=0;
   string tresultFilename = resultFilename + string(".temp");
   for(; threadID < threadNum && foundNextStart; threadID++)
@@ -132,7 +135,7 @@ int processSeqFileParallel(string seqFilename,
 
       while(!foundNextStart)
       {
-        size_t numElem = fread(buffer, sizeof(char), 4096, seqFile);
+        size_t numElem = fread(buffer, sizeof(char), SEQ_BUFSIZE, seqFile);
         for(size_t jdx = 0; numElem !=0 && jdx < numElem-1; jdx++)
         {
           if (buffer[jdx] == '\n' &&
