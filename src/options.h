@@ -63,12 +63,12 @@ public:
   std::string kcFile;
   unsigned int readAvgLen;
   unsigned int kmerWeight;
+  unsigned int threads;
 
   std::vector<cocoOption> empty;
   std::vector<cocoOption> abundanceEstimatorWorkflow;
   std::vector<cocoOption> pcreadsWorkflow;
   std::vector<cocoOption> profileWorkflow;
-  unsigned int threads;
 
   OPTION(OP_SEQ_FILE)
   OPTION(OP_KC_FILE)

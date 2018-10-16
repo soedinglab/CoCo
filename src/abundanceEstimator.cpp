@@ -81,11 +81,13 @@ int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
   translator = new KmerTranslator(kmerSize, opt.kmerWeight);
   //TODO: check return
 
-  unsigned long avgLen = opt.readAvgLen;//stol(*jt); //TODO float
-  //TODO: avglen optional?
-   
-  //TODO: handle mathematical cases
-  float corrFactor = (avgLen==kmerSize)?1:(float)(avgLen)/(avgLen-kmerSize+1);
+  float corrFactor = 1;
+  if (opt.readAvgLen != 0)
+  {
+    unsigned long avgLen = opt.readAvgLen;//stol(*jt); //TODO float
+    //TODO: handle mathematical cases
+    corrFactor = (avgLen==kmerSize)?1:(float)(avgLen)/(avgLen-kmerSize+1);
+  }
 
   fprintf(stderr, "preprocessing...\n");
   /* build lookuptale */

@@ -18,7 +18,7 @@ Options::Options():
   OP_AVERAGE_LENGTH(OP_AVERAGE_LENGTH_ID,"avgLength",
   "--avgLength", "average length of sequences used for generating kcFile "
                  "(please consider only sequences with length > kmerSize)",
-  typeid(int),  (void *) &readAvgLen, ABUNDANCE_ESTIMATOR|PCREADS)
+  typeid(int),  (void *) &readAvgLen, 0)
   ,
   OP_KMER_WEIGHT(OP_KMER_WEIGHT_ID,"kmerWeight",
   "--kmerWeight", "number of informative positions in a k-mer pattern, "
@@ -56,6 +56,7 @@ void Options::setDefaults()
 {
   kmerWeight = 27;
   threads = 1; //TODO:
+  readAvgLen = 0;
 }
 
 void printToolUsage(const ToolInfo &tool, const int FLAG)
@@ -185,6 +186,7 @@ void Options::parseOptions(int argc, const char *argv[],
     EXIT(EXIT_FAILURE);
   }
   //TODO: check requiered parameter
+  //TODO: valid range?
   for(cocoOption option: options)
   {
     //Check if option is required for current tool
