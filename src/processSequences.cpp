@@ -67,7 +67,7 @@ int processSeqFile(string seqFilename,
   return EXIT_SUCCESS;
 }
 
-int concatenateThreadResults(string resultFilename, string tresultFilenamePrefix, int threadNum)
+int concatenateThreadResults(string resultFilename, string tresultFilenamePrefix, int threadNum, bool deleteTresults)
 {
   //concatenate result file from threads temp results
   FILE *resultFile = openFileOrDie(resultFilename, "w");
@@ -91,6 +91,8 @@ int concatenateThreadResults(string resultFilename, string tresultFilenamePrefix
       }
     }
     fclose(source);
+    if (deleteTresults)
+      remove((tresultFilenamePrefix+ std::to_string(threadID)).c_str());
   }
   std::cerr << "Finish resultfile " << resultFilename << std::endl << std::flush;
   fclose(resultFile);
@@ -192,5 +194,5 @@ int processSeqFileParallel(string seqFilename,
   fclose(seqFile);
 
   /* collate thread iterim results */
-  concatenateThreadResults(resultFilename, tresultFilename, threadNum);
+  concatenateThreadResults(resultFilename, tresultFilename, threadNum, true);
 }
