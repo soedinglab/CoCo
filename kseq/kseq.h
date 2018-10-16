@@ -37,7 +37,7 @@
 #define KS_SEP_SPACE 0 // isspace(): \t, \n, \v, \f, \r
 #define KS_SEP_TAB   1 // isspace() && !' '
 #define KS_SEP_MAX   1
-#define KS_BUFSIZE 65536 // added by Annika Seidel 12OCT2018
+#define KS_BUFSIZE 4194304 // added by Annika Seidel 16OCT2018
 
 #define __KS_TYPE(type_t)						\
 	typedef struct __kstream_t {				\
