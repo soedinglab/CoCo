@@ -1,6 +1,8 @@
 #ifndef UTIL
 #define UTIL
 
+#include <omp.h>
+
 //#define DEBUG
 
 #ifndef EXIT

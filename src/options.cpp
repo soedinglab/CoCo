@@ -25,7 +25,7 @@ Options::Options():
   "default: 27", typeid(int),  (void *) &kmerWeight,0)
   ,
   OP_THREADS(OP_THREADS_ID, "nThreads", "--nThreads", "number of threasd to use"
-             "default: 1", typeid(int), (void *)&threads, 0)
+             "default: 0 (= all cores)", typeid(int), (void *)&threads, 0)
 {
   if (instance)
   {
@@ -55,7 +55,7 @@ Options::Options():
 void Options::setDefaults()
 {
   kmerWeight = 27;
-  threads = 1; //TODO:
+  threads = 0; //TODO:
   readAvgLen = 0;
 }
 
@@ -147,12 +147,12 @@ void Options::parseOptions(int argc, const char *argv[],
                else if (typeid(int) == options[idx].type)
                {
                  int val = atoi(optarg);
-                 if (val == 0)
+                 /*if (val == 0)
                  {
                    fprintf(stderr, "Invalid argument %s for option %s\n",
                                    optarg, options[idx].display);
                    EXIT(EXIT_FAILURE);
-                 }
+                 }*/
                  *((int *) options[idx].value) = val;
                  options[idx].isSet = true;
 
@@ -198,6 +198,18 @@ void Options::parseOptions(int argc, const char *argv[],
         fprintf(stderr, "ERROR: Option %s is required for %s\n", option.display, tool.cmd);
         EXIT(EXIT_FAILURE);
       }
+    }
+
+    if (option.uniqid == OP_THREADS_ID)
+    {
+      int nThreads = *(int *)option.value;
+      if (nThreads == 0)
+        nThreads = omp_get_max_threads();
+      else
+        nThreads = std::min(*((int *)option.value), (int) omp_get_max_threads());
+
+      *(int *)option.value = nThreads;
+      omp_set_num_threads(nThreads);
     }
   }
   //TODO: flag für print Parameter
