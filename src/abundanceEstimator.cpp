@@ -40,7 +40,7 @@ int abundanceEstimator(int argc, const char **argv, const ToolInfo* tool)
   printf("seqFile: %s\n", opt.seqFile.c_str());
   printf("kcFile: %s\n", opt.kcFile.c_str());
   printf("kmerWeight: %u\n", opt.kmerWeight);
-  exit(0);
+  
   // TODO:check parameter and if files exists
   // TODO: check resultfile already exists and tmp folder
 

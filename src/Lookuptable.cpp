@@ -68,7 +68,8 @@ size_t Lookuptable::addElement(kmerType kmer, unsigned int count)
   if(writingPosition >= this->maxNumberItems)
   {
     std::cerr << "Lookuptable addElement overflows. Current write position is "
-              << writingPosition << std::endl;
+              << writingPosition << " and maxNumberItems is " << maxNumberItems
+              << std::endl;
     EXIT(EXIT_FAILURE);
   }
   for (size_t pos = prevWritingPosition; pos < writingPosition; pos++)
