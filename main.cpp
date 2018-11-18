@@ -47,19 +47,19 @@ Options& opt = Options::getInstance();
 std::vector<struct ToolInfo> tools =
 {
   {"abundanceEstimator", abundanceEstimator, &opt.abundanceEstimatorWorkflow,
-   "estimates for every sequence (reads or contig) in <infile> an abundance "
-   "value for a sample based on its k-mer/count statistic <kcfile> .\n\n",
-   "Calculates for every sequence in a given file <inFile> of concatenated samples "
+   "estimates an abundance value for every sequence (read or contig) in <seqFile> "
+   "in a sample, based on its k-mer/count statistic <kcfile> .\n\n",
+   "Calculates for every sequence in a given file <seqFile> of concatenated samples "
    "S={s_1,...,s_n} an estimated value for the abundance in sample t. "\
-   "In general t is a subset of S. Provide for every sample in S the reads or "
+   "In general, t is a subset of S. Provide for every sample in S the reads or "
    "contigs in a concatenated fasta/fastq format and for sample t the kmer-count"
    "file in hdf5 format.\n\n"
-   "Further use case: abundance values of reads or contigs through many samples "
-   "enable binning steps. Call tool several times with same sequence file but "
+   "Further use case: abundance values of reads or contigs through many samples for"
+   "the use in a binning step. Call tool several times with same sequence file but "
    "different h5 sample files to get abundance values across many samples. "
    "Join the results to one big matrix abundance file and provide this for the binning step",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-   "--inFile <arg> --kcFile <arg>",
+   "--seqFile <arg> --kcFile <arg>",
    ABUNDANCE_ESTIMATOR //tool enum in option.h
   },
   {"pcreads", pcreads, &opt.pcreadsWorkflow, "calculates for every read the "\
@@ -72,7 +72,7 @@ std::vector<struct ToolInfo> tools =
    "the maximized spaced k-mer count profile in a seperated file",
    "TODO: long discreption",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-   "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>",
+   "TODO",
    PCREADS //tool enum in option.h
   },
 };
