@@ -70,42 +70,48 @@ Lookuptable* buildLookuptable(Storage &storage,
   Lookuptable *lookuptable = new Lookuptable(solidKmers.getNbItems(), corrFactor);
   // fill lookuptable
   {
-    Iterator<Count>* it = solidKmers.iterator();  LOCAL (it);
+    Iterator<Count>* it = solidKmers.iterator();  //LOCAL (it);
     typename Kmer<>::ModelCanonical model(kmerSize);
 
      fprintf(stderr, "start count kmers - construct grids\n");
     // construct grids: count kmers per grid, increase grid values in doing so
 
-#pragma omp parallel for
-    for (it->first(); !it->isDone(); it->next())
+#pragma omp parallel
     {
-      const Count& count = it->item();
+#pragma openmp for
+       for (it->first(); !it->isDone(); it->next())
+       {
+         const Count& count = it->item();
 
-      kmerType packedKmer =
-          translator.kmer2minPackedKmer(largeInt2uint128(count.value));
+         kmerType packedKmer =
+             translator.kmer2minPackedKmer(largeInt2uint128(count.value));
 #pragma omp critical
-      {
-        lookuptable->assignKmertoGrid(packedKmer);
-      }
+         {
+           lookuptable->assignKmertoGrid(packedKmer);
+         }
+       }
     }
     // shift grid value to grid start positions
     lookuptable->setupIndexGridTable();
 
     fprintf(stderr, "start fill lookuptable\n");
     // add elements, increase grid values in doing so
-#pragma omp parallel for
-    for (it->first(); !it->isDone(); it->next())
+#pragma omp parallel
     {
-      const Count& count = it->item();
-      //std::string kmer = model.toString(count.value);
+#pragma openmp for
+      for (it->first(); !it->isDone(); it->next())
+      {
+        const Count& count = it->item();
+        //std::string kmer = model.toString(count.value);
 
-      kmerType packedKmer =
-          translator.kmer2minPackedKmer(largeInt2uint128(count.value));
+        kmerType packedKmer =
+            translator.kmer2minPackedKmer(largeInt2uint128(count.value));
 
 #pragma omp critical
-      {
-      //TODO: duplicate code, better solution?
-      lookuptable->addElement(packedKmer, count.abundance);
+        {
+          //TODO: duplicate code, better solution?
+          lookuptable->addElement(packedKmer, count.abundance);
+        }
       }
     }
     fprintf(stderr, "start final setup for lookuptable\n");
