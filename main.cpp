@@ -47,8 +47,8 @@ Options& opt = Options::getInstance();
 std::vector<struct ToolInfo> tools =
 {
   {"abundanceEstimator", abundanceEstimator, &opt.abundanceEstimatorWorkflow,
-   "estimates an abundance value for every sequence (read or contig) in <seqFile> "
-   "in a sample, based on its k-mer/count statistic <kcfile> .\n\n",
+   "estimates an abundance value for every sequence (read or contig) in <seqFile> \n "
+   "                  \tin a sample, based on its k-mer/count statistic <kcfile>\n.",
    "Calculates for every sequence in a given file <seqFile> of concatenated samples "
    "S={s_1,...,s_n} an estimated value for the abundance in sample t. "\
    "In general, t is a subset of S. Provide for every sample in S the reads or "
@@ -62,14 +62,14 @@ std::vector<struct ToolInfo> tools =
    "--seqFile <arg> --kcFile <arg>",
    ABUNDANCE_ESTIMATOR //tool enum in option.h
   },
-  {"pcreads", pcreads, &opt.pcreadsWorkflow, "calculates for every read the "\
+  {"pcreads           ", pcreads, &opt.pcreadsWorkflow, "calculates for every read the "\
    "consensus read", "TODO: long discreption",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
    "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>",
    PCREADS //tool enum in option.h
   },
-  {"countprofile", profile, &opt.profileWorkflow, "write for every read the "\
-   "the maximized spaced k-mer count profile in a seperated file",
+  {"countprofile      ", profile, &opt.profileWorkflow, "write for every read the "\
+   "the maximized spaced k-mer count profile in a seperated file\n",
    "TODO: long discreption",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
    "TODO",
