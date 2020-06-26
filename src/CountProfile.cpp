@@ -43,16 +43,16 @@ void CountProfile::fill(const SeqType seq, const char* seqName)
   size_t seqlen = seq.size();
   assert(seqlen >= kmerSpan);
   this->seqName = (char*) seqName;
-  this->profileLength = seqlen;
+  this->profileLength = seqlen-kmerSpan+1;
   this->abundanceEstimation = 0;
 
 
   // check size of array and create new one in case of too small size
-  if(seqlen > maxprofileLength)
+  if(this->profileLength > maxprofileLength)
   {
     delete[] this->profile;
-    this->profile = new CountProfileEntry[seqlen];
-    this->maxprofileLength = seqlen;
+    this->profile = new CountProfileEntry[this->profileLength];
+    this->maxprofileLength = this->profileLength;
   }
 
   // add new sequence -> store all nucleotids of current sequence, one per entry in
@@ -65,17 +65,17 @@ void CountProfile::fill(const SeqType seq, const char* seqName)
       kmer = (kmer << 2) | seq[idx];
       nStore = nStore << 2;
 
-      this->profile[idx].nuc = seq[idx];
+     // this->profile[idx].nuc = seq[idx];
     }
     else // found non valid nucleotide
     {
       kmer = kmer << 2;
       nStore = nStore << 2 | 3;
-      this->profile[idx].nuc = alphabetSize;
+      //this->profile[idx].nuc = alphabetSize;
     }
 
-    this->profile[idx].seqPos = idx;
-    this->profile[idx].count = 0;
+    /*this->profile[idx].seqPos = idx;
+    this->profile[idx].count = 0;*/
 
     if(idx >= kmerSpan-1)
     {
@@ -87,14 +87,15 @@ void CountProfile::fill(const SeqType seq, const char* seqName)
       // current sequnece
       kmerType packedKmer = translator->kmer2minPackedKmer(kmer);
       uint32_t count = lookuptable->getCount(packedKmer);
+      profile[idx-(kmerSpan-1)].count = count;
       // update c_i for all previous positions j with b_j=1 and 0 ≤ j ≤ k-1
       // maximizing over abundance value
-      for(size_t jdx = 0; jdx < kmerWeight; jdx++)
+      /*for(size_t jdx = 0; jdx < kmerWeight; jdx++)
       {
         size_t pos = idx-(kmerSpan-translator->_maskArray[jdx]-1);
         profile[pos].count = std::max(count, profile[pos].count);
         
-      }
+      }*/
     }
   }
 }
@@ -123,6 +124,7 @@ void CountProfile::showProfile(FILE *fp) const
 {
   for (size_t idx=0; idx < profileLength; idx++)
   {
-    fprintf(fp,"%u\t%u\n", profile[idx].seqPos, profile[idx].count);
+    //fprintf(fp,"%u\t%u\n", profile[idx].seqPos, profile[idx].count);
+      fprintf(fp,"%u\t%u\n", idx, profile[idx].count);
   }
 }

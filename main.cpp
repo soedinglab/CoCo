@@ -46,7 +46,7 @@ extern int profile(int argc, const char **argv, const struct ToolInfo* tool);
 Options& opt = Options::getInstance();
 std::vector<struct ToolInfo> tools =
 {
-  {"abundanceEstimator", abundanceEstimator, &opt.abundanceEstimatorWorkflow,
+ /* {"abundanceEstimator", abundanceEstimator, &opt.abundanceEstimatorWorkflow,
    "estimates for every sequence (reads or contig) in <infile> an abundance "
    "value for a sample based on its k-mer/count statistic <kcfile> .\n\n",
    "Calculates for every sequence in a given file <inFile> of concatenated samples "
@@ -67,9 +67,9 @@ std::vector<struct ToolInfo> tools =
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
    "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>",
    PCREADS //tool enum in option.h
-  },
+  },*/
   {"countprofile", profile, &opt.profileWorkflow, "write for every read the "\
-   "the maximized spaced k-mer count profile in a seperated file",
+   "the maximized spaced k-mer count profile",
    "TODO: long discreption",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
    "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>",
