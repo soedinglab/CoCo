@@ -3,7 +3,7 @@
 
 
 CountProfile::CountProfile(const KmerTranslator *translator,
-                           const Lookuptable *lookuptable)
+                           const LookupTableBase *lookuptable)
 {
   this->translator = translator;
   this->lookuptable = lookuptable;
@@ -11,7 +11,7 @@ CountProfile::CountProfile(const KmerTranslator *translator,
 }
 
 CountProfile::CountProfile(const KmerTranslator *translator,
-                           const Lookuptable *lookuptable,
+                           const LookupTableBase *lookuptable,
                            const SeqType seq, char* seqName)
 {
   // call constructor
@@ -64,14 +64,14 @@ void CountProfile::fill(const SeqType seq, const char* seqName)
     if (seq[idx] != -1)
     {
       kmer = (kmer << 2) | seq[idx];
-      nStore = nStore << 2;
+      nStore = nStore << 1;
 
       //this->profile[idx].nuc = seq[idx];
     }
     else // found non valid nucleotide
     {
       kmer = kmer << 2;
-      nStore = nStore << 2 | 3;
+      nStore = nStore << 1 | 1;
       //this->profile[idx].nuc = alphabetSize;
     }
 
@@ -81,14 +81,18 @@ void CountProfile::fill(const SeqType seq, const char* seqName)
     if(idx >= kmerSpan-1)
     {
       // check if spaced k-mer contains 'N'
-      if ((nStore & translator->_mask) != 0)
-        continue;
+      if ((nStore & translator->_mask) != 0) {
+          profile[idx - (kmerSpan - 1)].count = 0;
+          profile[idx - (kmerSpan - 1)].valid = 0;
+          continue;
+      }
 
       // get abundance for packed k-mer, started at position idx in
       // current sequnece
       kmerType packedKmer = translator->kmer2minPackedKmer(kmer);
       uint32_t count = lookuptable->getCount(packedKmer);
       profile[idx-(kmerSpan-1)].count = count;
+      profile[idx-(kmerSpan-1)].valid = 1;
       // update c_i for all previous positions j with b_j=1 and 0 ≤ j ≤ k-1
       // maximizing over abundance value
       /*for(size_t jdx = 0; jdx < kmerWeight; jdx++)
@@ -99,6 +103,7 @@ void CountProfile::fill(const SeqType seq, const char* seqName)
       }*/
     }
   }
+  //TODO: continue until maxprofillength to reset count and valid flag? not necessary
 }
 
 size_t CountProfile::calc67quantile()
@@ -143,12 +148,13 @@ std::vector<unsigned int> CountProfile::getDropPointsInMaximzedProfile()
 
     size_t maxProfileLen = this->profileLength + kmerSpan - 1;
     uint32_t maxProfile[maxProfileLen];
-    memset(maxProfile,0,sizeof(uint32_t)*maxProfileLen);
+    memset(maxProfile,1,sizeof(uint32_t)*maxProfileLen);
 
     for (size_t idx = 0; idx < this->profileLength; idx++) {
         for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
             size_t pos = idx + translator->_maskArray[jdx];
-            maxProfile[pos] = std::max(this->profile[idx].count, maxProfile[pos]);
+            if (this->profile[idx].valid)
+              maxProfile[pos] = std::max(this->profile[idx].count, maxProfile[pos]);
         }
     }
 
@@ -178,6 +184,12 @@ bool CountProfile::checkForRiseAndDropPoints (std::vector<unsigned int> dropPosi
             if(pos >=0)
                 checkPoints[pos] =  false;
         }
+    }
+
+    //special mask for N positions
+    for (size_t idx=0; idx < profileLength; idx ++) {
+        if (!profile[idx].valid)
+            checkPoints[idx] =  false;
     }
 
     /*std:cerr << "toIgnore: ";
@@ -228,7 +240,7 @@ bool CountProfile::checkForRiseAndDropPoints (std::vector<unsigned int> dropPosi
 //    }
 //    prevMedian = getMax(window, windowsize);
 //    //prevMedian = getMedian(window, windowsize);
-//    // compare median of sliding window */
+//    /* compare median of sliding window */
 //    unsigned short m = 0.2;
 //    for(size_t idx = windowsize; idx < profileLength; idx++)
 //    {

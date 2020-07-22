@@ -6,13 +6,14 @@
 
 #include <cstdlib>
 #include "mathsupport.h"
+#include "LookuptableBase.h"
 #include "kmer.h"
 
 /* k-mer-index = (first p bits << I) | (last I bits) */
 #define LOGINDEXSIZE 30 /* p bits, gurantee ~8GB for indexGridTable*/
 #define LOGOFFSETSIZE 24 /* I bits */
 
-class Lookuptable
+class Lookuptable: public LookupTableBase
 {
 
 private:

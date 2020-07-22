@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "Lookuptable.h"
+#include "LookuptableBase.h"
 #include "KmerTranslator.h"
 #include "types.h"
 
@@ -17,7 +17,7 @@
 
 struct __attribute__((__packed__)) CountProfileEntry {
   uint8_t  nuc : 3;        /* nucleotid in 2 bit representation */
-  uint32_t seqPos;        /* position in read or contig */
+  uint8_t valid;
   uint32_t count;          /* max count of spaced k-mers matching <readPos> */
 };
 
@@ -27,7 +27,7 @@ class CountProfile
 
     CountProfileEntry*     profile;
     const KmerTranslator*  translator;
-    const Lookuptable*     lookuptable;
+    const LookupTableBase*     lookuptable;
 
     char *                 seqName;              /* index of sequence */
     size_t                 maxprofileLength = 0, /* maximal length of profile,
@@ -41,9 +41,9 @@ class CountProfile
 public:
 
     /* constructor */
-    CountProfile(const KmerTranslator *translator, const Lookuptable *lookuptable);
+    CountProfile(const KmerTranslator *translator, const LookupTableBase *lookuptable);
 
-    CountProfile(const KmerTranslator *translator, const Lookuptable *lookuptable,
+    CountProfile(const KmerTranslator *translator, const LookupTableBase *lookuptable,
                  const SeqType seq, char *seqdName);
 
     /* destructor */
@@ -51,8 +51,7 @@ public:
 
     /* getter */
     char *getSeqName(){return (this->seqName);}
-    float getCorrFactor(){return (this->lookuptable->getCorrFactor());}
-
+    float getCorrFactor(){return (0);}
     /* create and store count profiles of <seq> */
     void fill(const SeqType seq, const char *seqName);
 
@@ -62,6 +61,7 @@ public:
     std::vector<unsigned int> getDropPointsInMaximzedProfile();
 
     bool  checkForRiseAndDropPoints (std::vector<unsigned int> dropPositions, unsigned int windowsize);
+
 
     /* show tab-based table of seqPos and count.
        count means here the maximal count of all spaced k-mers,

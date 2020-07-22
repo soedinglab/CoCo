@@ -4,7 +4,9 @@ set(coco_header_files
   ${CMAKE_CURRENT_SOURCE_DIR}/options.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util.h
   ${CMAKE_CURRENT_SOURCE_DIR}/types.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/HashLookuptable.h
   ${CMAKE_CURRENT_SOURCE_DIR}/Lookuptable.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/LookuptableBase.h
   ${CMAKE_CURRENT_SOURCE_DIR}/mathsupport.h
   ${CMAKE_CURRENT_SOURCE_DIR}/uint128.h
   ${CMAKE_CURRENT_SOURCE_DIR}/kmer.h

@@ -18,7 +18,10 @@
 #include "preprocessing.h"
 #include "processSequences.h"
 #include "filehandling.h"
+#include "kseq.h"
+#include "HashLookuptable.h"
 
+KSEQ_INIT(int, read)
 int showProfile(CountProfile &countprofile, FILE *resultFile)
 {
   fprintf(resultFile,"#%s\n", countprofile.getSeqName());
@@ -26,84 +29,61 @@ int showProfile(CountProfile &countprofile, FILE *resultFile)
 
 }
 
-int profile(int argc, const char **argv, const ToolInfo* tool)
-{
-  Options &opt = Options::getInstance();
-  opt.parseOptions(argc, argv, *tool);
-  printf("seqFile: %s\n", opt.seqFile.c_str());
-  printf("kmerCounFile: %s\n", opt.kcFile.c_str());
-  printf("kmerWeight: %u\n", opt.kmerWeight);
+int profile(int argc, const char **argv, const ToolInfo* tool) {
+    Options &opt = Options::getInstance();
+    opt.parseOptions(argc, argv, *tool);
+    printf("seqFile: %s\n", opt.seqFile.c_str());
+    printf("kmerCounFile: %s\n", opt.kcFile.c_str());
+    initialize();
+    int span = 41;
+    int weight = 27;
+    const char *seqFilename = opt.seqFile.c_str();
+    const char * kmerCountFileName = opt.kcFile.c_str();
+    KmerTranslator *translator = new KmerTranslator(span, weight);
+    HashLookuptable *lookuptable = new HashLookuptable();
+    fprintf(stderr, "Counting kmers...\n");
+    {// Fill hashlookuptable
+        FILE *kmerCountFile = openFileOrDie(kmerCountFileName, "r");
+        int fd = fileno(kmerCountFile);
+        kseq_t *seq = kseq_init(fd);
+        spacedKmerType spacedKmer, mask = ((((spacedKmerType) 1) << (spacedKmerType)( span * 2)) - 1);
+        kmerType x;
+        while (kseq_read(seq) >= 0) {
+            const size_t len = seq->seq.l;
+            const char *seqNuc = seq->seq.s;
+            const char *seqName = seq->name.s;
+            SeqType seqStr;
+            seqStr.reserve(len);
 
-  // TODO:check parameter and if files exists
+            unsigned int kmerSpan = translator->getSpan();
+            if (len < kmerSpan) {
+                fprintf(stderr, "WARNING: sequence %s is too short, it'll be skipped\n", seqName);
+                continue;
+            }
 
-  /*if(opt.kmerWeight != 27)
-  {
-    throw logic_error("Given kmerWeight value not implemented, select one "
-                      "of the following (27), default: 27");
-  }*/
-
-  initialize();
-
-  // TODO: organize following lines, for now first test of workflow
-
-
-  KmerTranslator *translator = NULL;
-
-  /* get kmer-count and sample files */
-  //vector<string> *kmerCountList = getFileList(opt.kmerCountListFile.c_str());
-  string kmerCountFile = opt.kcFile;
-  //vector<string> *sampleList = getFileList(opt.sampleListFile.c_str());
-  string seqFile = opt.seqFile;
-
-  //for (vector<string>::iterator it = kmerCountList->begin(); it != kmerCountList->end(); ++it)
-  //{
-    /* get dsk kmer-count storage */
-    Storage* storage = StorageFactory(STORAGE_HDF5).load(kmerCountFile);
-    LOCAL (storage);
-
-    string kmerSizeStr = storage->getGroup("dsk").getProperty ("kmer_size");
-    unsigned int kmerSize = atoi(kmerSizeStr.c_str());
-
-    /* just for now, implement other kmerSize later */
-    /*if (kmerSize != 41)
-    {
-      fprintf(stderr, "kmerSize %u used in hdf5 file %s is not supported yet.\n"
-              "For now only dsk output with kmerSize 41 is supported\n",
-              kmerSize, kmerCountFile.c_str());
-      return EXIT_FAILURE;
-    }*/
-
-    if (translator == NULL)
-    {
-      translator = new KmerTranslator(kmerSize, opt.kmerWeight);
+            /* sequence to 2bit representation */
+            int l;
+            for (unsigned int pos = l = 0; pos < len; pos++) {
+                int c = res2int[(int) seqNuc[pos]];
+                if (c != -1) {
+                    spacedKmer = (spacedKmer << 2 | c) & mask;                  // forward strand
+                    if (++l >= span) {
+                        x = translator->kmer2minPackedKmer(spacedKmer);
+                        lookuptable->increaseCount(x);
+                    }
+                } else {
+                    l = 0;
+                    spacedKmer = 0;
+                    x = 0;
+                }
+            }
+            //TODO: add kmers with non informative N's ?
+        }
+        kseq_destroy(seq);
+        fclose(kmerCountFile);
     }
-    //TODO: new translator if (translator->getSpan() != kmerSize
-
-    fprintf(stderr, "preprocessing...\n");
-    /* build lookuptale */
-    Lookuptable* lookuptable = buildLookuptable(*storage, *translator, 0, 1);
-    if (lookuptable == NULL)
-    {
-      fprintf(stderr,"Generating lookuptable based on %s failed\n",
-              kmerCountFile.c_str());
-      return EXIT_FAILURE;
-    }
-    fprintf(stderr, "finished build lookuptable\n");
-    string filename = seqFile;
-    size_t lastdot = filename.find_last_of(".");
-    if (lastdot != std::string::npos)
-      filename=filename.substr(0, lastdot);
-    string resultFilename=(string("count_profile.")+string(basename(filename.c_str()))+string(".txt"));
-
-    //process_sampleList(sampleList, resultFilename, lookuptable, translator,showProfile);
-    processSeqFile(seqFile, resultFilename, lookuptable, translator,showProfile);
-    delete lookuptable;
-  //}
-
-  //delete sampleList;
-  //delete kmerCountList;
-  delete translator;
-
-  return EXIT_SUCCESS;
+    fprintf(stderr, "...done\nProcessing Sequences...");
+    processSeqFile(seqFilename, "resultfile.txt", lookuptable, translator,showProfile);
+    return EXIT_SUCCESS;
 }
 

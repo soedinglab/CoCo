@@ -10,7 +10,7 @@
 
 int processSeqFile(string seqFilename,
                    string resultFilename,
-                   const Lookuptable* lookuptable,
+                   const LookupTableBase* lookuptable,
                    const KmerTranslator* translator,
                    int (*processCountProfile)(CountProfile &, FILE*),
                    size_t chunkStart=0,
@@ -18,7 +18,7 @@ int processSeqFile(string seqFilename,
 
 int processSeqFileParallel(string seqFilename,
                            string resultFilename,
-                           const Lookuptable* lookuptable,
+                           const LookupTableBase* lookuptable,
                            const KmerTranslator* translator,
                            int (*processCountProfile)(CountProfile &, FILE*),
                            int threadNum);

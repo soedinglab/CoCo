@@ -5,7 +5,7 @@
 #include "filehandling.h"
 #include "KmerTranslator.h"
 #include "kseq.h"
-#include "Lookuptable.h"
+#include "LookuptableBase.h"
 #include "util.h"
 
 #define SEQ_BUFSIZE 4096
@@ -14,7 +14,7 @@ KSEQ_INIT(int, read)
 
 int processSeqFile(string seqFilename,
                    string resultFilename,
-                   const Lookuptable *lookuptable,
+                   const LookupTableBase *lookuptable,
                    const KmerTranslator *translator,
                    int (*processCountProfile)(CountProfile &, FILE*),
                    size_t chunkStart,
@@ -29,7 +29,6 @@ int processSeqFile(string seqFilename,
   CountProfile countprofile(translator, lookuptable);
 
   fseek(seqFile, chunkStart, SEEK_SET);
-
   /* iterate over every single fasta/fastq entry  */
   while (kseq_read(seq) >= 0)
   {
@@ -100,7 +99,7 @@ int concatenateThreadResults(string resultFilename, string tresultFilenamePrefix
 
 int processSeqFileParallel(string seqFilename,
                            string resultFilename,
-                           const Lookuptable* lookuptable,
+                           const LookupTableBase* lookuptable,
                            const KmerTranslator* translator,
                            int (*processCountProfile)(CountProfile &, FILE*),
                            int threadNum)

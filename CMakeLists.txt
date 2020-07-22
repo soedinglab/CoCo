@@ -17,8 +17,9 @@ add_definitions("-DGIT_SHA1=${GIT_SHA1}")
 #set(COCO_SOURCE_DIR src)
 set(coco_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-        src/filter.cpp)
+        src/filter.cpp kmer-cnt/khashl.h)
 include_directories(kseq)
+include_directories(kmer-cnt)
 #include_directories(src)
 
 list (APPEND KSIZE_DEFAULT_LIST 64)
