@@ -9,7 +9,7 @@
 #include <typeinfo>
 #include "ToolInfo.h"
 
-enum coco_tools{ABUNDANCE_ESTIMATOR=1, PCREADS=2, COUNTPROFILE=3};
+enum coco_tools{ABUNDANCE_ESTIMATOR=1, PCREADS=2, COUNTPROFILE=3, CHIMERIC_FILTER=4};
 
 struct cocoOption;
 #define OPTION(x) const static int x##_ID = __COUNTER__; \
@@ -63,17 +63,20 @@ public:
   std::string kcFile;
   unsigned int readAvgLen;
   unsigned int kmerWeight;
+  unsigned int windowsize;
   unsigned int threads;
 
   std::vector<cocoOption> empty;
   std::vector<cocoOption> abundanceEstimatorWorkflow;
   std::vector<cocoOption> pcreadsWorkflow;
   std::vector<cocoOption> profileWorkflow;
+  std::vector<cocoOption> chimericFilterWorkflow;
 
   OPTION(OP_SEQ_FILE)
   OPTION(OP_KC_FILE)
   OPTION(OP_AVERAGE_LENGTH)
   OPTION(OP_KMER_WEIGHT)
+  OPTION(OP_WINDOW_SIZE)
   OPTION(OP_THREADS)
 
 protected:

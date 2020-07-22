@@ -42,6 +42,7 @@ const char* main_author = "Annika Seidel (annika.seidel@mpibpc.mpg.de)";
 extern int abundanceEstimator(int argc, const char **argv, const struct ToolInfo* tool);
 extern int pcreads(int argc, const char **argv, const struct ToolInfo* tool);
 extern int profile(int argc, const char **argv, const struct ToolInfo* tool);
+extern int filter(int argc, const char **argv, const struct ToolInfo* tool);
 
 Options& opt = Options::getInstance();
 std::vector<struct ToolInfo> tools =
@@ -69,11 +70,17 @@ std::vector<struct ToolInfo> tools =
    PCREADS //tool enum in option.h
   },*/
   {"countprofile", profile, &opt.profileWorkflow, "write for every read the "\
-   "the maximized spaced k-mer count profile",
+   "spaced k-mer count profile",
    "TODO: long discreption",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
    "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>",
-   PCREADS //tool enum in option.h
+   COUNTPROFILE //tool enum in option.h
+  },
+  {"chimericFilter", filter, &opt.chimericFilterWorkflow, "identify chimeric reads",
+   "TODO: long discreption",
+   "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
+   "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>",
+   CHIMERIC_FILTER //tool enum in option.h
   },
 };
 

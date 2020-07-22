@@ -16,5 +16,7 @@ inline size_t ipow(size_t base, size_t exponent)
   return res;
 }
 
+
+
 #endif // MATHSUPPORT_H
 

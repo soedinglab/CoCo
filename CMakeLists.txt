@@ -17,7 +17,7 @@ add_definitions("-DGIT_SHA1=${GIT_SHA1}")
 #set(COCO_SOURCE_DIR src)
 set(coco_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-    )
+        src/filter.cpp)
 include_directories(kseq)
 #include_directories(src)
 

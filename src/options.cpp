@@ -19,10 +19,14 @@ Options::Options():
   "--avgLength", "average length of sequences used for generating kcFile "
                  "(please consider only sequences with length > kmerSize)",
   typeid(int),  (void *) &readAvgLen, 0)
-  ,
+  ,  
   OP_KMER_WEIGHT(OP_KMER_WEIGHT_ID,"kmerWeight",
   "--kmerWeight", "number of informative positions in a k-mer pattern, "
   "default: 27", typeid(int),  (void *) &kmerWeight,0)
+  ,
+  OP_WINDOW_SIZE(OP_WINDOW_SIZE_ID,"windowsize",
+  "--windowsize", "TODO",
+  typeid(int),  (void *) &windowsize, 0)
   ,
   OP_THREADS(OP_THREADS_ID, "nThreads", "--nThreads", "number of threasd to use"
              "default: 1", typeid(int), (void *)&threads, 0)
@@ -49,6 +53,11 @@ Options::Options():
   //TODO? profileWorkflow.push_back(OP_READ_AVERAGELEN_LIST);
   profileWorkflow.push_back(OP_KMER_WEIGHT);
 
+  // filter chimerics
+  chimericFilterWorkflow.push_back(OP_SEQ_FILE);
+  chimericFilterWorkflow.push_back(OP_KC_FILE);
+  chimericFilterWorkflow.push_back(OP_WINDOW_SIZE);
+
 }
 
 
@@ -57,6 +66,7 @@ void Options::setDefaults()
   kmerWeight = 27;
   threads = 1; //TODO:
   readAvgLen = 0;
+  windowsize=0;
 }
 
 void printToolUsage(const ToolInfo &tool, const int FLAG)
@@ -95,6 +105,7 @@ void Options::parseOptions(int argc, const char *argv[],
       {"kcFile", required_argument, NULL, 0},
       {"avgLength", required_argument, NULL, 0},
       {"kmerWeight", required_argument, NULL, 0},
+      {"windowsize", required_argument, NULL, 0},
       {"nThreads", required_argument, NULL, 0},
       { NULL, no_argument, NULL, 0 }
   };

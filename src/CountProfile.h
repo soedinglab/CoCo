@@ -59,12 +59,17 @@ public:
     /* set abundanceEstimation value c_pop to 67% quantile over count profile */
     size_t calc67quantile();
 
+    std::vector<unsigned int> getDropPointsInMaximzedProfile();
+
+    bool  checkForRiseAndDropPoints (std::vector<unsigned int> dropPositions, unsigned int windowsize);
+
     /* show tab-based table of seqPos and count.
        count means here the maximal count of all spaced k-mers,
        which overlap seqPos with a match */
     void showProfile(FILE *fp=stdout) const;
 
    //TODO: function: clear, correct
+    size_t calcMedian();
 };
 
 #endif // COUNTPROFILE_H

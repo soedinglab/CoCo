@@ -36,11 +36,11 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
 
   // TODO:check parameter and if files exists
 
-  if(opt.kmerWeight != 27)
+  /*if(opt.kmerWeight != 27)
   {
     throw logic_error("Given kmerWeight value not implemented, select one "
                       "of the following (27), default: 27");
-  }
+  }*/
 
   initialize();
 
@@ -65,13 +65,13 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
     unsigned int kmerSize = atoi(kmerSizeStr.c_str());
 
     /* just for now, implement other kmerSize later */
-    if (kmerSize != 41)
+    /*if (kmerSize != 41)
     {
       fprintf(stderr, "kmerSize %u used in hdf5 file %s is not supported yet.\n"
               "For now only dsk output with kmerSize 41 is supported\n",
               kmerSize, kmerCountFile.c_str());
       return EXIT_FAILURE;
-    }
+    }*/
 
     if (translator == NULL)
     {
@@ -89,7 +89,7 @@ int profile(int argc, const char **argv, const ToolInfo* tool)
       return EXIT_FAILURE;
     }
     fprintf(stderr, "finished build lookuptable\n");
-    string filename = kmerCountFile;
+    string filename = seqFile;
     size_t lastdot = filename.find_last_of(".");
     if (lastdot != std::string::npos)
       filename=filename.substr(0, lastdot);
