@@ -10,6 +10,7 @@ CountProfile::CountProfile(const KmerTranslator *translator,
   this->profile = NULL;
 }
 
+/*
 CountProfile::CountProfile(const KmerTranslator *translator,
                            const LookupTableBase *lookuptable,
                            const SeqType seq, char* seqName)
@@ -23,14 +24,14 @@ CountProfile::CountProfile(const KmerTranslator *translator,
   this->profileLength = seq.length();
   this->profile = new CountProfileEntry[profileLength];
   this->fill(seq, seqName);
-}
+}*/
 
 CountProfile::~CountProfile()
 {
   delete[] this->profile;
 }
 
-void CountProfile::fill(const SeqType seq, const char* seqName)
+void CountProfile::fill(const char *seqName, const char *seqNuc, size_t seqLen)
 {
   assert(this->lookuptable != NULL);
   assert(this->translator != NULL);
@@ -41,10 +42,9 @@ void CountProfile::fill(const SeqType seq, const char* seqName)
   /* coverage s_ni of the spaced k-mer starting at position <i>,
     compute c_i = max{s_{i-j} : b_j=1 and 0 ≤ j <= k-1} */
 
-  size_t seqlen = seq.size();
-  assert(seqlen >= kmerSpan);
+  assert(seqLen >= kmerSpan);
   this->seqName = (char*) seqName;
-  this->profileLength = seqlen-kmerSpan+1;
+  this->profileLength = seqLen-kmerSpan+1;
   this->abundanceEstimation = 0;
 
 
@@ -59,11 +59,11 @@ void CountProfile::fill(const SeqType seq, const char* seqName)
   // add new sequence -> store all nucleotids of current sequence, one per entry in
   // <profiles>
   spacedKmerType kmer = 0, nStore = 0;
-  for (size_t idx = 0; idx < seqlen; idx++)
+  for (size_t idx = 0; idx < seqLen; idx++)
   {
-    if (seq[idx] != -1)
+    if ((char)res2int[(int)seqNuc[idx]] != -1)
     {
-      kmer = (kmer << 2) | seq[idx];
+      kmer = (kmer << 2) | (char)res2int[(int)seqNuc[idx]];
       nStore = nStore << 1;
 
       //this->profile[idx].nuc = seq[idx];
@@ -169,7 +169,7 @@ std::vector<unsigned int> CountProfile::getDropPointsInMaximzedProfile()
     return positions;
 }
 
-bool CountProfile::checkForRiseAndDropPoints (std::vector<unsigned int> dropPositions, unsigned int windowsize)
+bool CountProfile::checkForRiseAndDropPoints (std::vector<unsigned int> dropPositions)
 {
     unsigned short kmerWeight = translator->getWeight();
     unsigned short kmerSpan = translator->getSpan();

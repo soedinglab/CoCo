@@ -8,27 +8,19 @@ Options* Options::instance = NULL;
 
 Options::Options():
   OP_SEQ_FILE(OP_SEQ_FILE_ID,"seqFile", "--seqFile",
-  "sequence file (reads or contigs in fasta format",
-  typeid(std::string), (void *) &seqFile, ABUNDANCE_ESTIMATOR|PCREADS)
+  "sequence file (reads or contigs in fasta format)",
+  typeid(std::string), (void *) &seqFile, PROFILE|FILTER|ABUNDANCE_ESTIMATOR|CONSENSUS)
   ,
-  OP_KC_FILE(OP_KC_FILE_ID,"kcFile", "--kcFile ",
-  "kmer/count file in hdf5 format",
-  typeid(std::string),  (void *) &kcFile, ABUNDANCE_ESTIMATOR)
+  OP_COUNT_FILE(OP_COUNT_FILE_ID,"count", "--count ",
+  "pre computed kmer count file in hdf5 format (dsk output format), Note: only supports 41-mers yet",
+  typeid(std::string),  (void *) &countFile, 0)
   ,
-  OP_AVERAGE_LENGTH(OP_AVERAGE_LENGTH_ID,"avgLength",
-  "--avgLength", "average length of sequences used for generating kcFile "
-                 "(please consider only sequences with length > kmerSize)",
-  typeid(int),  (void *) &readAvgLen, 0)
-  ,  
+  /*
   OP_KMER_WEIGHT(OP_KMER_WEIGHT_ID,"kmerWeight",
   "--kmerWeight", "number of informative positions in a k-mer pattern, "
   "default: 27", typeid(int),  (void *) &kmerWeight,0)
-  ,
-  OP_WINDOW_SIZE(OP_WINDOW_SIZE_ID,"windowsize",
-  "--windowsize", "TODO",
-  typeid(int),  (void *) &windowsize, 0)
-  ,
-  OP_THREADS(OP_THREADS_ID, "nThreads", "--nThreads", "number of threasd to use"
+  ,*/
+  OP_THREADS(OP_THREADS_ID, "threads", "--threads", "number of threads"
              "default: 1", typeid(int), (void *)&threads, 0)
 {
   if (instance)
@@ -40,47 +32,40 @@ Options::Options():
 
   setDefaults();
 
-  //abundanceEstimator
-  abundanceEstimatorWorkflow.push_back(OP_SEQ_FILE);
-  abundanceEstimatorWorkflow.push_back(OP_KC_FILE);
-  abundanceEstimatorWorkflow.push_back(OP_AVERAGE_LENGTH);
-  abundanceEstimatorWorkflow.push_back(OP_KMER_WEIGHT);
-  abundanceEstimatorWorkflow.push_back(OP_THREADS);
-
   //profile
   profileWorkflow.push_back(OP_SEQ_FILE);
-  profileWorkflow.push_back(OP_KC_FILE);
-  //TODO? profileWorkflow.push_back(OP_READ_AVERAGELEN_LIST);
-  profileWorkflow.push_back(OP_KMER_WEIGHT);
+  profileWorkflow.push_back(OP_COUNT_FILE);
+  profileWorkflow.push_back(OP_THREADS);
 
-  // filter chimerics
-  chimericFilterWorkflow.push_back(OP_SEQ_FILE);
-  chimericFilterWorkflow.push_back(OP_KC_FILE);
-  chimericFilterWorkflow.push_back(OP_WINDOW_SIZE);
+  // filter
+  filterWorkflow.push_back(OP_SEQ_FILE);
+  filterWorkflow.push_back(OP_COUNT_FILE);
+  filterWorkflow.push_back(OP_THREADS);
+
+  //abundanceEstimator
+  abundanceEstimatorWorkflow.push_back(OP_SEQ_FILE);
+  abundanceEstimatorWorkflow.push_back(OP_COUNT_FILE);
+  abundanceEstimatorWorkflow.push_back(OP_THREADS);
 
 }
-
 
 void Options::setDefaults()
 {
-  kmerWeight = 27;
-  threads = 1; //TODO:
-  readAvgLen = 0;
-  windowsize=0;
+  threads = 1; //TODO
 }
 
-void printToolUsage(const ToolInfo &tool, const int FLAG)
+void printToolUsage(const Command &command, const int FLAG)
 {
   std::stringstream usage;
-  usage << "coco " << tool.cmd << "\n";
-  usage << tool.descriptLong << "\n\n";
-  usage << "© " << tool.author << "\n\n";
+  usage << "coco " << command.cmd << "\n";
+  usage << command.descriptLong << "\n\n";
+  usage << "© " << command.author << "\n\n";
 
-  usage << "Usage: coco " << tool.cmd << " " << tool.usage << "\n\n";
+  usage << "Usage: coco " << command.cmd << " " << command.usage << "\n\n";
 
   if (FLAG == EXTENDED)
   {
-    const std::vector<cocoOption>& options = *tool.opt;
+    const std::vector<cocoOption>& options = *command.opt;
     for (size_t idx = 0; idx < options.size(); idx++)
     {
       //TODO: layout, maxwidth + 2 space in the beginning
@@ -91,22 +76,17 @@ void printToolUsage(const ToolInfo &tool, const int FLAG)
 }
 
 void Options::parseOptions(int argc, const char *argv[],
-                           const ToolInfo& tool)
+                           const Command& command)
 {
-  std::vector<cocoOption>& options = *tool.opt;
+  std::vector<cocoOption>& options = *command.opt;
   int opt, longIndex = 0;
-  //Save toolnum here for later use when checking required arguments
-  unsigned long toolNum = (unsigned long) tool.toolNum;
   extern char *optarg;
 
   static const struct option longOpts[] = {
       {"help", no_argument, NULL, 'h' },
       {"seqFile", required_argument, NULL, 0},
-      {"kcFile", required_argument, NULL, 0},
-      {"avgLength", required_argument, NULL, 0},
-      {"kmerWeight", required_argument, NULL, 0},
-      {"windowsize", required_argument, NULL, 0},
-      {"nThreads", required_argument, NULL, 0},
+      {"countFile", required_argument, NULL, 0},
+      {"threads", required_argument, NULL, 0},
       { NULL, no_argument, NULL, 0 }
   };
 
@@ -114,10 +94,10 @@ void Options::parseOptions(int argc, const char *argv[],
   {
      switch(opt)
      {
-        fprintf(stderr, "longidx=%d", longIndex);
-        fprintf(stderr, "processing %s\n", longOpts[longIndex].name);
+        //fprintf(stderr, "longidx=%d", longIndex);
+        //fprintf(stderr, "processing %s\n", longOpts[longIndex].name);
         case 'h':
-          printToolUsage(tool, EXTENDED);
+          printToolUsage(command, EXTENDED);
           EXIT(EXIT_SUCCESS);
         case 0:
         {
@@ -126,7 +106,7 @@ void Options::parseOptions(int argc, const char *argv[],
           {
              if (optname.compare("--help") == 0)
              {
-                printToolUsage(tool, EXTENDED);
+                printToolUsage(command, EXTENDED);
                 EXIT(EXIT_SUCCESS);
              }
 
@@ -135,7 +115,7 @@ void Options::parseOptions(int argc, const char *argv[],
                if (options[idx].isSet)
                {
                  fprintf(stderr, "Duplicate option %s\n\n",options[idx].display);
-                 printToolUsage(tool,SIMPLE);
+                 printToolUsage(command,SIMPLE);
                  EXIT(EXIT_FAILURE);
                }
 
@@ -183,7 +163,7 @@ void Options::parseOptions(int argc, const char *argv[],
 
        case '?':
          /* error message already printed by getopt function*/
-         printToolUsage(tool, SIMPLE);
+         printToolUsage(command, SIMPLE);
          EXIT(EXIT_FAILURE);
        default:
          abort ();
@@ -193,20 +173,20 @@ void Options::parseOptions(int argc, const char *argv[],
   if (optind != argc)
   {
     fprintf(stderr, "ERROR: Superfluous Argument %s\n\n", argv[optind]);
-    printToolUsage(tool, SIMPLE);
+    printToolUsage(command, SIMPLE);
     EXIT(EXIT_FAILURE);
   }
-  //TODO: check requiered parameter
+
   //TODO: valid range?
   for(cocoOption option: options)
   {
     //Check if option is required for current tool
-    if(toolNum & option.required)
+    if(command.id & option.required)
     {
       //If required and not set -> Error
       if(!option.isSet)
       {
-        fprintf(stderr, "ERROR: Option %s is required for %s\n", option.display, tool.cmd);
+        fprintf(stderr, "ERROR: Option %s is required for %s\n", option.display, command.cmd);
         EXIT(EXIT_FAILURE);
       }
     }

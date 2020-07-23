@@ -2,21 +2,21 @@
 #define PROCESSREADS
 
 #include "CountProfile.h"
-#include "Lookuptable.h"
+#include "LookuptableBase.h"
 #include "KmerTranslator.h"
 #include "kseq.h"
 #include "util.h"
 
 
 int processSeqFile(string seqFilename,
-                   string resultFilename,
                    const LookupTableBase* lookuptable,
                    const KmerTranslator* translator,
-                   int (*processCountProfile)(CountProfile &, FILE*),
+                   int (*processCountProfile)(CountProfile &, void*),
+                   void *processArgs,
                    size_t chunkStart=0,
                    size_t chunkEnd=std::numeric_limits<uint64_t>::max());
 
-int processSeqFileParallel(string seqFilename,
+/*int processSeqFileParallel(string seqFilename,
                            string resultFilename,
                            const LookupTableBase* lookuptable,
                            const KmerTranslator* translator,
@@ -26,7 +26,7 @@ int processSeqFileParallel(string seqFilename,
 void process_sampleList(vector<string> *sampleList, std::string resultFileName,
                         Lookuptable *lookuptable,\
                         KmerTranslator *translator,
-                        int (*processCountProfile)(CountProfile &, FILE*));
+                        int (*processCountProfile)(CountProfile &, FILE*));*/
 
 #endif // PROCESSREADS
 

@@ -18,7 +18,7 @@
 
 #include "src/util.h"
 #include "src/options.h"
-#include "src/ToolInfo.h"
+#include "src/Command.h"
 
 
 #ifdef GIT_SHA1
@@ -32,65 +32,57 @@
 #endif
 
 
-const char* binary_name = "coco";
-const char* tool_name = "COCO";
-const char* tool_introduction = "COCO is an open-source software suite for "\
+const char* tool_binary = "coco";
+const char* tool_name = "CoCo";
+const char* tool_introduction = "CoCo is an open-source software suite for "\
                                 "different COnsensus COmputation applications "\
                                 "on short reads and contigs";
-const char* main_author = "Annika Seidel (annika.seidel@mpibpc.mpg.de)";
 
-extern int abundanceEstimator(int argc, const char **argv, const struct ToolInfo* tool);
-extern int pcreads(int argc, const char **argv, const struct ToolInfo* tool);
+const char* main_author =  "Annika Seidel (annika.seidel@mpibpc.mpg.de)";
+
 extern int profile(int argc, const char **argv, const struct ToolInfo* tool);
 extern int filter(int argc, const char **argv, const struct ToolInfo* tool);
+extern int abundanceEstimator(int argc, const char **argv, const struct ToolInfo* tool);
+extern int consensus(int argc, const char **argv, const struct ToolInfo* tool);
 
 Options& opt = Options::getInstance();
-std::vector<struct ToolInfo> tools =
+std::vector<struct Command> commands =
 {
- /* {"abundanceEstimator", abundanceEstimator, &opt.abundanceEstimatorWorkflow,
-   "estimates for every sequence (reads or contig) in <infile> an abundance "
-   "value for a sample based on its k-mer/count statistic <kcfile> .\n\n",
-   "Calculates for every sequence in a given file <inFile> of concatenated samples "
-   "S={s_1,...,s_n} an estimated value for the abundance in sample t. "\
-   "In general t is a subset of S. Provide for every sample in S the reads or "
-   "contigs in a concatenated fasta/fastq format and for sample t the kmer-count"
-   "file in hdf5 format.\n\n"
-   "Further use case: abundance values of reads or contigs through many samples "
-   "enable binning steps. Call tool several times with same sequence file but "
-   "different h5 sample files to get abundance values across many samples. "
-   "Join the results to one big matrix abundance file and provide this for the binning step",
+  /*{"profile", profile, &opt.profileWorkflow, "write spaced k-mer count profiles (devtool)",
+   "dev tool to write for every read (contig) the spaced k-mer count profile in a tab separated plain text file",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-   "--inFile <arg> --kcFile <arg>",
-   ABUNDANCE_ESTIMATOR //tool enum in option.h
+   " --seqFile <fastaFile> [--count <count.h5>] [--outprefix <string>]",
+   PROFILE
   },
-  {"pcreads", pcreads, &opt.pcreadsWorkflow, "calculates for every read the "\
-   "consensus read", "TODO: long discreption",
+  {"filter", filter, &opt.filterWorkflow, "filter read file",
+   "identify reads containing remarkably/irregular nucleotide sequence as chimeras, indels, ... ",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-   "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>",
-   PCREADS //tool enum in option.h
-  },*/
-  {"countprofile", profile, &opt.profileWorkflow, "write for every read the "\
-   "spaced k-mer count profile",
-   "TODO: long discreption",
-   "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-   "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>",
-   COUNTPROFILE //tool enum in option.h
+   " --seqFile <fastaFile> [--count <count.h5>] [--outprefix <string>]",
+   FILTER
   },
-  {"chimericFilter", filter, &opt.chimericFilterWorkflow, "identify chimeric reads",
-   "TODO: long discreption",
+  {"abundanceEstimator", abundanceEstimator, &opt.abundanceEstimatorWorkflow,
+   "estimate abundance",
+   "Gives for every read an estimated value for the abundance",
    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-   "<i:fastaFile1[.gz]> ... <i:fastaFileN[.gz]> <i:kmer-countFile.hdf5>",
-   CHIMERIC_FILTER //tool enum in option.h
+   " --seqFile <fastaFile> [--count <count.h5>]",
+   ABUNDANCE_ESTIMATOR
   },
+
+   {"consensus", consensus, &opt.consensusWorkflow, "calculate consensus reads ",
+    "calculate for every read the consensus nucleotide sequence",
+    "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
+    "--seqFile <fastaFile> [--count <count.h5>] [--outprefix <string>]",
+    CONSENSUS
+    },*/
 };
 
-struct ToolInfo *getToolInfo(const char *name)
+struct Command *getCommand(const char *name)
 {
-  for(size_t idx=0; idx<tools.size(); idx++)
+  for(size_t idx=0; idx < commands.size(); idx++)
   {
-    struct ToolInfo *tool = &tools[idx];
-    if(!strcmp(name, tool->cmd))
-      return tool;
+    struct Command *command = &commands[idx];
+    if(!strcmp(name, command->cmd))
+      return command;
   }
   return NULL;
 }
@@ -102,22 +94,21 @@ void printUsage(const int mode=SIMPLE)
   usage << tool_name << " Version: " << version << "\n";
   usage << "© " << main_author << "\n\n";
 
-  usage << "available tools:\n";
-  for (size_t j = 0; j < tools.size(); j++)
+  usage << "available commands:\n";
+  for (size_t j = 0; j < commands.size(); j++)
   {
-    struct ToolInfo &t = tools[j];
+    struct Command &t = commands[j];
     usage << "  " + std::string(t.cmd) << "\t"\
           << t.descriptShort << "\n";
   }
 
-  //TODO: add EXTENDED mode for special tools, show when -h/--help is used
+  //TODO: add EXTENDED mode for dev tools, show when -h/--help is used
 
   std::cerr << usage.str() << "\n";
 }
 
 int main(int argc, const char * argv[])
 {
-  //TODO: check 64 system, avx2, sse3
 
   if (argc < 2)
   {
@@ -128,23 +119,18 @@ int main(int argc, const char * argv[])
   if ((argv[1][0] == '-' && argv[1][1] == 'h') ||
       strcmp(argv[1], "--help")==0)
   {
-    printUsage(EXTENDED); //TODO: usage extend for help
+    printUsage(EXTENDED);
     return(EXIT_SUCCESS);
   }
 
-  //TODO: configure
-  struct ToolInfo *tool;
-  if((tool = getToolInfo(argv[1]))!=NULL)
-  {
-    fprintf(stdout, "execute tool: %s\n", tool->cmd);
-    EXIT(tool->callerFunction(argc-1, argv+1, tool));
-  }
-  else
+  struct Command *command = getCommand(argv[1]);
+  if (command == NULL)
   {
     fprintf(stderr ,"Invalid Command: %s\n", argv[1]);
     printUsage(SIMPLE);
     return(EXIT_FAILURE);
   }
 
-  return EXIT_SUCCESS;
+    fprintf(stdout, "execute %s tool: %s\n", tool_name,command->cmd);
+    EXIT(command->callerFunction(argc-1, argv+1, command));
 }

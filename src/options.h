@@ -1,4 +1,4 @@
-/* Option handling for COCO tools/workflows */
+/* Option handling for CoCo workflows */
 
 #ifndef OPTIONS_H
 #define OPTIONS_H
@@ -7,9 +7,8 @@
 #include <vector>
 #include <string>
 #include <typeinfo>
-#include "ToolInfo.h"
+#include "Command.h"
 
-enum coco_tools{ABUNDANCE_ESTIMATOR=1, PCREADS=2, COUNTPROFILE=3, CHIMERIC_FILTER=4};
 
 struct cocoOption;
 #define OPTION(x) const static int x##_ID = __COUNTER__; \
@@ -32,8 +31,6 @@ struct cocoOption {
 };
 
 
-/* general class <Options>, provides vector of <cocoOption>s for different
- * COCO workflows */
 class Options
 {
 public:
@@ -53,30 +50,28 @@ public:
   }
 
   void parseOptions(int argc, const char* argv[],
-                    const ToolInfo& tool);
+                    const Command& command);
                        /*size_t requiredParameterCount,
                        bool printParameters = true,
                        int parseFlags = 0,
                        int outputFlags = 0);*/
 
   std::string seqFile;
-  std::string kcFile;
-  unsigned int readAvgLen;
-  unsigned int kmerWeight;
-  unsigned int windowsize;
+  std::string countFile;
+  //unsigned int kmerWeight;
   unsigned int threads;
 
   std::vector<cocoOption> empty;
-  std::vector<cocoOption> abundanceEstimatorWorkflow;
-  std::vector<cocoOption> pcreadsWorkflow;
+  std::vector<cocoOption> filterWorkflow;
   std::vector<cocoOption> profileWorkflow;
-  std::vector<cocoOption> chimericFilterWorkflow;
+  std::vector<cocoOption> abundanceEstimatorWorkflow;
+  std::vector<cocoOption> consensusWorkflow;
+
+
 
   OPTION(OP_SEQ_FILE)
-  OPTION(OP_KC_FILE)
-  OPTION(OP_AVERAGE_LENGTH)
-  OPTION(OP_KMER_WEIGHT)
-  OPTION(OP_WINDOW_SIZE)
+  OPTION(OP_COUNT_FILE)
+  //OPTION(OP_KMER_WEIGHT)
   OPTION(OP_THREADS)
 
 protected:

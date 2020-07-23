@@ -4,9 +4,9 @@
  */
 
 #include <cstdio>
-#include "ToolInfo.h"
+#include "Command.h"
 
-int pcreads(int argc, const char **argv, const ToolInfo* tool)
+int pcreads(int argc, const char **argv, const Command* command)
 {
   return 0;
 }

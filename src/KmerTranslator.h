@@ -13,7 +13,7 @@ private:
   unsigned char* _maskArray;
 
 public:
-  KmerTranslator(unsigned short span, unsigned short weight);
+  KmerTranslator();
 
   kmerType kmer2packedKmer(const spacedKmerType kmer) const;
   kmerType kmer2minPackedKmer(const spacedKmerType kmer) const;

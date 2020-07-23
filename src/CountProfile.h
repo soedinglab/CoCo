@@ -29,7 +29,8 @@ class CountProfile
     const KmerTranslator*  translator;
     const LookupTableBase*     lookuptable;
 
-    char *                 seqName;              /* index of sequence */
+    const char* seqNuc;
+    const char* seqName;
     size_t                 maxprofileLength = 0, /* maximal length of profile,
                                                     corresponds to the allocated
                                                     size of <profile> */
@@ -50,17 +51,17 @@ public:
     ~CountProfile();
 
     /* getter */
-    char *getSeqName(){return (this->seqName);}
+    const char *getSeqName(){return (this->seqName);}
     float getCorrFactor(){return (0);}
     /* create and store count profiles of <seq> */
-    void fill(const SeqType seq, const char *seqName);
+    void fill(const char *seqName, const char *seqNuc, size_t length);
 
     /* set abundanceEstimation value c_pop to 67% quantile over count profile */
     size_t calc67quantile();
 
     std::vector<unsigned int> getDropPointsInMaximzedProfile();
 
-    bool  checkForRiseAndDropPoints (std::vector<unsigned int> dropPositions, unsigned int windowsize);
+    bool  checkForRiseAndDropPoints (std::vector<unsigned int> dropPositions);
 
 
     /* show tab-based table of seqPos and count.

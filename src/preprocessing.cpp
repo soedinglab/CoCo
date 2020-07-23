@@ -1,9 +1,9 @@
-// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
-
 #include "preprocessing.h"
-#include <gatb/gatb_core.hpp>
 #include "Lookuptable.h"
-#include "util.h"
+#include "HashTable.h"
+#include "filehandling.h"
+#include "kseq.h"
+KSEQ_INIT(int, read)
 
 
 bool isValid(const Lookuptable &lookuptable,
@@ -52,17 +52,30 @@ bool isValid(const Lookuptable &lookuptable,
   return true;
 }
 
-Lookuptable* buildLookuptable(Storage &storage,
+LookupTableBase* buildLookuptable(string countFile,
                               const KmerTranslator &translator,
                               size_t minCount,
                               float corrFactor)
 {
-  //retrieve the partition holding the couples [kmer,abundance]
-  Group& dskGroup = storage.getGroup("dsk");
-  Partition<Count>& solidKmers = dskGroup.getPartition<Count> ("solid");
-  string kmerSizeStr = dskGroup.getProperty ("kmer_size");
-  unsigned int kmerSize = atoi(kmerSizeStr.c_str());
+    unsigned int kmerSpan = translator.getSpan();
 
+    /* get dsk kmer-count storage */
+    Storage* storage = StorageFactory(STORAGE_HDF5).load(countFile);
+    LOCAL (storage);
+    Group& dskGroup = storage->getGroup("dsk");
+    string kmerSizeStr = dskGroup.getProperty ("kmer_size");
+    unsigned int kmerSize = atoi(kmerSizeStr.c_str());
+
+    if (kmerSize != kmerSpan)
+    {
+        fprintf(stderr, "kmerSize %u used in hdf5 file %s is not supported.\n"
+                        "Please precompute kmer counts with k=41\n", kmerSize, countFile.c_str());
+        return NULL;
+    }
+
+  //retrieve the partition holding the couples [kmer,abundance]
+
+  Partition<Count>& solidKmers = dskGroup.getPartition<Count> ("solid");
 
   assert(translator.getSpan() == kmerSize);
   fprintf(stderr, "start create lookuptable\n");
@@ -112,6 +125,49 @@ Lookuptable* buildLookuptable(Storage &storage,
 #endif
   }
   return lookuptable;
+}
+
+LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator)
+{
+    unsigned int kmerSpan = translator.getSpan();
+    HashTable *hashtable = new HashTable();
+
+    FILE *kmerCountFile = openFileOrDie(seqFile, "r");
+    int fd = fileno(kmerCountFile);
+    kseq_t *seq = kseq_init(fd);
+    spacedKmerType spacedKmer, mask = ((((spacedKmerType) 1) << (spacedKmerType)( kmerSpan * 2)) - 1);
+    kmerType x;
+    while (kseq_read(seq) >= 0) {
+        const size_t len = seq->seq.l;
+        const char *seqNuc = seq->seq.s;
+        const char *seqName = seq->name.s;
+        SeqType seqStr;
+        seqStr.reserve(len);
+
+        if (len < kmerSpan)
+            continue;
+
+        /* sequence to 2bit representation */
+        int l;
+        for (unsigned int pos = l = 0; pos < len; pos++) {
+            int c = res2int[(int) seqNuc[pos]];
+            if (c != -1) {
+                spacedKmer = (spacedKmer << 2 | c) & mask;
+                if (++l >= kmerSpan) {
+                    x = translator.kmer2minPackedKmer(spacedKmer);
+                    hashtable->increaseCount(x);
+                }
+            } else {
+                l = 0;
+                spacedKmer = 0;
+                x = 0;
+            }
+        }
+        //TODO: add kmers with non informative N's ?
+    }
+    kseq_destroy(seq);
+    fclose(kmerCountFile);
+    return hashtable;
 }
 
 

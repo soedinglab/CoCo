@@ -1,17 +1,18 @@
 //
 // Created by aseidel1 on 7/21/20.
 //
+#ifndef HASHTABLE_H
+#define HASHTABLE_H
 #include "LookuptableBase.h"
 #include "khashl.h" // hash table
 
-#ifndef COCO_HASHLOOKUPTABLE_H
-#define COCO_HASHLOOKUPTABLE_H
+
 
 KHASHL_MAP_INIT(, kc_c1_t, kc_c1, uint64_t, uint32_t, kh_hash_uint64, kh_eq_generic)
-class HashLookuptable: public LookupTableBase{
+class HashTable: public LookupTableBase{
 
 public:
-    HashLookuptable(){
+    HashTable(){
         hashTable = kc_c1_init();
     }
 
@@ -37,4 +38,4 @@ public:
 
 
 };
-#endif //COCO_HASHLOOKUPTABLE_H
+#endif //HASHTABLE_H
