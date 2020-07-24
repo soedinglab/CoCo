@@ -12,7 +12,7 @@
 
 typedef struct {
     FILE *filterReads;
-    FILE *keepReads;
+    FILE *cleanedReads;
 } FilterArgs;
 
 int filterProcessor(CountProfile &countprofile, void *filterargs)
@@ -24,6 +24,10 @@ int filterProcessor(CountProfile &countprofile, void *filterargs)
     if(toFilter)
     {
         fprintf(((FilterArgs *)filterargs)->filterReads, "%s\n", countprofile.getSeqName());
+    }
+    else
+    {
+        fprintf(((FilterArgs *)filterargs)->cleanedReads, "%s\n", countprofile.getSeqName());
     }
 
 }
@@ -61,17 +65,18 @@ int filter(int argc, const char **argv, const Command* tool)
         return EXIT_FAILURE;
     }
 
+
     FilterArgs filterargs = {openFileOrDie("filtered", "w"),
-                             openFileOrDie("keep", "w")};
+                             openFileOrDie("cleaned", "w")};
 
     processSeqFile(seqFile, lookuptable, translator, filterProcessor, &filterargs);
 
     fclose(filterargs.filterReads);
-    fclose(filterargs.keepReads);
+    fclose(filterargs.cleanedReads);
 
     /*
      *string filename = kmerCountFile;
-    size_t lastdot = filename.find_last_of(".");
+    size_t lastdot = seqFile.find_last_of(".");
     if (lastdot != std::string::npos)
         filename=filename.substr(0, lastdot);
     string resultFilename=(string("count_profile.")+string(basename(filename.c_str()))+string(".txt"));*/

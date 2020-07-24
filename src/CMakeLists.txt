@@ -21,7 +21,7 @@ set(coco_header_files
 set(coco_source_files
   ${coco_source_files}
   ${CMAKE_CURRENT_SOURCE_DIR}/abundanceEstimator.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/pcreads.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/consensus.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/profile.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/options.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/types.cpp
