@@ -1,3 +1,5 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
+
 #include "types.h"
 
 char int2res[alphabetSize];

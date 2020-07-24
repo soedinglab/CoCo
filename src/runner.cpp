@@ -1,6 +1,8 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
+
 #include <cstdio>
 #include <thread>
-#include "processSequences.h"
+#include "runner.h"
 #include "CountProfile.h"
 #include "filehandling.h"
 #include "KmerTranslator.h"
@@ -34,9 +36,7 @@ int processSeqFile(string seqFilename,
   while (kseq_read(seq) >= 0)
   {
     const size_t len = seq->seq.l;
-    const char* seqNuc = seq->seq.s;
     const char* seqName = seq->name.s;
-    SeqType seqStr; seqStr.reserve(len);
 
     unsigned int kmerSpan = translator->getSpan();
     if(len < kmerSpan)
@@ -46,7 +46,8 @@ int processSeqFile(string seqFilename,
     }
 
     /* fill profile */
-    countprofile.fill(seqName, seqNuc, len);
+    SequenceInfo *seqinfo = new SequenceInfo {seq->name.s,seq->comment.s,seq->seq.s,seq->qual.s?string(seq->qual.s):string(""),(char)seq->last_char};
+    countprofile.fill(seqinfo, len);
 
     /* use function pointer for what to do with profile */
     processCountProfile(countprofile, processArgs);

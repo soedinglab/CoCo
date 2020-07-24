@@ -1,5 +1,5 @@
 // Written by Annika Seidel <annika.seidel@mpibpc.mpg.de> and
-// Martin Steinegger <martin.steinegger@mpibpc.mpg.de>
+// Martin Steinegger <themartinsteinegger@gmail.com>
 
 #ifndef LOOKUPTABLE_H
 #define LOOKUPTABLE_H
@@ -10,7 +10,7 @@
 #include "kmer.h"
 
 /* k-mer-index = (first p bits << I) | (last I bits) */
-#define LOGINDEXSIZE 30 /* p bits, gurantee ~8GB for indexGridTable*/
+#define LOGINDEXSIZE 30 /* p bits, guarantee ~8GB for indexGridTable*/
 #define LOGOFFSETSIZE 24 /* I bits */
 
 class Lookuptable: public LookupTableBase
@@ -27,11 +27,9 @@ private:
       return (first.indexOffset < second.indexOffset );
     }
   };
-  IndexEntry * offsetTable;
+  IndexEntry *offsetTable;
   size_t numberItems;
   size_t maxNumberItems;
-  float corrFactor;
-  //TODO: size_t countThreeshold
 
   size_t _offsetmask;
   size_t _indexmask;
@@ -52,8 +50,6 @@ public:
   void setupIndexGridTable();
   size_t addElement(kmerType kmer, unsigned int count);
   void finalSetupTables(size_t countThreeshold=1);
-  float getCorrFactor() const;
-
   unsigned int getCount (const kmerType kmer) const;
 };
 

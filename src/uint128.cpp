@@ -1,3 +1,5 @@
+//Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
+
 #include "uint128.h"
 
 /*uint128_t largeInt2uint128(const LargeInt<1> value)

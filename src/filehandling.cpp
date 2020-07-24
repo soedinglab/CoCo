@@ -1,3 +1,4 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 #include "filehandling.h"
 #include "util.h"
 
@@ -48,7 +49,16 @@ FILE* openFileOrDie(const char *fileName, const char * mode)
   return file;
 }
 
-string get_filename(string wholeFilePath)
+string getFileExtension(string wholeFilePath)
+{
+    string ext="";
+    size_t lastdot = wholeFilePath.find_last_of(".");
+    if (lastdot != std::string::npos)
+        ext = wholeFilePath.substr(lastdot,wholeFilePath.size());
+    return(ext);
+}
+
+string getFilename(string wholeFilePath)
 {
   string filename = wholeFilePath;
   size_t lastdot = filename.find_last_of(".");

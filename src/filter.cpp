@@ -1,4 +1,7 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
+
 #include <cstdio>
+#include <stdio.h>
 #include <fcntl.h>
 #include <stdexcept>
 
@@ -7,7 +10,7 @@
 #include "types.h"
 #include "KmerTranslator.h"
 #include "preprocessing.h"
-#include "processSequences.h"
+#include "runner.h"
 #include "filehandling.h"
 
 typedef struct {
@@ -17,17 +20,40 @@ typedef struct {
 
 int filterProcessor(CountProfile &countprofile, void *filterargs)
 {
-
     std::vector<unsigned int> dropPositions = countprofile.getDropPointsInMaximzedProfile();
 
     bool toFilter = countprofile.checkForRiseAndDropPoints(dropPositions);
+
+    SequenceInfo *seqinfo = countprofile.getSeqInfo();
     if(toFilter)
     {
-        fprintf(((FilterArgs *)filterargs)->filterReads, "%s\n", countprofile.getSeqName());
+        fwrite(&seqinfo->sep, sizeof(char), 1, ((FilterArgs *) filterargs)->filterReads);
+        fwrite(seqinfo->name.c_str(), sizeof(char), seqinfo->name.size(), ((FilterArgs *) filterargs)->filterReads);
+        fwrite(seqinfo->comment.c_str(), sizeof(char), seqinfo->comment.size(), ((FilterArgs *) filterargs)->filterReads);
+        fwrite("\n", sizeof(char), 1, ((FilterArgs *) filterargs)->filterReads);
+        fwrite(seqinfo->seq.c_str(), sizeof(char), seqinfo->seq.size(), ((FilterArgs *) filterargs)->filterReads);
+        fwrite("\n", sizeof(char), 1, ((FilterArgs *) filterargs)->filterReads);
+        if (seqinfo->sep == '@')
+        {
+            fwrite("*", sizeof(char), 1, ((FilterArgs *) filterargs)->filterReads);
+            fwrite(seqinfo->qual.c_str(), sizeof(char), seqinfo->qual.size(), ((FilterArgs *) filterargs)->filterReads);
+            fwrite("\n", sizeof(char), 1, ((FilterArgs *) filterargs)->filterReads);
+        }
     }
     else
     {
-        fprintf(((FilterArgs *)filterargs)->cleanedReads, "%s\n", countprofile.getSeqName());
+        fwrite(&seqinfo->sep, sizeof(char), 1, ((FilterArgs *) filterargs)->cleanedReads);
+        fwrite(seqinfo->name.c_str(), sizeof(char), seqinfo->name.size(), ((FilterArgs *) filterargs)->cleanedReads);
+        fwrite(seqinfo->comment.c_str(), sizeof(char), seqinfo->comment.size(), ((FilterArgs *) filterargs)->cleanedReads);
+        fwrite("\n", sizeof(char), 1, ((FilterArgs *) filterargs)->cleanedReads);
+        fwrite(seqinfo->seq.c_str(), sizeof(char), seqinfo->seq.size(), ((FilterArgs *) filterargs)->cleanedReads);
+        fwrite("\n", sizeof(char), 1, ((FilterArgs *) filterargs)->cleanedReads);
+        if (seqinfo->sep == '@')
+        {
+            fwrite("*", sizeof(char), 1, ((FilterArgs *) filterargs)->cleanedReads);
+            fwrite(seqinfo->qual.c_str(), sizeof(char), seqinfo->qual.size(), ((FilterArgs *) filterargs)->cleanedReads);
+            fwrite("\n", sizeof(char), 1, ((FilterArgs *) filterargs)->cleanedReads);
+        }
     }
 
 }
@@ -65,21 +91,19 @@ int filter(int argc, const char **argv, const Command* tool)
         return EXIT_FAILURE;
     }
 
-
-    FilterArgs filterargs = {openFileOrDie("filtered", "w"),
-                             openFileOrDie("cleaned", "w")};
+    string outprefix;
+    if(opt.OP_OUTPREFIX.isSet)
+        outprefix = opt.outprefix;
+    else
+        outprefix = getFilename(seqFile);
+    string ext = getFileExtension(seqFile);
+    FilterArgs filterargs = {openFileOrDie(outprefix + ".filtered" + ext, "w"),
+                             openFileOrDie(outprefix + ".cleaned" + ext, "w")};
 
     processSeqFile(seqFile, lookuptable, translator, filterProcessor, &filterargs);
 
     fclose(filterargs.filterReads);
     fclose(filterargs.cleanedReads);
-
-    /*
-     *string filename = kmerCountFile;
-    size_t lastdot = seqFile.find_last_of(".");
-    if (lastdot != std::string::npos)
-        filename=filename.substr(0, lastdot);
-    string resultFilename=(string("count_profile.")+string(basename(filename.c_str()))+string(".txt"));*/
 
     delete lookuptable;
     delete translator;

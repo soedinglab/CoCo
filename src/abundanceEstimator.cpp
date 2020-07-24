@@ -1,3 +1,4 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 #include <cstdio>
 #include <fcntl.h>
 #include <stdexcept>
@@ -11,7 +12,7 @@
 #include "Lookuptable.h"
 #include "CountProfile.h"
 #include "preprocessing.h"
-#include "processSequences.h"
+#include "runner.h"
 #include "filehandling.h"
 
 typedef struct {

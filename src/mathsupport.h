@@ -1,3 +1,5 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
+
 #ifndef MATHSUPPORT_H
 #define MATHSUPPORT_H
 

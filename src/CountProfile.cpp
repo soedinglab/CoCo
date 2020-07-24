@@ -1,3 +1,4 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 #include "CountProfile.h"
 #include "mathsupport.h"
 
@@ -10,28 +11,12 @@ CountProfile::CountProfile(const KmerTranslator *translator,
   this->profile = NULL;
 }
 
-/*
-CountProfile::CountProfile(const KmerTranslator *translator,
-                           const LookupTableBase *lookuptable,
-                           const SeqType seq, char* seqName)
-{
-  // call constructor
-  this->translator = translator;
-  this->lookuptable = lookuptable;
-
-  assert(seq.size() > 0);
-  this->maxprofileLength = seq.length();
-  this->profileLength = seq.length();
-  this->profile = new CountProfileEntry[profileLength];
-  this->fill(seq, seqName);
-}*/
-
 CountProfile::~CountProfile()
 {
   delete[] this->profile;
 }
 
-void CountProfile::fill(const char *seqName, const char *seqNuc, size_t seqLen)
+void CountProfile::fill(SequenceInfo *seqinfo, size_t length)
 {
   assert(this->lookuptable != NULL);
   assert(this->translator != NULL);
@@ -39,13 +24,9 @@ void CountProfile::fill(const char *seqName, const char *seqNuc, size_t seqLen)
   unsigned short kmerSpan = translator->getSpan();
   unsigned short kmerWeight = translator->getWeight();
 
-  /* coverage s_ni of the spaced k-mer starting at position <i>,
-    compute c_i = max{s_{i-j} : b_j=1 and 0 ≤ j <= k-1} */
-
-  assert(seqLen >= kmerSpan);
-  this->seqName = (char*) seqName;
-  this->profileLength = seqLen-kmerSpan+1;
-  this->abundanceEstimation = 0;
+  assert(length >= kmerSpan);
+  this->seqinfo = seqinfo;
+  this->profileLength = length-kmerSpan+1;
 
 
   // check size of array and create new one in case of too small size
@@ -56,27 +37,19 @@ void CountProfile::fill(const char *seqName, const char *seqNuc, size_t seqLen)
     this->maxprofileLength = this->profileLength;
   }
 
-  // add new sequence -> store all nucleotids of current sequence, one per entry in
-  // <profiles>
   spacedKmerType kmer = 0, nStore = 0;
-  for (size_t idx = 0; idx < seqLen; idx++)
+  for (size_t idx = 0; idx < length; idx++)
   {
-    if ((char)res2int[(int)seqNuc[idx]] != -1)
+    if ((char)res2int[(int)seqinfo->seq[idx]] != -1)
     {
-      kmer = (kmer << 2) | (char)res2int[(int)seqNuc[idx]];
+      kmer = (kmer << 2) | (char)res2int[(int)seqinfo->seq[idx]];
       nStore = nStore << 1;
-
-      //this->profile[idx].nuc = seq[idx];
     }
     else // found non valid nucleotide
     {
       kmer = kmer << 2;
       nStore = nStore << 1 | 1;
-      //this->profile[idx].nuc = alphabetSize;
     }
-
-    /*this->profile[idx].seqPos = idx;
-    this->profile[idx].count = 0;*/
 
     if(idx >= kmerSpan-1)
     {
@@ -87,58 +60,21 @@ void CountProfile::fill(const char *seqName, const char *seqNuc, size_t seqLen)
           continue;
       }
 
-      // get abundance for packed k-mer, started at position idx in
-      // current sequnece
       kmerType packedKmer = translator->kmer2minPackedKmer(kmer);
       uint32_t count = lookuptable->getCount(packedKmer);
       profile[idx-(kmerSpan-1)].count = count;
       profile[idx-(kmerSpan-1)].valid = 1;
-      // update c_i for all previous positions j with b_j=1 and 0 ≤ j ≤ k-1
-      // maximizing over abundance value
-      /*for(size_t jdx = 0; jdx < kmerWeight; jdx++)
-      {
-        size_t pos = idx-(kmerSpan-translator->_maskArray[jdx]-1);
-        profile[pos].count = std::max(count, profile[pos].count);
-        
-      }*/
     }
   }
   //TODO: continue until maxprofillength to reset count and valid flag? not necessary
 }
 
-size_t CountProfile::calc67quantile()
+void CountProfile::showProfile(FILE *fp) const
 {
-  //copy max count values
-  uint32_t *max_count = new uint32_t[profileLength];
-  
-  for(size_t idx = 0; idx < profileLength; idx++)
-  {
-    max_count[idx] = profile[idx].count;
-  }
-
-  // sort in ascending order
-  sort(max_count, max_count+profileLength);
-
-  // 67% quantile
-  abundanceEstimation = max_count[(uint32_t)(0.67*(double)this->profileLength)];
-
-  delete[] max_count;
-  return abundanceEstimation;
-}
-
-inline uint32_t getMedian(multiset<uint32_t> &multiSet, size_t size)
-{
-    double a = *next(multiSet.begin(), size / 2 - 1);
-    double b = *next(multiSet.begin(), size / 2);
-    if(size & 1)
-        return(b);
-
-    return((a + b) * 0.5);
-}
-
-inline uint32_t getMax(multiset<uint32_t> &multiSet, size_t size)
-{
-    return(*next(multiSet.begin(), size-1));
+    for (size_t idx=0; idx < profileLength; idx++)
+    {
+        fprintf(fp,"%u\t%u\n", idx, profile[idx].count);
+    }
 }
 
 std::vector<unsigned int> CountProfile::getDropPointsInMaximzedProfile()
@@ -192,13 +128,6 @@ bool CountProfile::checkForRiseAndDropPoints (std::vector<unsigned int> dropPosi
             checkPoints[idx] =  false;
     }
 
-    /*std:cerr << "toIgnore: ";
-    for (size_t idx=0; idx < profileLength+kmerSpan-1; idx ++) {
-        if (!checkPoints[idx])
-          std::cerr <<  idx << ",";
-    }
-
-    std::cerr<<endl;*/
     unsigned int validCount = 0;
     size_t idx = 0;
     for (size_t idx = 0; idx < profileLength; idx ++) {
@@ -211,11 +140,6 @@ bool CountProfile::checkForRiseAndDropPoints (std::vector<unsigned int> dropPosi
     }
 
     for (;idx < profileLength; idx ++) {
-        /*if ((checkPoints[idx] && checkPoints[idx-1]) && (((double) (profile[idx].count)/profile[idx-1].count < 0.1) ||
-                (double) (profile[idx-1].count)/profile[idx].count < 0.1)) {
-            std::cerr << seqName << " break at " << idx << " " << profile[idx].count << " " << profile[idx-1].count <<std::endl;
-            return true;
-        }*/
         if (checkPoints[idx]){
             if (((double) profile[idx].count/validCount  < 0.1) || ((double) validCount/profile[idx].count < 0.1))
               return true;
@@ -227,48 +151,22 @@ bool CountProfile::checkForRiseAndDropPoints (std::vector<unsigned int> dropPosi
     return false;
 }
 
-//bool CountProfile::checkForRiseAndDropPoints(unsigned int windowsize)
-//{
-//    unsigned long checkPoint = ULONG_LONG_MAX;
-//    multiset <uint32_t> window;
-//    double prevMedian, median;
-//
-//    //windowsize = translator->getSpan();
-//    for(size_t idx = 0; idx < windowsize; idx++)
-//    {
-//        window.insert(profile[idx].count);
-//    }
-//    prevMedian = getMax(window, windowsize);
-//    //prevMedian = getMedian(window, windowsize);
-//    /* compare median of sliding window */
-//    unsigned short m = 0.2;
-//    for(size_t idx = windowsize; idx < profileLength; idx++)
-//    {
-//        window.erase(window.find(profile[idx-windowsize].count));
-//        window.insert(profile[idx].count);
-//        median = getMax(window, windowsize);
-//        //median = getMedian(window, windowsize);
-//        //std::cout << "median: " << median << std::endl;
-//
-//        /* identify drop or rise */
-//        if (median/(prevMedian-m*sqrt(prevMedian)) < 0.1 || prevMedian/(median-m*sqrt(median)) < 0.1)
-//        {
-////std::cout << "idx: " << idx << std::endl;
-////std::cout << "prevMedian: " << prevMedian << std::endl;
-////std::cout << "median: " << median << std::endl;
-//            return true;
-//        }
-//        prevMedian = median;
-//    }
-//
-//    return false;
-//}
-
-void CountProfile::showProfile(FILE *fp) const
+unsigned int CountProfile::calc67quantile()
 {
-  for (size_t idx=0; idx < profileLength; idx++)
-  {
-    //fprintf(fp,"%u\t%u\n", profile[idx].seqPos, profile[idx].count);
-      fprintf(fp,"%u\t%u\n", idx, profile[idx].count);
-  }
+    //copy max count values
+    uint32_t *max_count = new uint32_t[profileLength];
+
+    for(size_t idx = 0; idx < profileLength; idx++)
+    {
+        max_count[idx] = profile[idx].count;
+    }
+
+    // sort in ascending order
+    sort(max_count, max_count+profileLength);
+
+    // 67% quantile
+    auto abundanceEstimation = max_count[(uint32_t)(0.67 * (double)this->profileLength)];
+
+    delete[] max_count;
+    return abundanceEstimation;
 }

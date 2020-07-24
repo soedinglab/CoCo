@@ -1,3 +1,4 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 #include <assert.h>
 #include <iostream>
 #include <string.h>
@@ -13,7 +14,6 @@ Lookuptable::Lookuptable(const size_t nbItems, float corrFactor)
   offsetTable = (IndexEntry *) calloc(nbItems, sizeof(IndexEntry));
   maxNumberItems = nbItems;
   numberItems = 0;
-  this->corrFactor = corrFactor;
 
   /* set masks */
   _indexmask = (ipow(2,LOGINDEXSIZE)-1) << LOGOFFSETSIZE;
@@ -62,8 +62,9 @@ size_t Lookuptable::addElement(kmerType kmer, unsigned int count)
   const size_t gridPosition = getGridPosition(kmer);
   const size_t writingPosition = indexGridTable[gridPosition];
   const size_t offset = getOffset(kmer);
+
   /* if kmer already in lookuptable, increase only count field */
-  if (gridPosition >0)
+  if (gridPosition > 0)
     prevWritingPosition = indexGridTable[gridPosition-1];
   if(writingPosition >= this->maxNumberItems)
   {
@@ -89,7 +90,7 @@ size_t Lookuptable::addElement(kmerType kmer, unsigned int count)
   return writingPosition;
 }
 
-void Lookuptable::finalSetupTables(size_t countThreeshold)
+void Lookuptable::finalSetupTables(size_t countThreshold)
 {
 
   size_t prev = 0,
@@ -101,7 +102,7 @@ void Lookuptable::finalSetupTables(size_t countThreeshold)
     for(;readpos < indexGridTable[idx]; readpos++)
     {
 
-      if (offsetTable[readpos].count > countThreeshold)
+      if (offsetTable[readpos].count > countThreshold)
       {
         if (readpos != writepos)
           offsetTable[writepos] = offsetTable[readpos];
@@ -121,10 +122,10 @@ void Lookuptable::finalSetupTables(size_t countThreeshold)
 
 inline std::pair<size_t, size_t> Lookuptable::getIndexGridRange(kmerType kmer) const
 {
-    size_t gridPosition = getGridPosition(kmer);
-    size_t indexGridSize = indexGridTable[gridPosition + 1] -
-                           indexGridTable[gridPosition];
-    return std::make_pair(indexGridTable[gridPosition], indexGridSize);
+  size_t gridPosition = getGridPosition(kmer);
+  size_t indexGridSize = indexGridTable[gridPosition + 1] -
+                         indexGridTable[gridPosition];
+  return std::make_pair(indexGridTable[gridPosition], indexGridSize);
 }
 
 unsigned int Lookuptable::getCount (const kmerType kmer) const
@@ -140,9 +141,4 @@ unsigned int Lookuptable::getCount (const kmerType kmer) const
   }
 
   return (pos != endPos) ? offsetTable[pos].count : 0;
-}
-
-float Lookuptable::getCorrFactor() const
-{
-  return corrFactor;
 }

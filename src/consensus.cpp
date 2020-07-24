@@ -1,3 +1,4 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 #include <cstdio>
 #include <stdlib.h>
 #include "Command.h"

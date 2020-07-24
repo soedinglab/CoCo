@@ -1,3 +1,5 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
+
 #include <cstdio>
 #include <fcntl.h>
 #include <stdexcept>
@@ -9,7 +11,7 @@
 #include "KmerTranslator.h"
 #include "CountProfile.h"
 #include "preprocessing.h"
-#include "processSequences.h"
+#include "runner.h"
 #include "filehandling.h"
 
 
@@ -59,7 +61,13 @@ int profile(int argc, const char **argv, const Command* tool)
         return EXIT_FAILURE;
     }
 
-    ProfileArgs profileargs = {openFileOrDie("profiles", "w")};
+    string outprefix;
+    if(opt.OP_OUTPREFIX.isSet)
+        outprefix = opt.outprefix;
+    else
+        outprefix = getFilename(seqFile);
+
+    ProfileArgs profileargs = {openFileOrDie(outprefix + ".profiles", "w")};
     processSeqFile(seqFile, lookuptable, translator, showProfile, &profileargs);
     fclose(profileargs.profileFile);
 

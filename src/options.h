@@ -1,4 +1,4 @@
-/* Option handling for CoCo workflows */
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 
 #ifndef OPTIONS_H
 #define OPTIONS_H
@@ -58,6 +58,7 @@ public:
 
   std::string seqFile;
   std::string countFile;
+  std::string outprefix;
   //unsigned int kmerWeight;
   unsigned int threads;
 
@@ -71,6 +72,7 @@ public:
 
   OPTION(OP_SEQ_FILE)
   OPTION(OP_COUNT_FILE)
+  OPTION(OP_OUTPREFIX)
   //OPTION(OP_KMER_WEIGHT)
   OPTION(OP_THREADS)
 

@@ -1,3 +1,4 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 #include "kmer.h"
 #include "emmintrin.h"
 #include "immintrin.h"

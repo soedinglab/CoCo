@@ -1,3 +1,5 @@
+//Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
+
 #ifndef UTIL
 #define UTIL
 

@@ -1,3 +1,4 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 #ifndef FILEHANDLING_H
 #define FILEHANDLING_H
 #include <sys/stat.h>
@@ -18,7 +19,9 @@ FILE* openFileOrDie(std::string fileName, const char * mode);
 FILE* openFileOrDie(const char *fileName, const char * mode);
 
 
-string get_filename(string wholeFilePath);
+string getFilename(string wholeFilePath);
+
+string getFileExtension(string wholeFilePath);
 
 vector<std::string> *getFileList(const char *fileListFilename);
 

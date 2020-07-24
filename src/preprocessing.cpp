@@ -1,3 +1,5 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
+
 #include "preprocessing.h"
 #include "Lookuptable.h"
 #include "HashTable.h"
@@ -5,12 +7,11 @@
 #include "kseq.h"
 KSEQ_INIT(int, read)
 
-
 bool isValid(const Lookuptable &lookuptable,
               Partition<Count> &solidKmers,
               Kmer<>::ModelCanonical &model,
               const KmerTranslator &translator,
-              unsigned short threeshold)
+              unsigned short threshold)
 {
 
   Iterator<Count>* it = solidKmers.iterator();  LOCAL (it);
@@ -20,27 +21,27 @@ bool isValid(const Lookuptable &lookuptable,
     const Count& count = it->item();
     kmerType packedKmer =
         translator.kmer2minPackedKmer(largeInt2uint128(count.value));
-    //TODO: packedKmer as string
+
     unsigned int lookupCount = lookuptable.getCount(packedKmer);
     std::string kmer = model.toString(count.value);
 
     //std::cout << lookupCount << "\t" << count.abundance << std::endl;
 
-    // abundance < threeshold:
+    // abundance < threshold:
     // kmer should not exist in lookuptable, except different kmers match to
     // the same packedKmer by using spacemask
-    if (count.abundance < threeshold && lookupCount!=0 && lookupCount < threeshold)
+    if (count.abundance < threshold && lookupCount!=0 && lookupCount < threshold)
     {
 
       std::cerr << "ERROR: count value " << lookupCount
                 << "found for packed kmer "
                 << packedKmer << "generated from " << kmer
-                << " is smaller than threeshold" << threeshold << std::endl;
+                << " is smaller than threeshold" << threshold << std::endl;
       return false;
     }
 
     // check count values
-    if ((unsigned)count.abundance > threeshold && (unsigned)count.abundance > lookupCount)
+    if ((unsigned)count.abundance > threshold && (unsigned)count.abundance > lookupCount)
     {
       std::cerr << "ERROR: check lookuptable counts failed, value " << lookupCount
                 << " for packed kmer " << packedKmer << "generated from"
@@ -53,9 +54,9 @@ bool isValid(const Lookuptable &lookuptable,
 }
 
 LookupTableBase* buildLookuptable(string countFile,
-                              const KmerTranslator &translator,
-                              size_t minCount,
-                              float corrFactor)
+                                  const KmerTranslator &translator,
+                                  size_t minCount,
+                                  float corrFactor)
 {
     unsigned int kmerSpan = translator.getSpan();
 
@@ -87,6 +88,7 @@ LookupTableBase* buildLookuptable(string countFile,
     typename Kmer<>::ModelCanonical model(kmerSize);
 
      fprintf(stderr, "start count kmers - construct grids\n");
+
     // construct grids: count kmers per grid, increase grid values in doing so
     for (it->first(); !it->isDone(); it->next())
     {
@@ -105,22 +107,20 @@ LookupTableBase* buildLookuptable(string countFile,
     for (it->first(); !it->isDone(); it->next())
     {
       const Count& count = it->item();
-      //std::string kmer = model.toString(count.value);
-
       kmerType packedKmer =
           translator.kmer2minPackedKmer(largeInt2uint128(count.value));
-      //TODO: duplicate code, better solution?
       lookuptable->addElement(packedKmer, count.abundance);
     }
 
     fprintf(stderr, "start final setup for lookuptable\n");
-    // shift grid value to grid start positions back
+
+    // final setup - shift grid value to grid start positions back
     lookuptable->finalSetupTables(minCount);
 
-    //TODO: sort elements per grid
+    //TODO: sort elements per grid?
 
 #ifdef DEBUG
-    if(!isValid(*lookuptable,solidKmers,model,translator,minCount))
+    if(!isValid(*lookuptable, solidKmers, model, translator, minCount))
       return NULL;
 #endif
   }

@@ -1,3 +1,4 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 #ifndef COUNTPROFILE_H
 #define COUNTPROFILE_H
 
@@ -13,10 +14,14 @@
 #include "KmerTranslator.h"
 #include "types.h"
 
+typedef struct{
+  string  name, comment, seq, qual;
+  char sep;
+}
+SequenceInfo;
 
 
 struct __attribute__((__packed__)) CountProfileEntry {
-  uint8_t  nuc : 3;        /* nucleotid in 2 bit representation */
   uint8_t valid;
   uint32_t count;          /* max count of spaced k-mers matching <readPos> */
 };
@@ -25,52 +30,43 @@ class CountProfile
 {
   private:
 
-    CountProfileEntry*     profile;
-    const KmerTranslator*  translator;
-    const LookupTableBase*     lookuptable;
+    CountProfileEntry* profile;
+    const KmerTranslator* translator;
+    const LookupTableBase* lookuptable;
 
-    const char* seqNuc;
-    const char* seqName;
-    size_t                 maxprofileLength = 0, /* maximal length of profile,
-                                                    corresponds to the allocated
-                                                    size of <profile> */
-                           profileLength = 0,    /* length of current profile,
-                                                    corresponds to the used
-                                                    size of <profile>*/
-                           abundanceEstimation = 0;
+    SequenceInfo* seqinfo;
+    //const char* seqNuc;
+    //const char* seqName;
+    size_t  maxprofileLength = 0, /* maximal length of profile,
+                                     corresponds to the allocated size of <profile> */
+            profileLength = 0;    /* length of current profile,
+                                     corresponds to the used size of <profile>*/
 
 public:
 
     /* constructor */
     CountProfile(const KmerTranslator *translator, const LookupTableBase *lookuptable);
 
-    CountProfile(const KmerTranslator *translator, const LookupTableBase *lookuptable,
-                 const SeqType seq, char *seqdName);
-
     /* destructor */
     ~CountProfile();
 
     /* getter */
-    const char *getSeqName(){return (this->seqName);}
-    float getCorrFactor(){return (0);}
-    /* create and store count profiles of <seq> */
-    void fill(const char *seqName, const char *seqNuc, size_t length);
+    const char *getSeqName(){return (seqinfo->name.c_str());}
+    SequenceInfo *getSeqInfo(){return (seqinfo);}
 
-    /* set abundanceEstimation value c_pop to 67% quantile over count profile */
-    size_t calc67quantile();
+    /* create and store count profiles */
+    void fill(SequenceInfo *seq, size_t length);
+
+    /* calculate abundanceEstimation value as 67% quantile over count profile */
+    unsigned int calc67quantile();
 
     std::vector<unsigned int> getDropPointsInMaximzedProfile();
 
     bool  checkForRiseAndDropPoints (std::vector<unsigned int> dropPositions);
 
+    /* show tab-based table of seqPos and count */
+    void showProfile(FILE *fp = stdout) const;
 
-    /* show tab-based table of seqPos and count.
-       count means here the maximal count of all spaced k-mers,
-       which overlap seqPos with a match */
-    void showProfile(FILE *fp=stdout) const;
-
-   //TODO: function: clear, correct
-    size_t calcMedian();
 };
 
 #endif // COUNTPROFILE_H

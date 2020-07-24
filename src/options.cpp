@@ -1,3 +1,4 @@
+// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 #include <iostream>
 #include <sstream>
 #include <getopt.h>
@@ -11,9 +12,13 @@ Options::Options():
   "sequence file (reads or contigs in fasta format)",
   typeid(std::string), (void *) &seqFile, PROFILE|FILTER|ABUNDANCE_ESTIMATOR|CONSENSUS)
   ,
-  OP_COUNT_FILE(OP_COUNT_FILE_ID,"count", "--count ",
+  OP_COUNT_FILE(OP_COUNT_FILE_ID, "counts", "--counts ",
   "pre computed kmer count file in hdf5 format (dsk output format), Note: only supports 41-mers yet",
   typeid(std::string),  (void *) &countFile, 0)
+  ,
+  OP_OUTPREFIX(OP_OUTPREFIX_ID, "outprefix", "--outprefix ",
+               "prefix to use for resultfile(s)",
+               typeid(std::string),  (void *) &outprefix, 0)
   ,
   /*
   OP_KMER_WEIGHT(OP_KMER_WEIGHT_ID,"kmerWeight",
@@ -36,16 +41,19 @@ Options::Options():
   profileWorkflow.push_back(OP_SEQ_FILE);
   profileWorkflow.push_back(OP_COUNT_FILE);
   profileWorkflow.push_back(OP_THREADS);
+  profileWorkflow.push_back(OP_OUTPREFIX);
 
   // filter
   filterWorkflow.push_back(OP_SEQ_FILE);
   filterWorkflow.push_back(OP_COUNT_FILE);
   filterWorkflow.push_back(OP_THREADS);
+  filterWorkflow.push_back(OP_OUTPREFIX);
 
   //abundanceEstimator
   abundanceEstimatorWorkflow.push_back(OP_SEQ_FILE);
   abundanceEstimatorWorkflow.push_back(OP_COUNT_FILE);
   abundanceEstimatorWorkflow.push_back(OP_THREADS);
+  abundanceEstimatorWorkflow.push_back(OP_OUTPREFIX);
 
 }
 
