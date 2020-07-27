@@ -4,8 +4,8 @@
 
 #include "uint128.h"
 
-typedef uint128_t       spacedKmerType;
-typedef uint64_t        kmerType;
+typedef uint128_t spacedKmerType;
+typedef uint64_t kmerType;
 
 kmerType minIndex(const kmerType kmer, const unsigned short kmerSize);
 

@@ -16,61 +16,58 @@
 
 
 typedef struct {
-    FILE *profileFile;
+  FILE *profileFile;
 } ProfileArgs;
 
 
-int showProfile(CountProfile &countprofile, void *profileargs)
-{
-  fprintf(((ProfileArgs *)profileargs)->profileFile,"#%s\n", countprofile.getSeqName());
-  countprofile.showProfile(((ProfileArgs *)profileargs)->profileFile);
+int showProfile(CountProfile &countprofile, void *profileargs) {
+  fprintf(((ProfileArgs *) profileargs)->profileFile, "#%s\n", countprofile.getSeqName());
+  countprofile.showProfile(((ProfileArgs *) profileargs)->profileFile);
 
 }
 
-int profile(int argc, const char **argv, const Command* tool)
-{
+int profile(int argc, const char **argv, const Command *tool) {
 
-    Options &opt = Options::getInstance();
-    opt.parseOptions(argc, argv, *tool);
+  Options &opt = Options::getInstance();
+  opt.parseOptions(argc, argv, *tool);
 
-    //TODO: print parameters
+  //TODO: print parameters
 
-    // TODO:check parameter and if files exists
+  // TODO:check parameter and if files exists
 
-    initialize();
-    KmerTranslator *translator = new KmerTranslator();
-    string seqFile = opt.seqFile;
+  initialize();
+  KmerTranslator *translator = new KmerTranslator();
+  string seqFile = opt.seqFile;
 
 
-    LookupTableBase *lookuptable;
+  LookupTableBase *lookuptable;
 
-    // use precomputed counts and fill lookuptable
-    if (opt.OP_COUNT_FILE.isSet) {
+  // use precomputed counts and fill lookuptable
+  if (opt.OP_COUNT_FILE.isSet) {
 
-        string countFile = opt.countFile;
-        lookuptable = buildLookuptable(countFile, *translator, 0, 1);
-    }
-    else { // count k-mers itself and fill hash-lookuptable
+    string countFile = opt.countFile;
+    lookuptable = buildLookuptable(countFile, *translator, 0, 1);
+  } else { // count k-mers itself and fill hash-lookuptable
 
-        lookuptable = buildHashTable(seqFile, *translator);
-    }
+    lookuptable = buildHashTable(seqFile, *translator);
+  }
 
-    if (lookuptable == NULL) {
+  if (lookuptable == NULL) {
 
-        fprintf(stderr,"Generating lookuptablefailed\n");
-        return EXIT_FAILURE;
-    }
+    fprintf(stderr, "Generating lookuptablefailed\n");
+    return EXIT_FAILURE;
+  }
 
-    string outprefix;
-    if(opt.OP_OUTPREFIX.isSet)
-        outprefix = opt.outprefix;
-    else
-        outprefix = getFilename(seqFile);
+  string outprefix;
+  if (opt.OP_OUTPREFIX.isSet)
+    outprefix = opt.outprefix;
+  else
+    outprefix = getFilename(seqFile);
 
-    ProfileArgs profileargs = {openFileOrDie(outprefix + ".profiles", "w")};
-    processSeqFile(seqFile, lookuptable, translator, showProfile, &profileargs);
-    fclose(profileargs.profileFile);
+  ProfileArgs profileargs = {openFileOrDie(outprefix + ".profiles", "w")};
+  processSeqFile(seqFile, lookuptable, translator, showProfile, &profileargs);
+  fclose(profileargs.profileFile);
 
-    return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }
 

@@ -11,12 +11,12 @@
 
 
 int processSeqFile(string seqFilename,
-                   const LookupTableBase* lookuptable,
-                   const KmerTranslator* translator,
-                   int (*processCountProfile)(CountProfile &, void*),
+                   const LookupTableBase *lookuptable,
+                   const KmerTranslator *translator,
+                   int (*processCountProfile)(CountProfile &, void *),
                    void *processArgs,
-                   size_t chunkStart=0,
-                   size_t chunkEnd=std::numeric_limits<uint64_t>::max());
+                   size_t chunkStart = 0,
+                   size_t chunkEnd = std::numeric_limits<uint64_t>::max());
 
 /*int processSeqFileParallel(string seqFilename,
                            string resultFilename,

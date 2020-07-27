@@ -17,12 +17,12 @@ typedef Kmer<>::Count Count;
               const KmerTranslator &translator,
               unsigned short threeshold);
 */
-LookupTableBase* buildLookuptable(string countFile,
-                              const KmerTranslator &translator,
-                              size_t minCount,
-                              float corrFactor);
+LookupTableBase *buildLookuptable(string countFile,
+                                  const KmerTranslator &translator,
+                                  size_t minCount,
+                                  float corrFactor);
 
-LookupTableBase* buildHashTable(string seqFile, const KmerTranslator &translator);
+LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator);
 
 
 #endif // PREPROCESSING

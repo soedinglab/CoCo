@@ -5,6 +5,7 @@
 #include "types.h"
 
 #ifdef __SSSE3__
+
 uint64_t revComplement_intr(const uint64_t kmer, const unsigned short k) {
 
   // broadcast 64bit to 128 bit
@@ -14,10 +15,10 @@ uint64_t revComplement_intr(const uint64_t kmer, const unsigned short k) {
   // a lookup entry at the index of two nucleotids (4 bit) describes the reverse
   // complement of these two nucleotid in the higher 4 bits (lookup1) or in the
   // lower 4 bits (lookup2)
-  __m128i lookup1 = _mm_set_epi8(0x50,0x10,0xD0,0x90,0x40,0x00,0xC0,0x80,0x70,
-                                 0x30,0xF0,0xB0,0x60,0x20,0xE0,0xA0);
-  __m128i lookup2 = _mm_set_epi8(0x05,0x01,0x0D,0x09,0x04,0x00,0x0C,0x08,0x07,
-                                 0x03,0x0F,0x0B,0x06,0x02,0x0E,0x0A);
+  __m128i lookup1 = _mm_set_epi8(0x50, 0x10, 0xD0, 0x90, 0x40, 0x00, 0xC0, 0x80, 0x70,
+                                 0x30, 0xF0, 0xB0, 0x60, 0x20, 0xE0, 0xA0);
+  __m128i lookup2 = _mm_set_epi8(0x05, 0x01, 0x0D, 0x09, 0x04, 0x00, 0x0C, 0x08, 0x07,
+                                 0x03, 0x0F, 0x0B, 0x06, 0x02, 0x0E, 0x0A);
 
   // _mm_set1_epi8: create 128 bit with all bytes set to given value
   // here: 0x0F (00001111) and 0xF0 (11110000)
@@ -37,17 +38,17 @@ uint64_t revComplement_intr(const uint64_t kmer, const unsigned short k) {
 
   // set upper 8 bytes to 0 and revert order of lower 8 bytes
   x = _mm_shuffle_epi8(x,
-      _mm_set_epi8(0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0,1,2,3,4,5,6,7));
+                       _mm_set_epi8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 1, 2, 3, 4, 5, 6, 7));
 
   // shift out the unused nucleotide positions (1 <= k <=32 )
   // broadcast 128 bit to 64 bit
-  return (((uint64_t)_mm_cvtsi128_si64(x)) >> (uint64_t)(64-2*k));
+  return (((uint64_t) _mm_cvtsi128_si64(x)) >> (uint64_t) (64 - 2 * k));
 }
+
 #endif
 
 
-kmerType revComplement(const kmerType kmer, const unsigned short kmerSize)
-{
+kmerType revComplement(const kmerType kmer, const unsigned short kmerSize) {
 
   kmerType revCompKmer = 0;
 
@@ -69,9 +70,8 @@ kmerType revComplement(const kmerType kmer, const unsigned short kmerSize)
 
 }
 
-kmerType minIndex(const kmerType kmer, const unsigned short kmerSize)
-{
+kmerType minIndex(const kmerType kmer, const unsigned short kmerSize) {
   kmerType revCompKmer = revComplement(kmer, kmerSize);
 
-  return kmer < revCompKmer? kmer: revCompKmer;
+  return kmer < revCompKmer ? kmer : revCompKmer;
 }

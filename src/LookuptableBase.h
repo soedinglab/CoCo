@@ -2,12 +2,13 @@
 
 #include "types.h"
 #include "kmer.h"
+
 #ifndef LOOKUPTABLEBASE_H
 #define LOOKUPTABLEBASE_H
 
-class LookupTableBase{
+class LookupTableBase {
 public:
-    virtual unsigned int getCount (const kmerType kmer) const = 0;
+  virtual unsigned int getCount(const kmerType kmer) const = 0;
 };
 
 #endif //LOOKUPTABLEBASE_H

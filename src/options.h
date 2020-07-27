@@ -25,36 +25,35 @@ struct cocoOption {
   unsigned long required;
 
   cocoOption(int uid, const char *n, const char *dp,
-         const char *descr, const std::type_info &ty,
-         void *val, unsigned long required):
-         name(n), uniqid(uid), display(dp), description(descr), type(ty),value(val),isSet(false),required(required){}
+             const char *descr, const std::type_info &ty,
+             void *val, unsigned long required) :
+    name(n), uniqid(uid), display(dp), description(descr), type(ty), value(val), isSet(false), required(required) {}
 };
 
 
-class Options
-{
+class Options {
 public:
 
   void setDefaults();
-  static Options& getInstance()
-  {
-    if (instance == NULL)
-    {
+
+  static Options &getInstance() {
+    if (instance == NULL) {
       initInstance();
     }
     return *instance;
   }
-  static void initInstance()
-  {
-      new Options;
+
+  static void initInstance() {
+    new Options;
   }
 
-  void parseOptions(int argc, const char* argv[],
-                    const Command& command);
-                       /*size_t requiredParameterCount,
-                       bool printParameters = true,
-                       int parseFlags = 0,
-                       int outputFlags = 0);*/
+  void parseOptions(int argc, const char *argv[],
+                    const Command &command);
+
+  /*size_t requiredParameterCount,
+  bool printParameters = true,
+  int parseFlags = 0,
+  int outputFlags = 0);*/
 
   std::string seqFile;
   std::string countFile;
@@ -69,7 +68,6 @@ public:
   std::vector<cocoOption> consensusWorkflow;
 
 
-
   OPTION(OP_SEQ_FILE)
   OPTION(OP_COUNT_FILE)
   OPTION(OP_OUTPREFIX)
@@ -77,13 +75,16 @@ public:
   OPTION(OP_THREADS)
 
 protected:
-    Options();
-    static Options* instance;
-    virtual ~Options() {};
+  Options();
+
+  static Options *instance;
+
+  virtual ~Options() {};
 
 private:
-    Options(Options const&);
-    void operator=(Options const&);
+  Options(Options const &);
+
+  void operator=(Options const &);
 };
 
 #endif // OPTIONS_H

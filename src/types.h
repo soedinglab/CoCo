@@ -11,7 +11,7 @@ typedef std::string SeqType;
 const unsigned int alphabetSize = 4;
 extern char int2res[alphabetSize];
 extern char int2rev[alphabetSize];
-extern int res2int['Z'+1];
+extern int res2int['Z' + 1];
 
 void initialize();
 

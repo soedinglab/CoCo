@@ -16,63 +16,58 @@
 #include "filehandling.h"
 
 typedef struct {
-    FILE *abundanceFile;
+  FILE *abundanceFile;
 } AbundanceEstimatorArgs;
 
 
-int abundanceEstimatationProcessor(CountProfile &countprofile, void *abundanceargs)
-{
+int abundanceEstimatationProcessor(CountProfile &countprofile, void *abundanceargs) {
   // estimate abundance value
   // TODO
 }
 
 
-int abundanceEstimator(int argc, const char **argv, const Command* tool)
-{
-    int exit_code=0;
-    Options &opt = Options::getInstance();
-    opt.parseOptions(argc, argv, *tool);
+int abundanceEstimator(int argc, const char **argv, const Command *tool) {
+  int exit_code = 0;
+  Options &opt = Options::getInstance();
+  opt.parseOptions(argc, argv, *tool);
 
-    //TODO: print parameters
+  //TODO: print parameters
 
-    // TODO:check parameter and if files exists
+  // TODO:check parameter and if files exists
 
-    initialize();
-    KmerTranslator *translator = new KmerTranslator();
-    string seqFile = opt.seqFile;
+  initialize();
+  KmerTranslator *translator = new KmerTranslator();
+  string seqFile = opt.seqFile;
 
 
-    LookupTableBase *lookuptable;
+  LookupTableBase *lookuptable;
 
-    // use precomputed counts and fill lookuptable
-    if (opt.OP_COUNT_FILE.isSet) {
+  // use precomputed counts and fill lookuptable
+  if (opt.OP_COUNT_FILE.isSet) {
 
-        string countFile = opt.countFile;
-        lookuptable = buildLookuptable(countFile, *translator, 0, 1);
+    string countFile = opt.countFile;
+    lookuptable = buildLookuptable(countFile, *translator, 0, 1);
+  } else { // count k-mers itself and fill hash-lookuptable
+
+    lookuptable = buildHashTable(seqFile, *translator);
+  }
+
+  if (lookuptable == NULL) {
+
+    fprintf(stderr, "Generating lookuptablefailed\n");
+    return EXIT_FAILURE;
+  }
+
+  AbundanceEstimatorArgs abundanceargs = {openFileOrDie("abundance", "w")};
+
+  if (opt.threads == 1) {
+    exit_code = processSeqFile(seqFile, lookuptable, translator, abundanceEstimatationProcessor, &abundanceargs);
+    if (exit_code != 0) {
+      std::cerr << "ERROR processing sequence file " << seqFile << std::endl;
     }
-    else { // count k-mers itself and fill hash-lookuptable
+  }
 
-        lookuptable = buildHashTable(seqFile, *translator);
-    }
-
-    if (lookuptable == NULL) {
-
-        fprintf(stderr,"Generating lookuptablefailed\n");
-        return EXIT_FAILURE;
-    }
-
-    AbundanceEstimatorArgs abundanceargs = {openFileOrDie("abundance", "w")};
-
-    if (opt.threads == 1)
-    {
-      exit_code = processSeqFile(seqFile, lookuptable, translator, abundanceEstimatationProcessor, &abundanceargs);
-      if (exit_code != 0)
-      {
-        std::cerr << "ERROR processing sequence file " << seqFile << std::endl;
-      }
-    }
-
-    //    else
+  //    else
 //    {
 //      retval = processSeqFileParallel(seqFile,
 //                                      resultFile,

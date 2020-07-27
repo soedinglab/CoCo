@@ -12,7 +12,7 @@
 #endif
 
 enum UsageMode {
-  SIMPLE=0,
+  SIMPLE = 0,
   EXTENDED
 };
 

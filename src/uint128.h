@@ -14,7 +14,7 @@ uint128_t largeInt2uint128(const LargeInt<1> value);
 
 uint128_t largeInt2uint128(const LargeInt<2> value);
 
-std::ostream& operator<<( std::ostream& dest, __uint128_t value );
+std::ostream &operator<<(std::ostream &dest, __uint128_t value);
 
 #endif // UINT128
 

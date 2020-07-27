@@ -4,10 +4,9 @@
 
 char int2res[alphabetSize];
 char int2rev[alphabetSize];
-int res2int['Z'+1];
+int res2int['Z' + 1];
 
-void initialize()
-{
+void initialize() {
   int2res[0] = 'A'; // T
   int2res[1] = 'C'; // G
   int2res[2] = 'T'; // A
@@ -17,12 +16,10 @@ void initialize()
   int2rev[2] = 0;
   int2rev[3] = 1;
 
-  for (unsigned int i = 0; i <= 'Z'; ++i)
-  {
-    res2int[i]= -1;
+  for (unsigned int i = 0; i <= 'Z'; ++i) {
+    res2int[i] = -1;
   }
-  for (unsigned int i = 0; i < alphabetSize; ++i)
-  {
-    res2int[(int)int2res[i]] = i;
+  for (unsigned int i = 0; i < alphabetSize; ++i) {
+    res2int[(int) int2res[i]] = i;
   }
 }

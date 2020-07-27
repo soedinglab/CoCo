@@ -17,11 +17,10 @@ KSEQ_INIT(int, read)
 int processSeqFile(string seqFilename,
                    const LookupTableBase *lookuptable,
                    const KmerTranslator *translator,
-                   int (*processCountProfile)(CountProfile &, void*),
+                   int (*processCountProfile)(CountProfile &, void *),
                    void *processArgs,
                    size_t chunkStart,
-                   size_t chunkEnd)
-{
+                   size_t chunkEnd) {
 
   FILE *seqFile = openFileOrDie(seqFilename, "r");
 
@@ -33,27 +32,26 @@ int processSeqFile(string seqFilename,
 
   fseek(seqFile, chunkStart, SEEK_SET);
   /* iterate over every single fasta/fastq entry  */
-  while (kseq_read(seq) >= 0)
-  {
+  while (kseq_read(seq) >= 0) {
     const size_t len = seq->seq.l;
-    const char* seqName = seq->name.s;
+    const char *seqName = seq->name.s;
 
     unsigned int kmerSpan = translator->getSpan();
-    if(len < kmerSpan)
-    {
+    if (len < kmerSpan) {
       fprintf(stderr, "WARNING: sequence %s is too short, it'll be skipped\n", seqName);
       continue;
     }
 
     /* fill profile */
-    SequenceInfo *seqinfo = new SequenceInfo {seq->name.s,seq->comment.s,seq->seq.s,seq->qual.s?string(seq->qual.s):string(""),(char)seq->last_char};
+    SequenceInfo *seqinfo = new SequenceInfo{seq->name.s, seq->comment.s, seq->seq.s,
+                                             seq->qual.s ? string(seq->qual.s) : string(""), (char) seq->last_char};
     countprofile.fill(seqinfo, len);
 
     /* use function pointer for what to do with profile */
     processCountProfile(countprofile, processArgs);
 
-    if (lseek(fd,0,SEEK_CUR) > chunkEnd)
-       break;
+    if (lseek(fd, 0, SEEK_CUR) > chunkEnd)
+      break;
 
   }
   kseq_destroy(seq);
