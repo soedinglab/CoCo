@@ -9,6 +9,7 @@
 #include "kseq.h"
 #include "LookuptableBase.h"
 #include "util.h"
+#include "Info.h"
 
 #define SEQ_BUFSIZE 4096
 
@@ -22,6 +23,7 @@ int processSeqFile(string seqFilename,
                    size_t chunkStart,
                    size_t chunkEnd) {
 
+  Info(Info::INFO) << "process seqFile...\n";
   FILE *seqFile = openFileOrDie(seqFilename, "r");
 
   //TODO: check what happens if one thread have problems wit a file, kill whole process then
@@ -38,7 +40,7 @@ int processSeqFile(string seqFilename,
 
     unsigned int kmerSpan = translator->getSpan();
     if (len < kmerSpan) {
-      fprintf(stderr, "WARNING: sequence %s is too short, it'll be skipped\n", seqName);
+      Info(Info::WARNING) << "WARNING: sequence " << seqName << " is too short, it'll be skipped\n";
       continue;
     }
 
@@ -57,6 +59,7 @@ int processSeqFile(string seqFilename,
   kseq_destroy(seq);
   fclose(seqFile);
 
+  Info(Info::INFO) << "...completed\n";
   return EXIT_SUCCESS;
 }
 

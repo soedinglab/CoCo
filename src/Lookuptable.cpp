@@ -1,9 +1,11 @@
 // Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
+
 #include <assert.h>
 #include <iostream>
 #include <string.h>
 #include "Lookuptable.h"
 #include "util.h"
+#include "Info.h"
 
 
 Lookuptable::Lookuptable(const size_t nbItems, float corrFactor) {
@@ -59,8 +61,8 @@ size_t Lookuptable::addElement(kmerType kmer, unsigned int count) {
   if (gridPosition > 0)
     prevWritingPosition = indexGridTable[gridPosition - 1];
   if (writingPosition >= this->maxNumberItems) {
-    std::cerr << "Lookuptable addElement overflows. Current write position is "
-              << writingPosition << std::endl;
+    Info(Info::ERROR) << "ERROR: Lookuptable addElement overflows. Current writing position is "
+                      << writingPosition << "\n";
     EXIT(EXIT_FAILURE);
   }
   for (size_t pos = prevWritingPosition; pos < writingPosition; pos++) {

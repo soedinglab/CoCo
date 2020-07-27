@@ -1,6 +1,7 @@
 set(coco_header_files
         ${coco_header_files}
         ${CMAKE_CURRENT_SOURCE_DIR}/Command.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/Info.h
         ${CMAKE_CURRENT_SOURCE_DIR}/options.h
         ${CMAKE_CURRENT_SOURCE_DIR}/util.h
         ${CMAKE_CURRENT_SOURCE_DIR}/types.h
@@ -15,11 +16,13 @@ set(coco_header_files
         ${CMAKE_CURRENT_SOURCE_DIR}/CountProfile.h
         ${CMAKE_CURRENT_SOURCE_DIR}/runner.h
         ${CMAKE_CURRENT_SOURCE_DIR}/filehandling.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/SequenceInfo.h
         PARENT_SCOPE
         )
 
 set(coco_source_files
         ${coco_source_files}
+        ${CMAKE_CURRENT_SOURCE_DIR}/Info.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/abundanceEstimator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/consensus.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/profile.cpp

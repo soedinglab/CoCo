@@ -1,4 +1,5 @@
 // Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
+
 #include "KmerTranslator.h"
 
 KmerTranslator::KmerTranslator() {

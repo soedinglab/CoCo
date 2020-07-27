@@ -1,6 +1,7 @@
 // Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 #include "filehandling.h"
 #include "util.h"
+#include "Info.h"
 
 void _mkdir(const char *dir, mode_t mode) {
   char tmp[256];
@@ -36,7 +37,7 @@ FILE *openFileOrDie(const char *fileName, const char *mode) {
   FILE *file;
   file = fopen(fileName, mode);
   if (file == NULL) {
-    fprintf(stderr, "ERROR: opening failed for file %s\n", fileName);
+    Info(Info::ERROR) << "ERROR: opening failed for file " << fileName << "\n";
     perror(fileName);
     EXIT(EXIT_FAILURE);
   }

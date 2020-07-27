@@ -5,6 +5,7 @@
 #include "HashTable.h"
 #include "filehandling.h"
 #include "kseq.h"
+#include "Info.h"
 
 KSEQ_INIT(int, read)
 
@@ -32,19 +33,19 @@ bool isValid(const Lookuptable &lookuptable,
     // the same packedKmer by using spacemask
     if (count.abundance < threshold && lookupCount != 0 && lookupCount < threshold) {
 
-      std::cerr << "ERROR: count value " << lookupCount
-                << "found for packed kmer "
-                << packedKmer << "generated from " << kmer
-                << " is smaller than threeshold" << threshold << std::endl;
+      Info(Info::ERROR)  << "ERROR: count value " << lookupCount
+                         << "found for packed kmer "
+                         << packedKmer << "generated from " << kmer
+                         << " is smaller than threeshold" << threshold << "\n";
       return false;
     }
 
     // check count values
     if ((unsigned) count.abundance > threshold && (unsigned) count.abundance > lookupCount) {
-      std::cerr << "ERROR: check lookuptable counts failed, value " << lookupCount
-                << " for packed kmer " << packedKmer << "generated from"
-                << kmer << "is smaller than count.abundance="
-                << count.abundance << "found in h5 file " << std::endl;
+      Info(Info::ERROR) << "ERROR: check lookuptable counts failed, value " << lookupCount
+                        << " for packed kmer " << packedKmer << "generated from"
+                        << kmer << "is smaller than count.abundance="
+                        << count.abundance << "found in h5 file " << "\n";
       return false;
     }
   }
@@ -65,8 +66,8 @@ LookupTableBase *buildLookuptable(string countFile,
   unsigned int kmerSize = atoi(kmerSizeStr.c_str());
 
   if (kmerSize != kmerSpan) {
-    fprintf(stderr, "kmerSize %u used in hdf5 file %s is not supported.\n"
-                    "Please precompute kmer counts with k=41\n", kmerSize, countFile.c_str());
+    Info(Info::ERROR) << "ERROR: kmerSize " << kmerSize << " used in hdf5 file " << countFile.c_str() << " is not supported.\n"
+                         "Please precompute kmer counts with k=41\n";
     return NULL;
   }
 
@@ -75,7 +76,8 @@ LookupTableBase *buildLookuptable(string countFile,
   Partition<Count> &solidKmers = dskGroup.getPartition<Count>("solid");
 
   assert(translator.getSpan() == kmerSize);
-  fprintf(stderr, "start create lookuptable\n");
+
+  Info(Info::INFO) << "create lookuptable...\n";
   // create lookuptable
   Lookuptable *lookuptable = new Lookuptable(solidKmers.getNbItems(), corrFactor);
   // fill lookuptable
@@ -84,7 +86,7 @@ LookupTableBase *buildLookuptable(string countFile,
     LOCAL (it);
     typename Kmer<>::ModelCanonical model(kmerSize);
 
-    fprintf(stderr, "start count kmers - construct grids\n");
+    Info(Info::INFO) << "...construct grids\n";
 
     // construct grids: count kmers per grid, increase grid values in doing so
     for (it->first(); !it->isDone(); it->next()) {
@@ -98,7 +100,7 @@ LookupTableBase *buildLookuptable(string countFile,
     // shift grid value to grid start positions
     lookuptable->setupIndexGridTable();
 
-    fprintf(stderr, "start fill lookuptable\n");
+    Info(Info::INFO) << "...fill lookuptable\n";
     // add elements, increase grid values in doing so
     for (it->first(); !it->isDone(); it->next()) {
       const Count &count = it->item();
@@ -107,12 +109,14 @@ LookupTableBase *buildLookuptable(string countFile,
       lookuptable->addElement(packedKmer, count.abundance);
     }
 
-    fprintf(stderr, "start final setup for lookuptable\n");
+    Info(Info::INFO) << "...final setup\n";
 
     // final setup - shift grid value to grid start positions back
     lookuptable->finalSetupTables(minCount);
 
     //TODO: sort elements per grid?
+
+    Info(Info::INFO) << "...completed\n";
 
 #ifdef DEBUG
     if(!isValid(*lookuptable, solidKmers, model, translator, minCount))
@@ -131,6 +135,8 @@ LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator
   kseq_t *seq = kseq_init(fd);
   spacedKmerType spacedKmer, mask = ((((spacedKmerType) 1) << (spacedKmerType) (kmerSpan * 2)) - 1);
   kmerType x;
+
+  Info(Info::INFO) << "count k-mers...\n";
   while (kseq_read(seq) >= 0) {
     const size_t len = seq->seq.l;
     const char *seqNuc = seq->seq.s;
@@ -161,6 +167,8 @@ LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator
   }
   kseq_destroy(seq);
   fclose(kmerCountFile);
+
+  Info(Info::INFO) << "...completed\n";
   return hashtable;
 }
 

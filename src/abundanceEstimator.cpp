@@ -14,6 +14,7 @@
 #include "preprocessing.h"
 #include "runner.h"
 #include "filehandling.h"
+#include "Info.h"
 
 typedef struct {
   FILE *abundanceFile;
@@ -54,7 +55,7 @@ int abundanceEstimator(int argc, const char **argv, const Command *tool) {
 
   if (lookuptable == NULL) {
 
-    fprintf(stderr, "Generating lookuptablefailed\n");
+    Info(Info::ERROR) <<"Generating lookuptablefailed\n";
     return EXIT_FAILURE;
   }
 
@@ -63,7 +64,7 @@ int abundanceEstimator(int argc, const char **argv, const Command *tool) {
   if (opt.threads == 1) {
     exit_code = processSeqFile(seqFile, lookuptable, translator, abundanceEstimatationProcessor, &abundanceargs);
     if (exit_code != 0) {
-      std::cerr << "ERROR processing sequence file " << seqFile << std::endl;
+      Info(Info::ERROR) << "ERROR processing sequence file " << seqFile << "\n";
     }
   }
 

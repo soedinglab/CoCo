@@ -15,6 +15,7 @@
 #include "src/util.h"
 #include "src/options.h"
 #include "src/Command.h"
+#include "src/Info.h"
 
 
 #ifdef GIT_SHA1
@@ -122,6 +123,6 @@ int main(int argc, const char *argv[]) {
     return (EXIT_FAILURE);
   }
 
-  fprintf(stdout, "execute %s tool: %s\n", tool_name, command->cmd);
+  Info(Info::ERROR) << "execute " << tool_name << " tool: " << command->cmd << "\n";
   EXIT(command->callerFunction(argc - 1, argv + 1, command));
 }

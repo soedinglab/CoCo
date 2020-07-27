@@ -15,7 +15,7 @@ typedef struct Command {
 
   int (*callerFunction)(int, const char **, const struct Command *);
 
-  std::vector<cocoOption> *opt;
+  std::vector<cocoOption*> *opt;
   const char *descriptShort;
   const char *descriptLong;
   const char *author;

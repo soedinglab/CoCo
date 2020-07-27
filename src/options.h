@@ -60,12 +60,13 @@ public:
   std::string outprefix;
   //unsigned int kmerWeight;
   unsigned int threads;
+  int verbose;
 
-  std::vector<cocoOption> empty;
-  std::vector<cocoOption> filterWorkflow;
-  std::vector<cocoOption> profileWorkflow;
-  std::vector<cocoOption> abundanceEstimatorWorkflow;
-  std::vector<cocoOption> consensusWorkflow;
+  std::vector<cocoOption*> empty;
+  std::vector<cocoOption*> filterWorkflow;
+  std::vector<cocoOption*> profileWorkflow;
+  std::vector<cocoOption*> abundanceEstimatorWorkflow;
+  std::vector<cocoOption*> consensusWorkflow;
 
 
   OPTION(OP_SEQ_FILE)
@@ -73,6 +74,7 @@ public:
   OPTION(OP_OUTPREFIX)
   //OPTION(OP_KMER_WEIGHT)
   OPTION(OP_THREADS)
+  OPTION(OP_VERBOSE)
 
 protected:
   Options();

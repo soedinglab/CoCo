@@ -1,7 +1,7 @@
 //Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 
-#ifndef COCO_SEQUENCEINFO_H
-#define COCO_SEQUENCEINFO_H
+#ifndef SEQUENCEINFO_H
+#define SEQUENCEINFO_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,4 +28,4 @@ inline void sequenceInfo2FileEntry(SequenceInfo *seqinfo, FILE *fp){
   }
 }
 
-#endif //COCO_SEQUENCEINFO_H
+#endif //SEQUENCEINFO_H

@@ -6,6 +6,7 @@
 #include <stdexcept>
 
 #include "Command.h"
+#include "Info.h"
 #include "options.h"
 #include "types.h"
 #include "KmerTranslator.h"
@@ -59,7 +60,7 @@ int filter(int argc, const char **argv, const Command *tool)
 
   if (lookuptable == NULL) {
 
-    fprintf(stderr, "Generating lookuptablefailed\n");
+    Info(Info::ERROR) << "ERROR: Generating lookuptable failed\n";
     return EXIT_FAILURE;
   }
 

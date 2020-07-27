@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Command.h"
+#include "Info.h"
 #include "options.h"
 #include "types.h"
 #include "KmerTranslator.h"
@@ -31,8 +32,6 @@ int profile(int argc, const char **argv, const Command *tool) {
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);
 
-  //TODO: print parameters
-
   // TODO:check parameter and if files exists
 
   initialize();
@@ -54,7 +53,7 @@ int profile(int argc, const char **argv, const Command *tool) {
 
   if (lookuptable == NULL) {
 
-    fprintf(stderr, "Generating lookuptablefailed\n");
+    Info(Info::ERROR) << "ERROR: Generating lookuptable failed\n";
     return EXIT_FAILURE;
   }
 
