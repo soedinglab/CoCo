@@ -73,7 +73,8 @@ std::vector<unsigned int> CountProfile::getDropPointsInMaximzedProfile() {
 
   size_t maxProfileLen = this->profileLength + kmerSpan - 1;
   uint32_t maxProfile[maxProfileLen];
-  memset(maxProfile, 1, sizeof(uint32_t) * maxProfileLen);
+  for (size_t idx = 0; idx < maxProfileLen; idx++)
+    maxProfile[idx] = 1;  
 
   for (size_t idx = 0; idx < this->profileLength; idx++) {
     for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
