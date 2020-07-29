@@ -96,7 +96,7 @@ std::vector<unsigned int> CountProfile::getDropPointsInMaximzedProfile() {
   return positions;
 }
 
-bool CountProfile::checkForRiseAndDropPoints(std::vector<unsigned int> dropPositions) {
+bool CountProfile::checkForRiseAndDropPoints(std::vector<unsigned int> dropPositions, unsigned int minCount) {
   unsigned short kmerWeight = translator->getWeight();
   unsigned short kmerSpan = translator->getSpan();
   bool checkPoints[profileLength + kmerSpan - 1];
@@ -131,8 +131,8 @@ bool CountProfile::checkForRiseAndDropPoints(std::vector<unsigned int> dropPosit
 
   for (; idx < profileLength; idx++) {
     if (checkPoints[idx]) {
-      if (((double) profile[idx].count / validCount < 0.1 ) ||
-          ((double) validCount / profile[idx].count < 0.1 ))
+      if (((double) profile[idx].count / validCount < 0.1 && profile[idx].count < minCount) ||
+          ((double) validCount / profile[idx].count < 0.1 && validCount < minCount))
         return true;
 
       validCount = profile[idx].count;

@@ -17,13 +17,14 @@
 typedef struct {
   FILE *filterReads;
   FILE *cleanedReads;
+  int minCount;
 } FilterArgs;
 
 int filterProcessor(CountProfile &countprofile, void *filterargs)
 {
   std::vector<unsigned int> dropPositions = countprofile.getDropPointsInMaximzedProfile();
 
-  bool toFilter = countprofile.checkForRiseAndDropPoints(dropPositions);
+  bool toFilter = countprofile.checkForRiseAndDropPoints(dropPositions, ((FilterArgs *) filterargs)->minCount);
 
   SequenceInfo *seqinfo = countprofile.getSeqInfo();
   if (toFilter)
@@ -71,7 +72,8 @@ int filter(int argc, const char **argv, const Command *tool)
     outprefix = getFilename(seqFile);
   string ext = getFileExtension(seqFile);
   FilterArgs filterargs = {openFileOrDie(outprefix + ".filtered" + ext, "w"),
-                           openFileOrDie(outprefix + ".cleaned" + ext, "w")};
+                           openFileOrDie(outprefix + ".cleaned" + ext, "w"),
+                           opt.minCount};
 
   processSeqFile(seqFile, lookuptable, translator, filterProcessor, &filterargs);
 

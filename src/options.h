@@ -58,6 +58,7 @@ public:
   std::string seqFile;
   std::string countFile;
   std::string outprefix;
+  unsigned int minCount;
   //unsigned int kmerWeight;
   unsigned int threads;
   int verbose;
@@ -72,6 +73,7 @@ public:
   OPTION(OP_SEQ_FILE)
   OPTION(OP_COUNT_FILE)
   OPTION(OP_OUTPREFIX)
+  OPTION(OP_MINCOUNT)
   //OPTION(OP_KMER_WEIGHT)
   OPTION(OP_THREADS)
   OPTION(OP_VERBOSE)

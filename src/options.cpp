@@ -19,6 +19,9 @@ Options::Options() :
   OP_OUTPREFIX(OP_OUTPREFIX_ID, "outprefix", "--outprefix",
                "prefix to use for resultfile(s)",
                typeid(std::string), (void *) &outprefix, 0),
+  OP_MINCOUNT(OP_OUTPREFIX_ID, "mincount", "--mincount",
+               "min count value used to filter at drop positions",
+               typeid(int), (void *) &minCount, 0),
   /*
   OP_KMER_WEIGHT(OP_KMER_WEIGHT_ID,"kmerWeight",
   "--kmerWeight", "number of informative positions in a k-mer pattern, "
@@ -47,6 +50,7 @@ Options::Options() :
   filterWorkflow.push_back(&OP_SEQ_FILE);
   filterWorkflow.push_back(&OP_COUNT_FILE);
   filterWorkflow.push_back(&OP_OUTPREFIX);
+  filterWorkflow.push_back(&OP_MINCOUNT);
   filterWorkflow.push_back(&OP_THREADS);
   filterWorkflow.push_back(&OP_VERBOSE);
 
@@ -59,6 +63,7 @@ Options::Options() :
 }
 
 void Options::setDefaults() {
+  minCount = 10;
   threads = 1; //TODO
   verbose = Info::INFO;
 }
@@ -91,6 +96,8 @@ void Options::parseOptions(int argc, const char *argv[],
     {"help",      no_argument,       NULL, 'h'},
     {"seqFile",   required_argument, NULL, 0},
     {"counts",    required_argument, NULL, 0},
+    {"outprefix",    required_argument, NULL, 0},
+    {"mincount",    required_argument, NULL, 0},
     {"threads",   required_argument, NULL, 0},
     {"verbose",   required_argument, NULL, 0},
     {NULL,        no_argument,       NULL, 0}

@@ -29,9 +29,9 @@ private:
   SequenceInfo *seqinfo;
   //const char* seqNuc;
   //const char* seqName;
-  size_t maxprofileLength = 0, /* maximal length of profile,
+  size_t maxprofileLength = 0,    /* maximal length of profile,
                                      corresponds to the allocated size of <profile> */
-    profileLength = 0;    /* length of current profile,
+            profileLength = 0;    /* length of current profile,
                                      corresponds to the used size of <profile>*/
 
 public:
@@ -55,7 +55,7 @@ public:
 
   std::vector<unsigned int> getDropPointsInMaximzedProfile();
 
-  bool checkForRiseAndDropPoints(std::vector<unsigned int> dropPositions);
+  bool checkForRiseAndDropPoints(std::vector<unsigned int> dropPositions, unsigned int minCount);
 
   /* show tab-based table of seqPos and count */
   void showProfile(FILE *fp = stdout) const;

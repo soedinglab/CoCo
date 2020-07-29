@@ -51,27 +51,27 @@ std::vector<struct Command> commands =
     {"profile", profile, &opt.profileWorkflow, "write spaced k-mer count profiles (devtool)",
       "dev tool to write for every read (contig) the spaced k-mer count profile in a tab separated plain text file",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      " --seqFile <fastaFile> [--count <count.h5>] [--outprefix <string>]",
+      " --seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       PROFILE
     },
     {"filter", filter, &opt.filterWorkflow, "denoise read file",
       "identify reads containing remarkably/irregular nucleotide sequence as chimeras, indels, ... ",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      " --seqFile <fastaFile> [--count <count.h5>] [--outprefix <string>]",
+      " --seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       FILTER
     },
     {"abundance", abundanceEstimator, &opt.abundanceEstimatorWorkflow,
                                                               "estimate abundance values",
       "Gives for every read an estimated value for the abundance",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      " --seqFile <fastaFile> [--count <count.h5>] [--outprefix <string>]",
+      " --seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       ABUNDANCE_ESTIMATOR
     },
 
     {"consensus", consensus, &opt.consensusWorkflow, "calculate consensus reads ",
       "calculate for every read the consensus nucleotide sequence",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      "--seqFile <fastaFile> [--count <count.h5>] [--outprefix <string>]",
+      "--seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       CONSENSUS
     }
   };
