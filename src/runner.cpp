@@ -46,7 +46,7 @@ int processSeqFile(string seqFilename,
 
     /* fill profile */
     SequenceInfo *seqinfo = new SequenceInfo{seq->name.s, seq->comment.s!=NULL ? string(seq->comment.s) : string(""), seq->seq.s,
-                                             seq->qual.s!=NULL ? string(seq->qual.s) : string(""), (char) seq->last_char};
+                                             seq->qual.s!=NULL ? string(seq->qual.s) : string(""), seq->qual.s!=NULL ? '@':'>'};
     countprofile.fill(seqinfo, len);
 
     /* use function pointer for what to do with profile */

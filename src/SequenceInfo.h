@@ -24,7 +24,7 @@ inline void sequenceInfo2FileEntry(SequenceInfo *seqinfo, FILE *fp){
   fwrite(seqinfo->seq.c_str(), sizeof(char), seqinfo->seq.size(), fp);
   fwrite("\n", sizeof(char), 1, fp);
   if (seqinfo->sep == '@') {
-    fwrite("*", sizeof(char), 1, fp);
+    fwrite("+\n", sizeof(char), 2, fp);
     fwrite(seqinfo->qual.c_str(), sizeof(char), seqinfo->qual.size(), fp);
     fwrite("\n", sizeof(char), 1, fp);
   }
