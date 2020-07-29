@@ -46,7 +46,7 @@ void CountProfile::fill(SequenceInfo *seqinfo, size_t length) {
 
     if (idx >= kmerSpan - 1) {
       // check if spaced k-mer contains 'N'
-      if ((nStore & translator->_mask) != 0) {
+      if ((nStore & (spacedKmerType) 2199023255551) != 0) { //if ((nStore & translator->_mask) != 0)
         profile[idx - (kmerSpan - 1)].count = 0;
         profile[idx - (kmerSpan - 1)].valid = 0;
         continue;
@@ -131,7 +131,8 @@ bool CountProfile::checkForRiseAndDropPoints(std::vector<unsigned int> dropPosit
 
   for (; idx < profileLength; idx++) {
     if (checkPoints[idx]) {
-      if (((double) profile[idx].count / validCount < 0.1) || ((double) validCount / profile[idx].count < 0.1))
+      if (((double) profile[idx].count / validCount < 0.1 ) ||
+          ((double) validCount / profile[idx].count < 0.1 ))
         return true;
 
       validCount = profile[idx].count;
