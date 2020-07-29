@@ -12,7 +12,9 @@ typedef struct {
   string name, comment, seq, qual;
   char sep;
 }
-  SequenceInfo;
+SequenceInfo;
+
+
 
 inline void sequenceInfo2FileEntry(SequenceInfo *seqinfo, FILE *fp){
   fwrite(&seqinfo->sep, sizeof(char), 1, fp);
