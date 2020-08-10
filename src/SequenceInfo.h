@@ -19,7 +19,10 @@ SequenceInfo;
 inline void sequenceInfo2FileEntry(SequenceInfo *seqinfo, FILE *fp){
   fwrite(&seqinfo->sep, sizeof(char), 1, fp);
   fwrite(seqinfo->name.c_str(), sizeof(char), seqinfo->name.size(), fp);
-  fwrite(seqinfo->comment.c_str(), sizeof(char), seqinfo->comment.size(), fp);
+  if (seqinfo->comment.size() > 0) {
+    fwrite(" ", sizeof(char), 1, fp);
+    fwrite(seqinfo->comment.c_str(), sizeof(char), seqinfo->comment.size(), fp);
+  }
   fwrite("\n", sizeof(char), 1, fp);
   fwrite(seqinfo->seq.c_str(), sizeof(char), seqinfo->seq.size(), fp);
   fwrite("\n", sizeof(char), 1, fp);

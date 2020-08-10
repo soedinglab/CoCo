@@ -118,6 +118,13 @@ bool CountProfile::checkForRiseAndDropPoints(std::vector<unsigned int> dropPosit
       checkPoints[idx] = false;
   }
 
+
+  /*
+    std::cout << "#"  << this->seqinfo->name << std::endl;
+  for (size_t kdx = 0; kdx < profileLength; kdx++) {
+    std::cout << kdx << '\t' << profile[kdx].count << '\t' << (checkPoints[kdx]?"1":"0") << std::endl;
+  }
+   */
   unsigned int validCount = 0;
   size_t idx = 0;
   for (size_t idx = 0; idx < profileLength; idx++) {
