@@ -86,12 +86,35 @@ std::vector<unsigned int> CountProfile::getDropPointsInMaximzedProfile() {
   }
 
   std::vector<unsigned int> positions;
-  for (size_t idx = 1; idx < maxProfileLen; idx++) {
+  /*for (size_t idx = 1; idx < maxProfileLen; idx++) {
     if ((double) (maxProfile[idx]) / maxProfile[idx - 1] < 0.1)
       positions.push_back(idx);
     else if (((double) (maxProfile[idx - 1]) / maxProfile[idx] < 0.1) &&
              (positions.empty() || positions.back() != idx - 1))
       positions.push_back(idx - 1);
+  }*/
+
+  unsigned int upperLevel;
+  for (size_t idx = 0; idx < maxProfileLen; idx++) {
+    upperLevel = 0;
+    for (size_t jdx = 1; jdx <= MIN_UPPER_LEVEL_POSITIONS && jdx < idx; jdx++) {
+        if ((double) maxProfile[idx] / maxProfile[idx - jdx] < 0.1)
+          upperLevel++;
+        else
+          break;
+    }
+    if (upperLevel >= MIN_UPPER_LEVEL_POSITIONS)
+      positions.push_back(idx);
+
+    upperLevel = 0;
+    for (size_t jdx = 1; jdx <= MIN_UPPER_LEVEL_POSITIONS && jdx < maxProfileLen - idx; jdx++) {
+        if ((double) maxProfile[idx] / maxProfile[idx + jdx] < 0.1)
+          upperLevel++;
+        else
+          break;
+    }
+    if (upperLevel >= MIN_UPPER_LEVEL_POSITIONS)
+      positions.push_back(idx);
   }
 
   return positions;
