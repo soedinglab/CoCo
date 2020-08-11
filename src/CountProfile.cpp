@@ -2,6 +2,7 @@
 #include "CountProfile.h"
 #include "mathsupport.h"
 
+#define MIN_UPPER_LEVEL_POSITIONS 3
 
 CountProfile::CountProfile(const KmerTranslator *translator,
                            const LookupTableBase *lookuptable) {
@@ -102,6 +103,11 @@ bool CountProfile::checkForRiseAndDropPoints(std::vector<unsigned int> dropPosit
   bool checkPoints[profileLength + kmerSpan - 1];
   memset(checkPoints, true, sizeof(bool) * (profileLength + kmerSpan - 1));
 
+  /*std::cout << "dropPositions:";
+  for (size_t idx = 0; idx < dropPositions.size(); idx++) {
+    std::cout << dropPositions[idx];
+  }
+  std::cout << std::endl;*/
 
   for (size_t idx = 0; idx < dropPositions.size(); idx++) {
 
@@ -118,13 +124,12 @@ bool CountProfile::checkForRiseAndDropPoints(std::vector<unsigned int> dropPosit
       checkPoints[idx] = false;
   }
 
-
-  /*
-    std::cout << "#"  << this->seqinfo->name << std::endl;
+  /*std::cout << "#"  << this->seqinfo->name << std::endl;
   for (size_t kdx = 0; kdx < profileLength; kdx++) {
     std::cout << kdx << '\t' << profile[kdx].count << '\t' << (checkPoints[kdx]?"1":"0") << std::endl;
-  }
-   */
+  }*/
+
+/*
   unsigned int validCount = 0;
   size_t idx = 0;
   for (size_t idx = 0; idx < profileLength; idx++) {
@@ -146,23 +151,61 @@ bool CountProfile::checkForRiseAndDropPoints(std::vector<unsigned int> dropPosit
     }
 
   }
+
+*/
+  unsigned int upperLevel;
+  for (size_t idx = 0; idx < profileLength; idx++) {
+    if (checkPoints[idx]) {
+      if (profile[idx].count < minCount) {
+        upperLevel = 0;
+        for (size_t jdx = 1, validCount = 0; validCount < MIN_UPPER_LEVEL_POSITIONS && jdx < idx; jdx++) {
+          if (checkPoints[idx - jdx]) {
+            validCount++;
+            if ((double) profile[idx].count / profile[idx - jdx].count < 0.1)
+              upperLevel++;
+            else
+              break;
+          }
+        }
+        if (upperLevel >= MIN_UPPER_LEVEL_POSITIONS)
+          return true;
+
+        upperLevel = 0;
+        for (size_t jdx = 1, validCount = 0; validCount < MIN_UPPER_LEVEL_POSITIONS && jdx < profileLength - idx; jdx++) {
+          if (checkPoints[idx + jdx]) {
+            validCount++;
+            if ((double) profile[idx].count / profile[idx + jdx].count < 0.1)
+              upperLevel++;
+            else
+              break;
+          }
+        }
+        if (upperLevel >= MIN_UPPER_LEVEL_POSITIONS)
+          return true;
+
+      }
+    }
+  }
   return false;
+
+
 }
 
+
 unsigned int CountProfile::calc67quantile() {
-  //copy max count values
-  uint32_t *max_count = new uint32_t[profileLength];
+//copy max count values
+uint32_t *max_count = new uint32_t[profileLength];
 
-  for (size_t idx = 0; idx < profileLength; idx++) {
-    max_count[idx] = profile[idx].count;
-  }
+for (size_t idx = 0; idx < profileLength; idx++) {
+  max_count[idx] = profile[idx].count;
+}
 
-  // sort in ascending order
-  sort(max_count, max_count + profileLength);
+// sort in ascending order
+sort(max_count, max_count + profileLength);
 
-  // 67% quantile
-  auto abundanceEstimation = max_count[(uint32_t) (0.67 * (double) this->profileLength)];
+// 67% quantile
+auto abundanceEstimation = max_count[(uint32_t) (0.67 * (double) this->profileLength)];
 
-  delete[] max_count;
-  return abundanceEstimation;
+delete[] max_count;
+return abundanceEstimation;
 }
