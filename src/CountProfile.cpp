@@ -84,38 +84,85 @@ std::vector<unsigned int> CountProfile::getDropPointsInMaximzedProfile() {
         maxProfile[pos] = std::max(this->profile[idx].count, maxProfile[pos]);
     }
   }
-
-  std::vector<unsigned int> positions;
-  /*for (size_t idx = 1; idx < maxProfileLen; idx++) {
-    if ((double) (maxProfile[idx]) / maxProfile[idx - 1] < 0.1)
-      positions.push_back(idx);
-    else if (((double) (maxProfile[idx - 1]) / maxProfile[idx] < 0.1) &&
-             (positions.empty() || positions.back() != idx - 1))
-      positions.push_back(idx - 1);
+  /*std::cout << "maximized " << this->seqinfo->name<< std::endl;
+  for (size_t idx = 0; idx < maxProfileLen; idx++) {
+    std::cout << idx << "\t" << maxProfile[idx] << std::endl;
   }*/
 
-  unsigned int upperLevel;
-  for (size_t idx = 0; idx < maxProfileLen; idx++) {
-    upperLevel = 0;
-    for (size_t jdx = 1; jdx <= MIN_UPPER_LEVEL_POSITIONS && jdx < idx; jdx++) {
-        if ((double) maxProfile[idx] / maxProfile[idx - jdx] < 0.1)
-          upperLevel++;
-        else
-          break;
-    }
-    if (upperLevel >= MIN_UPPER_LEVEL_POSITIONS)
-      positions.push_back(idx);
+  char to_mask[maxProfileLen];
+  memset(to_mask, 0, maxProfileLen * sizeof(char));
+  // 0 - not interesting
+  // 1 - candidate position for drop or rise
+  // 2 - drop or rise position
 
-    upperLevel = 0;
-    for (size_t jdx = 1; jdx <= MIN_UPPER_LEVEL_POSITIONS && jdx < maxProfileLen - idx; jdx++) {
-        if ((double) maxProfile[idx] / maxProfile[idx + jdx] < 0.1)
-          upperLevel++;
-        else
-          break;
+  vector<unsigned int> positions; // to_mask == 2
+  vector<unsigned int> candidates; // to_mask >= 1
+  for (size_t idx = 1; idx < maxProfileLen; idx++) {
+    if ((double) (maxProfile[idx]) / maxProfile[idx - 1] < 0.1) {
+      candidates.push_back(idx);
+      to_mask[idx] = 1;
     }
-    if (upperLevel >= MIN_UPPER_LEVEL_POSITIONS)
-      positions.push_back(idx);
+    else if (((double) (maxProfile[idx - 1]) / maxProfile[idx] < 0.1) && to_mask[idx - 1] == 0) {
+      candidates.push_back(idx - 1);
+      to_mask[idx - 1] = 1;
+    }
   }
+
+  unsigned int prev_identified;
+  do{
+
+    unsigned int upperLevel, valid;
+    prev_identified = positions.size();
+
+    for (unsigned int candidate : candidates) {
+
+      if (to_mask[candidate] == 1) {
+
+        upperLevel = 0;
+        valid = 0;
+        for (size_t jdx = 1; valid < MIN_UPPER_LEVEL_POSITIONS && jdx < candidate; jdx++) {
+          if (to_mask[candidate - jdx] != 2) {
+            valid++;
+
+            if ((double) maxProfile[candidate] / maxProfile[candidate - jdx] < 0.1)
+              upperLevel++;
+            else
+              break;
+          }
+        }
+        if (upperLevel >= MIN_UPPER_LEVEL_POSITIONS) {
+          to_mask[candidate] = 2;
+          positions.push_back(candidate);
+          /*if (candidate != maxProfileLen - 1 && to_mask[candidate + 1] == 0) {
+            to_mask[candidate + 1] = 1;
+            candidates.push_back(candidate + 1);
+          }*/
+          continue;
+        }
+
+        valid = 0;
+        upperLevel = 0;
+        for (size_t jdx = 1; valid < MIN_UPPER_LEVEL_POSITIONS && jdx < maxProfileLen - candidate; jdx++) {
+          if (to_mask[candidate + jdx] != 2) {
+            valid++;
+
+            if ((double) maxProfile[candidate] / maxProfile[candidate + jdx] < 0.1)
+              upperLevel++;
+            else
+              break;
+          }
+        }
+        if (upperLevel >= MIN_UPPER_LEVEL_POSITIONS) {
+          to_mask[candidate] = 2;
+          positions.push_back(candidate);
+          /*if (candidate != 0 && to_mask[candidate - 1] == 0) {
+            to_mask[candidate - 1] = 1;
+            candidates.push_back(candidate - 1);
+          }*/
+        }
+      }
+    }
+  } while(prev_identified < positions.size());
 
   return positions;
 }
@@ -128,7 +175,7 @@ bool CountProfile::checkForRiseAndDropPoints(std::vector<unsigned int> dropPosit
 
   /*std::cout << "dropPositions:";
   for (size_t idx = 0; idx < dropPositions.size(); idx++) {
-    std::cout << dropPositions[idx];
+    std::cout << dropPositions[idx] << ",";
   }
   std::cout << std::endl;*/
 
@@ -152,30 +199,6 @@ bool CountProfile::checkForRiseAndDropPoints(std::vector<unsigned int> dropPosit
     std::cout << kdx << '\t' << profile[kdx].count << '\t' << (checkPoints[kdx]?"1":"0") << std::endl;
   }*/
 
-/*
-  unsigned int validCount = 0;
-  size_t idx = 0;
-  for (size_t idx = 0; idx < profileLength; idx++) {
-    if (checkPoints[idx]) {
-      validCount = profile[idx].count;
-      idx++;
-      break;
-    }
-
-  }
-
-  for (; idx < profileLength; idx++) {
-    if (checkPoints[idx]) {
-      if (((double) profile[idx].count / validCount < 0.1 && profile[idx].count < minCount) ||
-          ((double) validCount / profile[idx].count < 0.1 && validCount < minCount))
-        return true;
-
-      validCount = profile[idx].count;
-    }
-
-  }
-
-*/
   unsigned int upperLevel;
   for (size_t idx = 0; idx < profileLength; idx++) {
     if (checkPoints[idx]) {
