@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <getopt.h>
+#include <limits.h>
 
 #include "options.h"
 #include "Info.h"
@@ -27,7 +28,7 @@ Options::Options() :
   "--kmerWeight", "number of informative positions in a k-mer pattern, "
   "default: 27", typeid(int),  (void *) &kmerWeight,0)
   ,*/
-  OP_THREADS(OP_THREADS_ID, "threads", "--threads", "number of threads, default: 1", typeid(int), (void *) &threads, 0),
+  OP_THREADS(OP_THREADS_ID, "threads", "--threads", "number of threads, not supported yet, default: 1", typeid(int), (void *) &threads, 0),
   OP_VERBOSE(OP_VERBOSE_ID, "verbose", "--verbose", "verbosity level, 0: quiet 1: Errors, 2: +Warnings, 3: +Info, 4: +Debug, "\
                             "default: 3", typeid(int), (void *) &verbose, 0)
   {
@@ -63,7 +64,7 @@ Options::Options() :
 }
 
 void Options::setDefaults() {
-  minCount = 10;
+  minCount = 3;
   threads = 1; //TODO
   verbose = Info::INFO;
 }
@@ -181,5 +182,8 @@ void Options::parseOptions(int argc, const char *argv[],
 
   Info::setVerboseLevel(verbose);
 
+  if (minCount == 0) {
+    minCount = UINT_MAX;
+  }
 
 }
