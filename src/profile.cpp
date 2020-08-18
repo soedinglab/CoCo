@@ -22,8 +22,18 @@ typedef struct {
 
 
 int showProfile(CountProfile &countprofile, void *profileargs) {
-  fprintf(((ProfileArgs *) profileargs)->profileFile, "#%s\n", countprofile.getSeqName());
-  countprofile.showProfile(((ProfileArgs *) profileargs)->profileFile);
+
+  FILE *fp = ((ProfileArgs *) profileargs)->profileFile;
+  SequenceInfo *seqinfo = countprofile.getSeqInfo();
+
+  fwrite("#", sizeof(char), 1, fp);
+  fwrite(seqinfo->name.c_str(), sizeof(char), seqinfo->name.size(), fp);
+  if (seqinfo->comment.size() > 0) {
+    fwrite(" ", sizeof(char), 1, fp);
+    fwrite(seqinfo->comment.c_str(), sizeof(char), seqinfo->comment.size(), fp);
+  }
+  fwrite("\n", sizeof(char), 1, fp);
+  countprofile.showProfile(fp);
 
 }
 
