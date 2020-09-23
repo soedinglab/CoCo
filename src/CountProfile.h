@@ -57,6 +57,12 @@ public:
 
   bool checkForRiseAndDropPoints(std::vector<unsigned int> dropPositions, unsigned int minCount);
 
+  bool getDropPointsSimplified(unsigned int minCount);
+
+  bool getDropPointsSimplified2(unsigned int minCount);
+
+  bool getDropPointsSimplified3(unsigned int minCount);
+
   /* show tab-based table of seqPos and count */
   void showProfile(FILE *fp = stdout) const;
 

@@ -22,11 +22,23 @@ typedef struct {
 
 int filterProcessor(CountProfile &countprofile, void *filterargs)
 {
-  std::vector<unsigned int> dropPositions = countprofile.getDropPointsInMaximzedProfile();
+  /*std::vector<unsigned int> dropPositions = countprofile.getDropPointsInMaximzedProfile();
 
-  bool toFilter = countprofile.checkForRiseAndDropPoints(dropPositions, ((FilterArgs *) filterargs)->minCount);
+  bool toFilter = countprofile.checkForRiseAndDropPoints(dropPositions, ((FilterArgs *) filterargs)->minCount);*/
+
+  //bool toFilter = countprofile.getDropPointsSimplified(((FilterArgs *) filterargs)->minCount);
+  //bool toFilter = countprofile.getDropPointsSimplified3(((FilterArgs *) filterargs)->minCount);
 
   SequenceInfo *seqinfo = countprofile.getSeqInfo();
+  //std::cout << seqinfo->name.c_str() << std::endl;
+  bool toFilter = countprofile.getDropPointsSimplified2(((FilterArgs *) filterargs)->minCount);
+
+  /*if (toFilter)
+    std::cout << "filtered out" << std::endl;
+  else
+    std::cout << "not filtered" << std::endl;*/
+
+
   if (toFilter)
     sequenceInfo2FileEntry(seqinfo, ((FilterArgs *) filterargs)->filterReads);
   else
