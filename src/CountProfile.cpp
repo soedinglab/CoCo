@@ -224,6 +224,7 @@ bool CountProfile::getDropPointsSimplified2(unsigned int minCount) {
   unsigned short kmerSpan = translator->getSpan();
   unsigned short kmerWeight = translator->getWeight();
 
+
   size_t maxProfileLen = this->profileLength + kmerSpan - 1;
   uint32_t maxProfile[maxProfileLen];
   for (size_t idx = 0; idx < maxProfileLen; idx++)
@@ -322,6 +323,9 @@ bool CountProfile::getDropPointsSimplified2(unsigned int minCount) {
     }
   } while(prev_identified < positions.size());
 
+
+
+
   vector<unsigned int> dropPositions = positions;
   bool checkPoints[profileLength + kmerSpan - 1];
   memset(checkPoints, true, sizeof(bool) * (profileLength + kmerSpan - 1));
@@ -340,6 +344,13 @@ bool CountProfile::getDropPointsSimplified2(unsigned int minCount) {
         checkPoints[pos] = false;
     }
   }
+
+  //special mask for N positions
+  for (size_t idx = 0; idx < profileLength; idx++) {
+    if (!profile[idx].valid)
+      checkPoints[idx] = false;
+  }
+
 
   for (size_t idx = 0; idx < profileLength + kmerSpan - 1; idx++) {
     if (checkPoints[idx] == false)
