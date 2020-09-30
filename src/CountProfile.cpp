@@ -253,10 +253,12 @@ bool CountProfile::getDropPointsSimplified2(unsigned int minCount) {
 
 
     }
-    else if (((double) (maxProfile[idx - 1]) / maxProfile[idx] < 0.1) && to_mask[idx - 1] == 0) { //} && (last!=-1 || idx>41) ) {
+    else if (((double) (maxProfile[idx - 1]) / maxProfile[idx] < 0.1)) { //} && (last!=-1 || idx>41) ) {
       last = 1;
+      if(to_mask[idx - 1] == 0){
       candidates.push_back(idx - 1);
       to_mask[idx - 1] = 1;
+      }
     }
   }
 
@@ -324,11 +326,11 @@ bool CountProfile::getDropPointsSimplified2(unsigned int minCount) {
   bool checkPoints[profileLength + kmerSpan - 1];
   memset(checkPoints, true, sizeof(bool) * (profileLength + kmerSpan - 1));
 
-/*
+
   for (size_t idx = 0; idx < dropPositions.size(); idx++) {
     std::cout << dropPositions[idx] << ",";
   }
-  std::cout << std::endl;*/
+  std::cout << std::endl;
 
   for (size_t idx = 0; idx < dropPositions.size(); idx++) {
 
@@ -339,11 +341,11 @@ bool CountProfile::getDropPointsSimplified2(unsigned int minCount) {
     }
   }
 
-  /*for (size_t idx = 0; idx < profileLength + kmerSpan - 1; idx++) {
+  for (size_t idx = 0; idx < profileLength + kmerSpan - 1; idx++) {
     if (checkPoints[idx] == false)
     std::cout << idx << ",";
   }
-  std::cout << std::endl;*/
+  std::cout << std::endl;
 
   unsigned int dropstart=0,dropend=0;
 
@@ -356,14 +358,14 @@ bool CountProfile::getDropPointsSimplified2(unsigned int minCount) {
     } else if (//(double) (this->profile[idx - 1].count < minCount) &&
                (double) this->profile[idx - 1].count / this->profile[idx].count < 0.1) {
       dropend = idx;
-      if (dropend - dropstart > 3) {
+      if ((dropstart !=0 && dropend - dropstart > 0) || dropend-dropstart > 3) {
         unsigned int count = 0;
         for (short jdx = dropstart; jdx < dropend; jdx++) {
           if (checkPoints[jdx] && (double) (this->profile[jdx].count < minCount))
             count++;
         }
-        /*std::cout << "dropstart: " << dropstart << ", dropend" << dropend<< std::endl;
-        std::cout << "count: " << count << std::endl;*/
+        std::cout << "dropstart: " << dropstart << ", dropend" << dropend<< std::endl;
+        std::cout << "count: " << count << std::endl;
         if (count > 0){// && count <= 41) {
           return true;
         }
@@ -552,11 +554,11 @@ bool CountProfile::checkForRiseAndDropPoints(std::vector<unsigned int> dropPosit
   bool checkPoints[profileLength + kmerSpan - 1];
   memset(checkPoints, true, sizeof(bool) * (profileLength + kmerSpan - 1));
 
-  /*std::cout << "dropPositions:";
+  std::cout << "dropPositions:";
   for (size_t idx = 0; idx < dropPositions.size(); idx++) {
     std::cout << dropPositions[idx] << ",";
   }
-  std::cout << std::endl;*/
+  std::cout << std::endl;
 
   for (size_t idx = 0; idx < dropPositions.size(); idx++) {
 
