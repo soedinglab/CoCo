@@ -22,22 +22,9 @@ typedef struct {
 
 int filterProcessor(CountProfile &countprofile, void *filterargs)
 {
-  /*std::vector<unsigned int> dropPositions = countprofile.getDropPointsInMaximzedProfile();
-
-  bool toFilter = countprofile.checkForRiseAndDropPoints(dropPositions, ((FilterArgs *) filterargs)->minCount);*/
-
-  //bool toFilter = countprofile.getDropPointsSimplified(((FilterArgs *) filterargs)->minCount);
-  //bool toFilter = countprofile.getDropPointsSimplified3(((FilterArgs *) filterargs)->minCount);
 
   SequenceInfo *seqinfo = countprofile.getSeqInfo();
-  //std::cout << seqinfo->name.c_str() << std::endl;
-  bool toFilter = countprofile.getDropPointsSimplified2(((FilterArgs *) filterargs)->minCount);
-
-  /*if (toFilter)
-    std::cout << "filtered out" << std::endl;
-  else
-    std::cout << "not filtered" << std::endl;*/
-
+  bool toFilter = countprofile.checkForTransitionDrops(((FilterArgs *) filterargs)->minCount);
 
   if (toFilter)
     sequenceInfo2FileEntry(seqinfo, ((FilterArgs *) filterargs)->filterReads);
@@ -83,7 +70,7 @@ int filter(int argc, const char **argv, const Command *tool)
   else
     outprefix = getFilename(seqFile);
   string ext = getFileExtension(seqFile);
-  FilterArgs filterargs = {openFileOrDie(outprefix + ".filtered" + ext, "w"),
+  FilterArgs filterargs = {openFileOrDie(outprefix + ".spurious" + ext, "w"),
                            openFileOrDie(outprefix + ".cleaned" + ext, "w"),
                            opt.minCount};
 
