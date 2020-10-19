@@ -246,7 +246,7 @@ bool CountProfile::getDropPointsSimplified2(unsigned int minCount) {
   vector<unsigned int> candidates; // to_mask >= 1
   int last = -1;
   for (size_t idx = 1; idx < maxProfileLen; idx++) {
-    if ((double) (maxProfile[idx]) / maxProfile[idx - 1] < 0.1) {
+    if ((double) (maxProfile[idx]) / maxProfile[idx - 1] < 0.1 && maxProfile[idx] < minCount ) {
 
       last = 0;
         candidates.push_back(idx);
@@ -254,7 +254,7 @@ bool CountProfile::getDropPointsSimplified2(unsigned int minCount) {
 
 
     }
-    else if (((double) (maxProfile[idx - 1]) / maxProfile[idx] < 0.1)) { //} && (last!=-1 || idx>41) ) {
+    else if (((double) (maxProfile[idx - 1]) / maxProfile[idx] < 0.1) && maxProfile[idx-1] < minCount) { //} && (last!=-1 || idx>41) ) {
       last = 1;
       if(to_mask[idx - 1] == 0){
       candidates.push_back(idx - 1);
@@ -263,70 +263,71 @@ bool CountProfile::getDropPointsSimplified2(unsigned int minCount) {
     }
   }
 
-  if(last == 0 && candidates[candidates.size()-1] >= maxProfileLen-41) {
+  /*if(last == 0 && candidates[candidates.size()-1] >= maxProfileLen-41) {
     candidates.pop_back();
-  }
-
-  unsigned int prev_identified;
-  do{
-
-    unsigned int upperLevel, valid;
-    prev_identified = positions.size();
-
-    for (unsigned int candidate : candidates) {
-
-      if (to_mask[candidate] == 1) {
-
-        upperLevel = 0;
-        valid = 0;
-        for (size_t jdx = 1; valid < MIN_UPPER_LEVEL_POSITIONS_NEW && jdx < candidate; jdx++) {
-          if (to_mask[candidate - jdx] != 2) {
-            valid++;
-
-            if ((double) maxProfile[candidate] / maxProfile[candidate - jdx] < 0.1)
-              upperLevel++;
-            else
-              break;
-          }
-        }
-        if (upperLevel >= MIN_UPPER_LEVEL_POSITIONS_NEW) {
-          to_mask[candidate] = 2;
-          positions.push_back(candidate);
-          /*if (candidate != maxProfileLen - 1 && to_mask[candidate + 1] == 0) {
-            to_mask[candidate + 1] = 1;
-            candidates.push_back(candidate + 1);
-          }*/
-          continue;
-        }
-
-        valid = 0;
-        upperLevel = 0;
-        for (size_t jdx = 1; valid < MIN_UPPER_LEVEL_POSITIONS_NEW && jdx < maxProfileLen - candidate; jdx++) {
-          if (to_mask[candidate + jdx] != 2) {
-            valid++;
-
-            if ((double) maxProfile[candidate] / maxProfile[candidate + jdx] < 0.1)
-              upperLevel++;
-            else
-              break;
-          }
-        }
-        if (upperLevel >= MIN_UPPER_LEVEL_POSITIONS_NEW) {
-          to_mask[candidate] = 2;
-          positions.push_back(candidate);
-          /*if (candidate != 0 && to_mask[candidate - 1] == 0) {
-            to_mask[candidate - 1] = 1;
-            candidates.push_back(candidate - 1);
-          }*/
-        }
-      }
-    }
-  } while(prev_identified < positions.size());
-
-
+  }*/
+//
+//  unsigned int prev_identified;
+//  do{
+//
+//    unsigned int upperLevel, valid;
+//    prev_identified = positions.size();
+//
+//    for (unsigned int candidate : candidates) {
+//
+//      if (to_mask[candidate] == 1) {
+//
+//        upperLevel = 0;
+//        valid = 0;
+//        for (size_t jdx = 1; valid < MIN_UPPER_LEVEL_POSITIONS_NEW && jdx < candidate; jdx++) {
+//          if (to_mask[candidate - jdx] != 2) {
+//            valid++;
+//
+//            if ((double) maxProfile[candidate] / maxProfile[candidate - jdx] < 0.1)
+//              upperLevel++;
+//            else
+//              break;
+//          }
+//        }
+//        if (upperLevel >= MIN_UPPER_LEVEL_POSITIONS_NEW) {
+//          to_mask[candidate] = 2;
+//          positions.push_back(candidate);
+//          /*if (candidate != maxProfileLen - 1 && to_mask[candidate + 1] == 0) {
+//            to_mask[candidate + 1] = 1;
+//            candidates.push_back(candidate + 1);
+//          }*/
+//          continue;
+//        }
+//
+//        valid = 0;
+//        upperLevel = 0;
+//        for (size_t jdx = 1; valid < MIN_UPPER_LEVEL_POSITIONS_NEW && jdx < maxProfileLen - candidate; jdx++) {
+//          if (to_mask[candidate + jdx] != 2) {
+//            valid++;
+//
+//            if ((double) maxProfile[candidate] / maxProfile[candidate + jdx] < 0.1)
+//              upperLevel++;
+//            else
+//              break;
+//          }
+//        }
+//        if (upperLevel >= MIN_UPPER_LEVEL_POSITIONS_NEW) {
+//          to_mask[candidate] = 2;
+//          positions.push_back(candidate);
+//          /*if (candidate != 0 && to_mask[candidate - 1] == 0) {
+//            to_mask[candidate - 1] = 1;
+//            candidates.push_back(candidate - 1);
+//          }*/
+//        }
+//      }
+//    }
+//  } while(prev_identified < positions.size());
 
 
-  vector<unsigned int> dropPositions = positions;
+
+
+  //vector<unsigned int> dropPositions = positions;
+  vector<unsigned int> dropPositions = candidates;
   bool checkPoints[profileLength + kmerSpan - 1];
   memset(checkPoints, true, sizeof(bool) * (profileLength + kmerSpan - 1));
 
@@ -364,7 +365,8 @@ bool CountProfile::getDropPointsSimplified2(unsigned int minCount) {
     if (//(double) (this->profile[idx].count < minCount) &&
         (double) this->profile[idx].count / this->profile[idx - 1].count < 0.1) {
 
-      dropstart = idx;
+      if (dropstart == 0 || dropstart == profileLength)
+        dropstart = idx;
       dropend = this->profileLength;
     } else if (//(double) (this->profile[idx - 1].count < minCount) &&
                (double) this->profile[idx - 1].count / this->profile[idx].count < 0.1) {
@@ -375,8 +377,8 @@ bool CountProfile::getDropPointsSimplified2(unsigned int minCount) {
           if (checkPoints[jdx] && (double) (this->profile[jdx].count < minCount))
             count++;
         }
-        std::cout << "dropstart: " << dropstart << ", dropend" << dropend<< std::endl;
-        std::cout << "count: " << count << std::endl;
+        //std::cout << "dropstart: " << dropstart << ", dropend" << dropend<< std::endl;
+        //std::cout << "count: " << count << std::endl;
         if (count > 0){// && count <= 41) {
           return true;
         }
