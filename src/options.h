@@ -9,7 +9,6 @@
 #include <typeinfo>
 #include "Command.h"
 
-
 struct cocoOption;
 #define OPTION(x) const static int x##_ID = __COUNTER__; \
              cocoOption x;
@@ -58,10 +57,12 @@ public:
   std::string seqFile;
   std::string countFile;
   std::string outprefix;
-  unsigned int minCount;
+  unsigned int dropLevel1;
+  std::vector<float> dropLevel2;
   //unsigned int kmerWeight;
   unsigned int threads;
   int verbose;
+  bool softFilter;
 
   std::vector<cocoOption*> empty;
   std::vector<cocoOption*> filterWorkflow;
@@ -73,10 +74,13 @@ public:
   OPTION(OP_SEQ_FILE)
   OPTION(OP_COUNT_FILE)
   OPTION(OP_OUTPREFIX)
-  OPTION(OP_MINCOUNT)
+  OPTION(OP_DROP_LEVEL1)
+  OPTION(OP_DROP_LEVEL2)
+  OPTION(OP_SOFT_FILTER)
   //OPTION(OP_KMER_WEIGHT)
   OPTION(OP_THREADS)
   OPTION(OP_VERBOSE)
+
 
 protected:
   Options();

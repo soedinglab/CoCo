@@ -3,10 +3,13 @@
 #include <sstream>
 #include <getopt.h>
 #include <limits.h>
+#include <string.h>
 
 #include "options.h"
 #include "Info.h"
 #include "util.h"
+
+
 
 Options *Options::instance = NULL;
 
@@ -20,9 +23,15 @@ Options::Options() :
   OP_OUTPREFIX(OP_OUTPREFIX_ID, "outprefix", "--outprefix",
                "prefix to use for resultfile(s)",
                typeid(std::string), (void *) &outprefix, 0),
-  OP_MINCOUNT(OP_OUTPREFIX_ID, "mincount", "--mincount",
-               "min count value used to filter at drop positions",
-               typeid(int), (void *) &minCount, 0),
+  OP_DROP_LEVEL1(OP_DROP_LEVEL1_ID, "drop-level1", "--drop-level1",
+               "absolute min count value used in step 1 to filter at drop positions",
+               typeid(int), (void *) &dropLevel1, 0),
+  OP_DROP_LEVEL2(OP_DROP_LEVEL2_ID, "drop-level2", "--drop-level2",
+              "comma-separated list of percentage values, used iteratively in step 2 to filter relative to the abundance level (range 0-0.5)",
+              typeid(std::vector<float>), (void *) &dropLevel2, 0),
+  OP_SOFT_FILTER(OP_SOFT_FILTER_ID, "soft", "--soft",
+              "less strict filtering mode due to more strict masking strategy ",
+              typeid(bool), (void *) &softFilter, 0),
   /*
   OP_KMER_WEIGHT(OP_KMER_WEIGHT_ID,"kmerWeight",
   "--kmerWeight", "number of informative positions in a k-mer pattern, "
@@ -51,7 +60,9 @@ Options::Options() :
   filterWorkflow.push_back(&OP_SEQ_FILE);
   filterWorkflow.push_back(&OP_COUNT_FILE);
   filterWorkflow.push_back(&OP_OUTPREFIX);
-  filterWorkflow.push_back(&OP_MINCOUNT);
+  filterWorkflow.push_back(&OP_SOFT_FILTER);
+  filterWorkflow.push_back(&OP_DROP_LEVEL1);
+  filterWorkflow.push_back(&OP_DROP_LEVEL2);
   filterWorkflow.push_back(&OP_THREADS);
   filterWorkflow.push_back(&OP_VERBOSE);
 
@@ -64,9 +75,11 @@ Options::Options() :
 }
 
 void Options::setDefaults() {
-  minCount = 3;
+  dropLevel1 = 1;
+  dropLevel2 = {0.0078, 0.0156, 0.0312, 0.0625, 0.1250};
   threads = 1; //TODO
   verbose = Info::INFO;
+  softFilter = false;
 }
 
 void printToolUsage(const Command &command, const int FLAG) {
@@ -98,7 +111,9 @@ void Options::parseOptions(int argc, const char *argv[],
     {"seqFile",   required_argument, NULL, 0},
     {"counts",    required_argument, NULL, 0},
     {"outprefix",    required_argument, NULL, 0},
-    {"mincount",    required_argument, NULL, 0},
+    {"drop-level1",    required_argument, NULL, 0},
+    {"drop-level2",    required_argument, NULL, 0},
+    {"soft",    no_argument, NULL, 0},
     {"threads",   required_argument, NULL, 0},
     {"verbose",   required_argument, NULL, 0},
     {NULL,        no_argument,       NULL, 0}
@@ -129,6 +144,7 @@ void Options::parseOptions(int argc, const char *argv[],
                 Info(Info::ERROR) << "ERROR: Invalid argument " << optarg << " for option " << options[idx]->display << "\n";
                 EXIT(EXIT_FAILURE);
               }
+
               std::string val(optarg);
               if (val.length() != 0) {
                 std::string *currVal = ((std::string *) options[idx]->value);
@@ -138,6 +154,24 @@ void Options::parseOptions(int argc, const char *argv[],
             } else if (typeid(int) == options[idx]->type) {
               int val = atoi(optarg);
               *((int *) options[idx]->value) = val;
+              options[idx]->isSet = true;
+
+            } else if (typeid(bool) == options[idx]->type) {
+
+              *((bool *) options[idx]->value) = true;
+              options[idx]->isSet = true;
+
+            } else if (typeid(std::vector<float>) == options[idx]->type) {
+
+              std::vector<float> list;
+              char *elem = strtok(optarg, ",");
+              while (elem != NULL)
+              {
+                list.push_back(std::stof(elem));
+                elem = strtok(NULL,",");
+              }
+
+              *((std::vector<float> *) options[idx]->value) = list;
               options[idx]->isSet = true;
 
             } else {
@@ -181,9 +215,5 @@ void Options::parseOptions(int argc, const char *argv[],
   }
 
   Info::setVerboseLevel(verbose);
-
-  if (minCount == 0) {
-    minCount = UINT_MAX;
-  }
 
 }

@@ -48,32 +48,31 @@ extern int consensus(int argc, const char **argv, const struct Command *tool);
 Options &opt = Options::getInstance();
 std::vector<struct Command> commands =
   {
-    {"profile", profile, &opt.profileWorkflow, "write spaced k-mer count profiles (devtool)",
-      "dev tool to write for every read (contig) the spaced k-mer count profile in a tab separated plain text file",
-      "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      " --seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
-      PROFILE
-    },
     {"filter", filter, &opt.filterWorkflow, "denoise read file",
-      "identify reads containing remarkably/irregular nucleotide sequence as chimeras, indels, ... ",
+      "identify reads containing spurious nucleotide order as chimeras, indels, ... ",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
       " --seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       FILTER
     },
-    {"abundance", abundanceEstimator, &opt.abundanceEstimatorWorkflow,
-                                                              "estimate abundance values",
-      "Gives for every read an estimated value for the abundance",
+    {"profile", profile, &opt.profileWorkflow, "print spaced k-mer count profiles (devtool)",
+      "dev tool to write for every sequence the spaced k-mer count profile in a tab separated plain text file",
+      "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
+      " --seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+      PROFILE
+    },
+    {"abundance", abundanceEstimator, &opt.abundanceEstimatorWorkflow, "estimate abundance values",
+      "Give for every read an estimated value for the abundance",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
       " --seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       ABUNDANCE_ESTIMATOR
     },
 
-    {"consensus", consensus, &opt.consensusWorkflow, "calculate consensus reads ",
+    /*{"consensus", consensus, &opt.consensusWorkflow, "calculate consensus reads ",
       "calculate for every read the consensus nucleotide sequence",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
       "--seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       CONSENSUS
-    }
+    }*/
   };
 
 struct Command *getCommand(const char *name) {
