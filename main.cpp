@@ -117,11 +117,11 @@ int main(int argc, const char *argv[]) {
 
   struct Command *command = getCommand(argv[1]);
   if (command == NULL) {
-    fprintf(stderr, "Invalid Command: %s\n", argv[1]);
+    Info(Info::ERROR) << "Invalid Command: " << argv[1] << "\n";
     printUsage(SIMPLE);
     return (EXIT_FAILURE);
   }
 
-  Info(Info::ERROR) << "execute " << tool_name << " tool: " << command->cmd << "\n";
+  Info(Info::INFO) << "execute " << tool_name << " tool: " << command->cmd << "\n";
   EXIT(command->callerFunction(argc - 1, argv + 1, command));
 }

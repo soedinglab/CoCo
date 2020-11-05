@@ -44,26 +44,38 @@ public:
   /* destructor */
   ~CountProfile();
 
-  /* getter */
-  const char *getSeqName() { return (seqinfo->name.c_str()); }
-
-  SequenceInfo *getSeqInfo() { return (seqinfo); }
-
   /* create and store count profiles */
   void fill(SequenceInfo *seq, size_t length);
 
+  /* getter */
+  const char *getSeqName() { return (seqinfo->name.c_str()); }
+
+  unsigned int getProfileLen() { return (profileLength); }
+
+  SequenceInfo *getSeqInfo() { return (seqinfo); }
+
+  /* basic profile operations */
   uint32_t* maximize();
 
-  /* calculate abundanceEstimation value as 67% quantile over count profile */
+  void addCountPerPosition(std::vector<uint32_t> &summedCountProfile);
+
+  /* calculate abundance estimation value as 67% quantile over count profile */
   unsigned int calc67quantile();
+
   unsigned int calcMedian();
+
+  unsigned int calcMedian(std::vector<uint32_t> &positionsOfInterest);
+
+  unsigned int calcXquantile(double quantile, std::vector<uint32_t> &positionsOfInterest);
+
+  /* advanced profile operations */
 
   bool checkForTransitionDrops(unsigned int minCount);
   bool checkForTransitionDropsNew(unsigned int minCount);
   bool checkForTransitionDropsNew2(unsigned int minCount);
   char checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges=true);
 
-  /* show tab-based table of seqPos and count */
+  /* show tab-based table of positions and counts */
   void showProfile(FILE *fp = stdout) const;
 
 };

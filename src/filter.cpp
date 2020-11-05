@@ -14,50 +14,56 @@
 #include "runner.h"
 #include "filehandling.h"
 
+#define FREQUENT_COUNT_WINDOWSIZE 10
+#define FREQUENT_COUNT_BANDWIDTH 0.2
+
 typedef struct {
   FILE *filterReads;
   FILE *cleanedReads;
   unsigned int dropLevel1;
   std::vector<float> dropLevel2;
-  bool softFilter;
+  std::vector<uint32_t> shrinkedPlainPositions;
+  bool maskOnlyDropEdges;
 } FilterArgs;
 
 int filterProcessor(CountProfile &countprofile, void *filterargs)
 {
 
-
+  FilterArgs *currFilterArgs = (FilterArgs *) filterargs;
   SequenceInfo *seqinfo = countprofile.getSeqInfo();
 
-  //TODO: special median for 16s data
-  unsigned int median = countprofile.calcMedian();
+  /* estimate coverage value */
+  unsigned int covEst;
+  if(currFilterArgs->shrinkedPlainPositions.size() == 0)
+    covEst = countprofile.calcMedian();
+  else {
+    //covEst = countprofile.calcMedian(currFilterArgs->shrinkedPlainPositions);
+    covEst = countprofile.calcXquantile(0.67, currFilterArgs->shrinkedPlainPositions);
+  }
 
-  std::cout << seqinfo->name << std::endl;
+  Info(Info::DEBUG) << seqinfo->name << "\t" << covEst << "\n";
 
   uint32_t *maxProfile = countprofile.maximize();
-
-  bool maskOnlyDropEdges = true;
-  if (((FilterArgs *) filterargs)->softFilter)
-    maskOnlyDropEdges = false;
 
   //TODO: wobbly
 
   unsigned int mincount = ((FilterArgs *) filterargs)->dropLevel1;
   std::vector<float> percDropLevels = ((FilterArgs *) filterargs)->dropLevel2;
 
-  if(median < std::max((unsigned int)10, 2*mincount))
+  if(covEst < std::max((unsigned int)10, 2*mincount))
     return 0; //TODO
 
-  bool filter = countprofile.checkForSpuriousTransitionDrops(maxProfile, mincount, maskOnlyDropEdges);
+  bool filter = countprofile.checkForSpuriousTransitionDrops(maxProfile, mincount, currFilterArgs->maskOnlyDropEdges);
 
   if(!filter) {
 
     for (float p : percDropLevels) {
-      unsigned int dropLevelCriterion = p * median;
+      unsigned int dropLevelCriterion = p * covEst;
 
       if (dropLevelCriterion < 1)
         continue;
 
-      filter = countprofile.checkForSpuriousTransitionDrops(maxProfile, dropLevelCriterion, maskOnlyDropEdges);
+      filter = countprofile.checkForSpuriousTransitionDrops(maxProfile, dropLevelCriterion, currFilterArgs->maskOnlyDropEdges);
 
       if (filter)
         break;
@@ -68,6 +74,19 @@ int filterProcessor(CountProfile &countprofile, void *filterargs)
     sequenceInfo2FileEntry(seqinfo, ((FilterArgs *) filterargs)->filterReads);
   else
     sequenceInfo2FileEntry(seqinfo, ((FilterArgs *) filterargs)->cleanedReads);
+}
+
+typedef struct{
+  unsigned int numSequences;
+  std::vector<uint32_t> summedCounts;
+} ProfileStatistic;
+
+int sumCounts(CountProfile &countprofile, void *stat)
+{
+
+  ((ProfileStatistic *) stat)->numSequences += 1;
+  countprofile.addCountPerPosition(((ProfileStatistic *) stat)->summedCounts);
+
 }
 
 int filter(int argc, const char **argv, const Command *tool)
@@ -81,7 +100,7 @@ int filter(int argc, const char **argv, const Command *tool)
   if (opt.OP_DROP_LEVEL2.isSet) {
     for (float d : opt.dropLevel2){
       if (d >= 0.5){
-        Info(Info::ERROR) << "ERROR: found invalid argument for " << opt.OP_DROP_LEVEL2.name << ". (valid range: 0-0.5)\n";
+        Info(Info::ERROR) << "ERROR: found invalid argument for " << opt.OP_DROP_LEVEL2.name << " (valid range: 0-0.5)\n";
         return EXIT_FAILURE;
       }
     }
@@ -110,6 +129,53 @@ int filter(int argc, const char **argv, const Command *tool)
     return EXIT_FAILURE;
   }
 
+  vector<uint32_t> shrinkedPlainPositions{};
+  if (opt.OP_ALIGNED.isSet) {
+
+    Info(Info::INFO) << "try to optimize coverage estimation\n";
+
+    ProfileStatistic stat = {0, std::vector<uint32_t>{}};
+    processSeqFile(seqFile, lookuptable, translator, sumCounts, &stat);
+
+    vector<uint32_t> summedCountsSorted = stat.summedCounts;
+    sort(summedCountsSorted.begin(), summedCountsSorted.end());
+
+    unsigned int windowSize = FREQUENT_COUNT_WINDOWSIZE;
+    double maxDensity = 0, maxDenseCount = 0;
+    for (size_t idx = 0; idx < summedCountsSorted.size() - windowSize; idx++) {
+      double density =
+        (double) windowSize / ((double) (summedCountsSorted[idx + windowSize] - summedCountsSorted[idx]));
+      if (density > maxDensity) {
+        maxDensity = density;
+        maxDenseCount = (summedCountsSorted[idx + windowSize] + summedCountsSorted[idx]) / 2;
+      }
+    }
+
+    double bandwidth = FREQUENT_COUNT_BANDWIDTH;
+    unsigned int sharedCountThr = maxDenseCount + bandwidth * maxDenseCount + 1;
+
+    for (size_t idx = 0; idx < stat.summedCounts.size(); idx++) {
+      if (stat.summedCounts[idx] <= sharedCountThr)
+        shrinkedPlainPositions.push_back(idx);
+    }
+
+    if (shrinkedPlainPositions.size() < 2 * translator->getSpan()) {
+      Info(Info::WARNING) << "WARNING: the optimization for coverage estimation (set by --aligned paramter) can not be " \
+                           "performed, because less than 2*k positions have counts smaller than the calculated threshold "\
+                           "for shared counts. The average profile is probably to spiky to optimize the coverage, " \
+                           "estimation. ";
+      shrinkedPlainPositions.clear();
+      /*shrinkedPlainPositions.reserve(stat.summedCounts.size());
+      for (size_t idx = 0; idx < stat.summedCounts.size(); idx++) {
+        shrinkedPlainPositions.push_back(idx);
+      }*/
+    }
+  }
+
+  bool maskOnlyDropEdges = true;
+  if (opt.softFilter)
+    maskOnlyDropEdges = false;
+
   string outprefix;
   if (opt.OP_OUTPREFIX.isSet)
     outprefix = opt.outprefix;
@@ -118,7 +184,7 @@ int filter(int argc, const char **argv, const Command *tool)
   string ext = getFileExtension(seqFile);
   FilterArgs filterargs = {openFileOrDie(outprefix + ".spurious" + ext, "w"),
                            openFileOrDie(outprefix + ".cleaned" + ext, "w"),
-                           opt.dropLevel1, opt.dropLevel2, opt.softFilter};
+                           opt.dropLevel1, opt.dropLevel2, shrinkedPlainPositions, maskOnlyDropEdges};
 
   processSeqFile(seqFile, lookuptable, translator, filterProcessor, &filterargs);
 

@@ -32,11 +32,9 @@ Options::Options() :
   OP_SOFT_FILTER(OP_SOFT_FILTER_ID, "soft", "--soft",
               "less strict filtering mode due to more strict masking strategy ",
               typeid(bool), (void *) &softFilter, 0),
-  /*
-  OP_KMER_WEIGHT(OP_KMER_WEIGHT_ID,"kmerWeight",
-  "--kmerWeight", "number of informative positions in a k-mer pattern, "
-  "default: 27", typeid(int),  (void *) &kmerWeight,0)
-  ,*/
+  OP_ALIGNED(OP_ALIGNED_ID, "aligned", "--aligned",
+             "optimize abundance estimation, only works if all reads have the same length and span the same region!",
+              typeid(bool), (void *) &aligned, 0),
   OP_THREADS(OP_THREADS_ID, "threads", "--threads", "number of threads, not supported yet, default: 1", typeid(int), (void *) &threads, 0),
   OP_VERBOSE(OP_VERBOSE_ID, "verbose", "--verbose", "verbosity level, 0: quiet 1: Errors, 2: +Warnings, 3: +Info, 4: +Debug, "\
                             "default: 3", typeid(int), (void *) &verbose, 0)
@@ -60,9 +58,10 @@ Options::Options() :
   filterWorkflow.push_back(&OP_SEQ_FILE);
   filterWorkflow.push_back(&OP_COUNT_FILE);
   filterWorkflow.push_back(&OP_OUTPREFIX);
-  filterWorkflow.push_back(&OP_SOFT_FILTER);
   filterWorkflow.push_back(&OP_DROP_LEVEL1);
   filterWorkflow.push_back(&OP_DROP_LEVEL2);
+  filterWorkflow.push_back(&OP_ALIGNED);
+  filterWorkflow.push_back(&OP_SOFT_FILTER);
   filterWorkflow.push_back(&OP_THREADS);
   filterWorkflow.push_back(&OP_VERBOSE);
 
@@ -71,15 +70,19 @@ Options::Options() :
   abundanceEstimatorWorkflow.push_back(&OP_COUNT_FILE);
   abundanceEstimatorWorkflow.push_back(&OP_OUTPREFIX);
   abundanceEstimatorWorkflow.push_back(&OP_THREADS);
+  abundanceEstimatorWorkflow.push_back(&OP_VERBOSE);
 
 }
 
 void Options::setDefaults() {
   dropLevel1 = 1;
   dropLevel2 = {0.0078, 0.0156, 0.0312, 0.0625, 0.1250};
+
+  aligned = false;
+  softFilter = false;
+
   threads = 1; //TODO
   verbose = Info::INFO;
-  softFilter = false;
 }
 
 void printToolUsage(const Command &command, const int FLAG) {
@@ -113,6 +116,7 @@ void Options::parseOptions(int argc, const char *argv[],
     {"outprefix",    required_argument, NULL, 0},
     {"drop-level1",    required_argument, NULL, 0},
     {"drop-level2",    required_argument, NULL, 0},
+    {"aligned",    no_argument, NULL, 0},
     {"soft",    no_argument, NULL, 0},
     {"threads",   required_argument, NULL, 0},
     {"verbose",   required_argument, NULL, 0},

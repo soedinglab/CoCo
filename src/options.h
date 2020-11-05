@@ -62,6 +62,7 @@ public:
   //unsigned int kmerWeight;
   unsigned int threads;
   int verbose;
+  bool aligned;
   bool softFilter;
 
   std::vector<cocoOption*> empty;
@@ -76,8 +77,8 @@ public:
   OPTION(OP_OUTPREFIX)
   OPTION(OP_DROP_LEVEL1)
   OPTION(OP_DROP_LEVEL2)
+  OPTION(OP_ALIGNED)
   OPTION(OP_SOFT_FILTER)
-  //OPTION(OP_KMER_WEIGHT)
   OPTION(OP_THREADS)
   OPTION(OP_VERBOSE)
 

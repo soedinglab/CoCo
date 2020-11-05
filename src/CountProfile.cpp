@@ -60,6 +60,11 @@ void CountProfile::fill(SequenceInfo *seqinfo, size_t length) {
       profile[idx - (kmerSpan - 1)].valid = 1;
     }
   }
+
+  std::cout << "count profile" << std::endl;
+  for (size_t idx = 0; idx < this->profileLength; idx++) {
+    std::cout << idx << ":" << this->profile[idx].count << std::endl;
+  }
   //TODO: continue until maxprofillength to reset count and valid flag? not necessary
 }
 
@@ -81,8 +86,24 @@ uint32_t *CountProfile::maximize() {
     }
   }
 
+  /*std::cout << "maximized count profile" << std::endl;
+  for (size_t idx = 0; idx < maxProfileLen; idx++) {
+   std::cout << idx << ":" << maxProfile[idx] << std::endl;
+  }*/
+
   return maxProfile;
 }
+
+void CountProfile::addCountPerPosition(std::vector<uint32_t> &summedCountProfile)
+{
+  if (summedCountProfile.size() < this->profileLength)
+    summedCountProfile.resize(this->profileLength,0);
+
+  for (size_t idx = 0; idx < this->profileLength; idx++)
+   summedCountProfile[idx] += profile[idx].count;
+}
+
+
 
 void CountProfile::showProfile(FILE *fp) const {
   for (size_t idx = 0; idx < profileLength; idx++) {
@@ -231,22 +252,52 @@ bool CountProfile::checkForTransitionDrops(unsigned int minCount) {
 
 }
 
-unsigned int CountProfile::calcMedian() {
-  //copy max count values
-  uint32_t *max_count = new uint32_t[profileLength];
+unsigned int CountProfile::calcXquantile(double quantile, std::vector<uint32_t> &positionsOfInterest) {
+  unsigned int totalPos = 0 ;
+  for (size_t idx = 0; idx < positionsOfInterest.size(); idx++) {
+    if (positionsOfInterest[idx] < profileLength)
+      totalPos++;
+  }
+  //copy count values
+  uint32_t *counts = new uint32_t[totalPos];
 
-  for (size_t idx = 0; idx < profileLength; idx++) {
-    max_count[idx] = profile[idx].count;
+  for (size_t idx = 0; idx < totalPos; idx++) {
+    counts[idx] = profile[positionsOfInterest[idx]].count;
   }
 
   // sort in ascending order
-  sort(max_count, max_count + profileLength);
+  sort(counts, counts + totalPos);
 
-  auto abundanceEstimation = max_count[(uint32_t) (0.5 * (double) this->profileLength)];
+  auto x_quantile = counts[(uint32_t) (quantile * (double) totalPos)];
 
-  delete[] max_count;
-  return abundanceEstimation;
+  delete[] counts;
+  return x_quantile;
 }
+
+unsigned int CountProfile::calcMedian() {
+  //copy count values
+  uint32_t *counts = new uint32_t[profileLength];
+
+  for (size_t idx = 0; idx < profileLength; idx++) {
+    counts[idx] = profile[idx].count;
+  }
+
+  // sort in ascending order
+  sort(counts, counts + profileLength);
+
+  auto median = counts[(uint32_t) (0.5 * (double) this->profileLength)];
+
+  delete[] counts;
+  return median;
+}
+
+unsigned int CountProfile::calcMedian(std::vector<uint32_t> &positionsOfInterest) {
+
+  return(calcXquantile(0.5, positionsOfInterest));
+}
+
+
+
 bool CountProfile::checkForTransitionDropsNew(unsigned int minCount) {
 
   float lowLevelCriterion=0.4;
@@ -353,8 +404,7 @@ bool CountProfile::checkForTransitionDropsNew(unsigned int minCount) {
       dropend = idx;
       if ((dropstart !=0 && dropend - dropstart > 0) || dropend-dropstart > 3) {
         unsigned int count = 0;
-        std::cout << "dropstart: " << dropstart << std::endl;
-        std::cout << "dropend: " << dropend << std::endl;
+
         for (short jdx = dropstart; jdx < dropend; jdx++) {
           if (checkPoints[jdx] && (double) (this->profile[jdx].count < lowLevelCriterion*median))
             count++;
@@ -653,21 +703,17 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
   unsigned int dropend = this->profileLength;
   for (size_t idx = 1; idx < this->profileLength; idx++) {
 
-    if (((double) this->profile[idx].count <= dropLevelCriterion &&
-         (double) this->profile[idx - 1].count <= dropLevelCriterion) ||
-        ((double) this->profile[idx].count >= dropLevelCriterion &&
-         (double) this->profile[idx - 1].count >= dropLevelCriterion))
-      continue;
-
     // dropstart
-    if ((double) this->profile[idx].count / this->profile[idx - 1].count <= 0.5 &&
-        (double) this->profile[idx].count <= dropLevelCriterion) {
+    if (this->profile[idx].count / this->profile[idx - 1].count <= 0.5 &&
+        this->profile[idx].count <= dropLevelCriterion &&
+        this->profile[idx - 1].count > dropLevelCriterion) {
       dropstart = idx;
 
     }
       // dropend
-    else if ((double) this->profile[idx - 1].count / this->profile[idx].count <= 0.5 &&
-             (double) this->profile[idx - 1].count <= dropLevelCriterion) {
+    else if (this->profile[idx - 1].count / this->profile[idx].count <= 0.5 &&
+             this->profile[idx - 1].count <= dropLevelCriterion &&
+             this->profile[idx].count > dropLevelCriterion) {
 
       if (dropstart == this->profileLength)
         continue;
@@ -690,9 +736,6 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
     }
   }
 
-  for (size_t idx = 0; idx < this->profileLength; idx++) {
-    std::cout << (int) candidates[idx] << std::endl;
-  }
 
   unsigned short kmerSpan = translator->getSpan();
   unsigned short kmerWeight = translator->getWeight();
@@ -703,28 +746,24 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
 
   for (size_t idx = 1; idx < maxProfileLen; idx++) {
 
-    if (((double) maxProfile[idx] <= (dropLevelCriterion + correctionFactor*maxProfile[idx-1]) &&
-         (double) maxProfile[idx-1] <= (dropLevelCriterion + correctionFactor*maxProfile[idx])) ||
-        ((double) maxProfile[idx] >= (dropLevelCriterion + correctionFactor*maxProfile[idx-1]) &&
-         (double) maxProfile[idx-1] >= (dropLevelCriterion + correctionFactor*maxProfile[idx])))
-      continue;
-
     // dropstart
-    if ((double) maxProfile[idx] / maxProfile[idx-1] < 0.5 &&
-        (double) maxProfile[idx] <= (dropLevelCriterion + correctionFactor*maxProfile[idx-1])) {
+    if (maxProfile[idx] / maxProfile[idx-1] < 0.5 &&
+        maxProfile[idx] <= (dropLevelCriterion + (correctionFactor*maxProfile[idx-1]+1)) &&
+        maxProfile[idx-1] > (dropLevelCriterion + (correctionFactor*maxProfile[idx-1]+1))) {
       dropstart = idx;
     }
       // dropend
-    else if ((double) maxProfile[idx-1] / maxProfile[idx] < 0.5 &&
-             (double) maxProfile[idx-1] <= (dropLevelCriterion + correctionFactor*maxProfile[idx])) {
+    else if (maxProfile[idx-1] / maxProfile[idx] < 0.5 &&
+             maxProfile[idx-1] <= (dropLevelCriterion + (correctionFactor*maxProfile[idx]+1)) &&
+             maxProfile[idx] > (dropLevelCriterion + (correctionFactor*maxProfile[idx]+1))) {
 
 
       if (dropstart == maxProfileLen)
         continue;
 
       dropend = idx;
-      std::cout << "maksing Dropstart: " << dropstart << " dropend: " << dropend << std::endl;
       if (maskOnlyDropEdges) {
+
         for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
           int pos = dropstart - translator->_maskArray[jdx];
           if (pos >= 0 && pos < profileLength)
@@ -756,6 +795,7 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
   }
 
   if(dropstart>0 && dropstart < maxProfileLen) {
+
     if (maskOnlyDropEdges) {
       for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
         int pos = dropstart - translator->_maskArray[jdx];
@@ -782,12 +822,6 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
     }
   }
 
-  std::cout << "after masking" << std::endl;
-  for (size_t idx = 0; idx < this->profileLength; idx++) {
-    std::cout << (int) candidates[idx] << std::endl;
-  }
-
-
   for (size_t idx = 0; idx < this->profileLength; idx++) {
     if (candidates[idx] != 0)
       return true;
@@ -796,22 +830,4 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
   return false;
 
   //TODO:N's
-}
-
-unsigned int CountProfile::calc67quantile() {
-  //copy max count values
-  uint32_t *max_count = new uint32_t[profileLength];
-
-  for (size_t idx = 0; idx < profileLength; idx++) {
-    max_count[idx] = profile[idx].count;
-  }
-
-  // sort in ascending order
-  sort(max_count, max_count + profileLength);
-
-  // 67% quantile
-  auto abundanceEstimation = max_count[(uint32_t) (0.67 * (double) this->profileLength)];
-
-  delete[] max_count;
-  return abundanceEstimation;
 }
