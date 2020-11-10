@@ -61,10 +61,10 @@ void CountProfile::fill(SequenceInfo *seqinfo, size_t length) {
     }
   }
 
-  std::cout << "count profile" << std::endl;
+  /*std::cout << "count profile" << std::endl;
   for (size_t idx = 0; idx < this->profileLength; idx++) {
     std::cout << idx << ":" << this->profile[idx].count << std::endl;
-  }
+  }*/
   //TODO: continue until maxprofillength to reset count and valid flag? not necessary
 }
 
@@ -131,127 +131,6 @@ void CountProfile::showProfile(FILE *fp) const {
 }
 
 
-bool CountProfile::checkForTransitionDrops(unsigned int minCount) {
-  unsigned short kmerSpan = translator->getSpan();
-  unsigned short kmerWeight = translator->getWeight();
-
-
-  size_t maxProfileLen = this->profileLength + kmerSpan - 1;
-  uint32_t maxProfile[maxProfileLen];
-  for (size_t idx = 0; idx < maxProfileLen; idx++)
-    maxProfile[idx] = 1;
-
-  for (size_t idx = 0; idx < this->profileLength; idx++) {
-    for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-      size_t pos = idx + translator->_maskArray[jdx];
-      if (this->profile[idx].valid)
-        maxProfile[pos] = std::max(this->profile[idx].count, maxProfile[pos]);
-    }
-  }
-
-
-  char to_mask[maxProfileLen];
-  memset(to_mask, 0, maxProfileLen * sizeof(char));
-
-  vector<unsigned int> positions; // to_mask == 2
-  vector<unsigned int> candidates; // to_mask >= 1
-  int last = -1;
-  for (size_t idx = 1; idx < maxProfileLen; idx++) {
-    if ((double) (maxProfile[idx]) / maxProfile[idx - 1] < 0.1 && maxProfile[idx] < minCount ) {
-
-      last = 0;
-        candidates.push_back(idx);
-        to_mask[idx] = 1;
-
-
-    }
-    else if (((double) (maxProfile[idx - 1]) / maxProfile[idx] < 0.1) && maxProfile[idx-1] < minCount) { //} && (last!=-1 || idx>41) ) {
-      last = 1;
-      if(to_mask[idx - 1] == 0){
-      candidates.push_back(idx - 1);
-      to_mask[idx - 1] = 1;
-      }
-    }
-  }
-
-  //vector<unsigned int> dropPositions = positions;
-  vector<unsigned int> dropPositions = candidates;
-  bool checkPoints[profileLength + kmerSpan - 1];
-  memset(checkPoints, true, sizeof(bool) * (profileLength + kmerSpan - 1));
-
-  /*
-  for (size_t idx = 0; idx < dropPositions.size(); idx++) {
-    std::cout << dropPositions[idx] << ",";
-  }
-  std::cout << std::endl;*/
-
-  for (size_t idx = 0; idx < dropPositions.size(); idx++) {
-
-    for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-      int pos = dropPositions[idx] - translator->_maskArray[jdx];
-      if (pos >= 0)
-        checkPoints[pos] = false;
-    }
-  }
-
-  //special mask for N positions
-  for (size_t idx = 0; idx < profileLength; idx++) {
-    if (!profile[idx].valid)
-      checkPoints[idx] = false;
-  }
-
-
-  std::cout << seqinfo->name.c_str() << "\t";
-  for (size_t idx = 0; idx < profileLength + kmerSpan - 1; idx++) {
-    if (checkPoints[idx] == false)
-    std::cout << idx << ",";
-  }
-  std::cout << std::endl;
-
-  unsigned int dropstart=0,dropend=0;
-
-  for (size_t idx = 1; idx < this->profileLength; idx++) {
-    if (//(double) (this->profile[idx].count < minCount) &&
-        (double) this->profile[idx].count / this->profile[idx - 1].count < 0.1) {
-
-      if (dropstart == 0 || dropstart == profileLength)
-        dropstart = idx;
-      dropend = this->profileLength;
-    } else if (//(double) (this->profile[idx - 1].count < minCount) &&
-               (double) this->profile[idx - 1].count / this->profile[idx].count < 0.1) {
-      dropend = idx;
-      if ((dropstart !=0 && dropend - dropstart > 0) || dropend-dropstart > 3) {
-        unsigned int count = 0;
-        for (short jdx = dropstart; jdx < dropend; jdx++) {
-          if (checkPoints[jdx] && (double) (this->profile[jdx].count < minCount))
-            count++;
-        }
-        //std::cout << "dropstart: " << dropstart << ", dropend" << dropend<< std::endl;
-        //std::cout << "count: " << count << std::endl;
-        if (count > 0){// && count <= 41) {
-          return true;
-        }
-        dropstart = this->profileLength;
-      }
-    }
-  }
-  if ((double) (this->profile[profileLength-1].count < minCount)) {
-    if (dropend - dropstart > 3){//} && dropend - dropstart <= 41) {
-      unsigned int count = 0;
-      for (short jdx = dropstart; jdx < dropend; jdx++) {
-        if (checkPoints[jdx] && (double) (this->profile[jdx].count < minCount))
-          count++;
-      }
-      if (count > 0){//} && count <= 41) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-
-}
-
 unsigned int CountProfile::calcXquantile(double quantile, std::vector<uint32_t> &positionsOfInterest) {
   unsigned int totalPos = 0 ;
   for (size_t idx = 0; idx < positionsOfInterest.size(); idx++) {
@@ -297,400 +176,6 @@ unsigned int CountProfile::calcMedian(std::vector<uint32_t> &positionsOfInterest
 }
 
 
-
-bool CountProfile::checkForTransitionDropsNew(unsigned int minCount) {
-
-  float lowLevelCriterion=0.4;
-
-  unsigned short kmerSpan = translator->getSpan();
-  unsigned short kmerWeight = translator->getWeight();
-
-  unsigned int median = this->calcMedian();
-
-  size_t maxProfileLen = this->profileLength + kmerSpan - 1;
-  uint32_t maxProfile[maxProfileLen];
-  for (size_t idx = 0; idx < maxProfileLen; idx++)
-    maxProfile[idx] = 1;
-
-  for (size_t idx = 0; idx < this->profileLength; idx++) {
-    for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-      size_t pos = idx + translator->_maskArray[jdx];
-      if (this->profile[idx].valid)
-        maxProfile[pos] = std::max(this->profile[idx].count, maxProfile[pos]);
-    }
-  }
-
-  for (size_t idx = 0; idx < maxProfileLen; idx++)
-    std::cout << maxProfile[idx] <<",";
-  std::cout << std::endl;
-  char to_mask[maxProfileLen];
-  memset(to_mask, 0, maxProfileLen * sizeof(char));
-
-  vector<unsigned int> positions; // to_mask == 2
-  vector<unsigned int> candidates; // to_mask >= 1
-  int last = -1;
-  for (size_t idx = 1; idx < maxProfileLen; idx++) {
-
-    if(((double) maxProfile[idx] < lowLevelCriterion*median && (double) maxProfile[idx-1] < lowLevelCriterion*median) ||
-      ((double) maxProfile[idx] > lowLevelCriterion*median && (double) maxProfile[idx-1] > lowLevelCriterion*median))
-        continue;
-
-    if ((double) (maxProfile[idx]) / maxProfile[idx - 1] < 0.5 && maxProfile[idx] < lowLevelCriterion*median ) {
-
-      candidates.push_back(idx);
-      to_mask[idx] = 1;
-
-
-    }
-    else if (((double) (maxProfile[idx - 1]) / maxProfile[idx] < 0.5) && maxProfile[idx-1] < lowLevelCriterion*median ) {
-      last = 1;
-      if(to_mask[idx - 1] == 0){
-        candidates.push_back(idx - 1);
-        to_mask[idx - 1] = 1;
-      }
-    }
-  }
-
-  //vector<unsigned int> dropPositions = positions;
-  vector<unsigned int> dropPositions = candidates;
-  bool checkPoints[profileLength + kmerSpan - 1];
-  memset(checkPoints, true, sizeof(bool) * (profileLength + kmerSpan - 1));
-
-
-  for (size_t idx = 0; idx < dropPositions.size(); idx++) {
-    std::cout << dropPositions[idx] << ",";
-  }
-  std::cout << std::endl;
-
-  for (size_t idx = 0; idx < dropPositions.size(); idx++) {
-
-    for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-      int pos = dropPositions[idx] - translator->_maskArray[jdx];
-      if (pos >= 0)
-        checkPoints[pos] = false;
-    }
-  }
-
-  //special mask for N positions
-  for (size_t idx = 0; idx < profileLength; idx++) {
-    if (!profile[idx].valid)
-      checkPoints[idx] = false;
-  }
-
-
-  std::cout << seqinfo->name.c_str() << "\t";
-  for (size_t idx = 0; idx < profileLength + kmerSpan - 1; idx++) {
-    if (checkPoints[idx] == false)
-      std::cout << idx << ",";
-  }
-  std::cout << std::endl;
-
-  unsigned int dropstart=0,dropend=0;
-
-  for (size_t idx = 1; idx < this->profileLength; idx++) {
-
-    if(((double) this->profile[idx].count < lowLevelCriterion*median && (double) this->profile[idx-1].count < lowLevelCriterion*median) ||
-      ((double) this->profile[idx].count > lowLevelCriterion*median && (double) this->profile[idx-1].count > lowLevelCriterion*median))
-      continue;
-
-    if (//(double) (this->profile[idx].count < minCount) &&
-      (double) this->profile[idx].count / this->profile[idx - 1].count < 0.5) {
-
-      if (dropstart == 0 || dropstart == profileLength)
-        dropstart = idx;
-      dropend = this->profileLength;
-    } else if (//(double) (this->profile[idx - 1].count < minCount) &&
-      (double) this->profile[idx - 1].count / this->profile[idx].count < 0.5) {
-      dropend = idx;
-      if ((dropstart !=0 && dropend - dropstart > 0) || dropend-dropstart > 3) {
-        unsigned int count = 0;
-
-        for (short jdx = dropstart; jdx < dropend; jdx++) {
-          if (checkPoints[jdx] && (double) (this->profile[jdx].count < lowLevelCriterion*median))
-            count++;
-        }
-        //std::cout << "dropstart: " << dropstart << ", dropend" << dropend<< std::endl;
-        //std::cout << "count: " << count << std::endl;
-        if (count > 0){// && count <= 41) {
-          return true;
-        }
-        dropstart = this->profileLength;
-      }
-    }
-  }
-  if ((double) (this->profile[profileLength-1].count < minCount)) {
-    if (dropend - dropstart > 3){//} && dropend - dropstart <= 41) {
-      unsigned int count = 0;
-      for (short jdx = dropstart; jdx < dropend; jdx++) {
-        if (checkPoints[jdx] && (double) (this->profile[jdx].count < lowLevelCriterion*median))
-          count++;
-      }
-      if (count > 0){//} && count <= 41) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-
-}
-
-
-bool CountProfile::checkForTransitionDropsNew2(unsigned int minCount) {
-
-  double lowLevelCriterion = 0.1;
-  //double mincount = 10;
-
-  unsigned short kmerSpan = translator->getSpan();
-  unsigned short kmerWeight = translator->getWeight();
-
-  unsigned int median = this->calcMedian();
-
-  size_t maxProfileLen = this->profileLength + kmerSpan - 1;
-  uint32_t maxProfile[maxProfileLen];
-  for (size_t idx = 0; idx < maxProfileLen; idx++)
-    maxProfile[idx] = 1;
-
-  for (size_t idx = 0; idx < this->profileLength; idx++) {
-    for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-      size_t pos = idx + translator->_maskArray[jdx];
-      if (this->profile[idx].valid)
-        maxProfile[pos] = std::max(this->profile[idx].count, maxProfile[pos]);
-    }
-  }
-  for (size_t idx = 0; idx < maxProfileLen; idx++) {
-    std::cout << idx << ": " << maxProfile[idx] << std::endl;
-  }
-  unsigned int dropstart = 0, dropend = this->profileLength;
-
-  uint8_t candidates[this->profileLength];
-  memset(candidates, 0, sizeof(*candidates) * this->profileLength);
-  for (size_t idx = 1; idx < this->profileLength; idx++) {
-
-    if (((double) this->profile[idx].count < lowLevelCriterion * median &&
-         (double) this->profile[idx - 1].count < lowLevelCriterion * median) ||
-        ((double) this->profile[idx].count > lowLevelCriterion * median &&
-         (double) this->profile[idx - 1].count > lowLevelCriterion * median))
-      continue;
-
-    // dropstart
-    if ((double) this->profile[idx].count / this->profile[idx - 1].count < 0.5 &&
-        (double) this->profile[idx].count < lowLevelCriterion * median) {
-      dropstart = idx;
-      dropend = this->profileLength;
-    }
-      // dropend
-    else if ((double) this->profile[idx - 1].count / this->profile[idx].count < 0.5 &&
-             (double) this->profile[idx - 1].count < lowLevelCriterion * median) {
-      dropend = idx - 1;
-
-      if (dropstart < this->profileLength) {
-        std::cout << "dropstart: " << dropstart << std::endl;
-        std::cout << "dropend: " << dropend << std::endl;
-        for (size_t d = dropstart; d <= dropend; d++) {
-          if (this->profile[d].count < lowLevelCriterion * median)
-            candidates[d] = 1;
-        }
-
-        if (maxProfile[dropend] < lowLevelCriterion * median) {
-          std::cout << "Maks position " << dropend << std::endl;
-          for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-            int pos = dropend - translator->_maskArray[jdx];
-            if (pos >= 0)
-              candidates[pos] = 0;
-          }
-        }
-
-        if (maxProfile[dropstart + kmerSpan - 1] < lowLevelCriterion * median) {
-          std::cout << "Maks position " << dropstart + kmerSpan - 1 << std::endl;
-          for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-            int pos = dropstart + kmerSpan - 1 - translator->_maskArray[jdx];
-            if (pos >= 0)
-              candidates[pos] = 0;
-          }
-        }
-        dropstart = this->profileLength;
-      }
-      dropend = this->profileLength;
-    }
-  }
-
-
-  if (dropstart < this->profileLength) {
-    dropend = this->profileLength - 1;
-    std::cout << "dropstart: " << dropstart << std::endl;
-    std::cout << "dropend: " << dropend << std::endl;
-    for (size_t d = dropstart; d <= dropend; d++) {
-      if (this->profile[d].count < lowLevelCriterion * median)
-
-        candidates[d] = 1;
-    }
-
-    if (maxProfile[dropend] < lowLevelCriterion * median) {
-      for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-        int pos = dropend - translator->_maskArray[jdx];
-        if (pos >= 0)
-          candidates[pos] = 0;
-      }
-    }
-
-    if (maxProfile[dropstart + kmerSpan - 1] < lowLevelCriterion * median) {
-      for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-        int pos = dropstart + kmerSpan - 1 - translator->_maskArray[jdx];
-        if (pos >= 0)
-          candidates[pos] = 0;
-      }
-    }
-  }
-
-
-  for (size_t idx = 0; idx < this->profileLength; idx++) {
-    if (candidates[idx] != 0) {
-      return true;
-    }
-  }
-  //TODO: N's
-
-  return false;
-
-}
-//
-//bool CountProfile::checkForSpuriousTransitionDrops_old(unsigned int minCount) {
-//
-//
-//  unsigned int median = this->calcMedian();
-//  double dropLevelCriterion = 0.01 * median;
-//
-//  uint8_t candidates[this->profileLength];
-//  memset(candidates, 0, sizeof(*candidates) * this->profileLength);
-//
-//  unsigned int dropstart=0;
-//  unsigned int dropend=this->profileLength;
-//  for (size_t idx = 1; idx < this->profileLength; idx++) {
-//
-//    if (((double) this->profile[idx].count < dropLevelCriterion &&
-//         (double) this->profile[idx - 1].count < dropLevelCriterion) ||
-//        ((double) this->profile[idx].count > dropLevelCriterion &&
-//         (double) this->profile[idx - 1].count > dropLevelCriterion))
-//      continue;
-//
-//    // dropstart
-//    if ((double) this->profile[idx].count / this->profile[idx - 1].count < 0.5 &&
-//        (double) this->profile[idx].count < dropLevelCriterion) {
-//      dropstart = idx;
-//
-//    }
-//      // dropend
-//    else if ((double) this->profile[idx - 1].count / this->profile[idx].count < 0.5 &&
-//             (double) this->profile[idx - 1].count < dropLevelCriterion) {
-//      dropend = idx;
-//
-//      for (size_t d = dropstart; d < dropend; d++) {
-//        candidates[d] = 1;
-//      }
-//      dropstart=this->profileLength;
-//      dropend = this->profileLength;
-//    }
-//  }
-//
-//  if(dropstart>0) {
-//    for (size_t d = dropstart; d < this->profileLength; d++) {
-//      candidates[d] = 1;
-//    }
-//  }
-//
-//  unsigned short kmerSpan = translator->getSpan();
-//  unsigned short kmerWeight = translator->getWeight();
-//
-//  size_t maxProfileLen = this->profileLength + kmerSpan - 1;
-//  uint32_t maxProfile[maxProfileLen];
-//  for (size_t idx = 0; idx < maxProfileLen; idx++)
-//    maxProfile[idx] = 1;
-//
-//  for (size_t idx = 0; idx < this->profileLength; idx++) {
-//    for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-//      size_t pos = idx + translator->_maskArray[jdx];
-//      if (this->profile[idx].valid)
-//        maxProfile[pos] = std::max(this->profile[idx].count, maxProfile[pos]);
-//    }
-//  }
-//
-//  dropstart=0;
-//  dropend=maxProfileLen;
-//  //TODO: edge case ?
-//  for (size_t idx = 1; idx < maxProfileLen; idx++) {
-//    if (((double) maxProfile[idx] < dropLevelCriterion &&
-//         (double) maxProfile[idx-1] < dropLevelCriterion) ||
-//        ((double) maxProfile[idx] > dropLevelCriterion &&
-//         (double) maxProfile[idx-1] > dropLevelCriterion))
-//      continue;
-//
-//    // dropstart
-//    if ((double) maxProfile[idx] / maxProfile[idx-1] < 0.5 &&
-//        (double) maxProfile[idx] < dropLevelCriterion * median) {
-//      dropstart = idx;
-//    }
-//      // dropend
-//    else if ((double) maxProfile[idx-1] / maxProfile[idx] < 0.5 &&
-//             (double) maxProfile[idx-1] < dropLevelCriterion * median) {
-//      dropend = idx;
-//
-//      /*for (size_t d = dropstart; d < dropend; d++) {
-//        for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-//          int pos = d - translator->_maskArray[jdx];
-//          if (pos >= 0)
-//            candidates[pos] = 0;
-//        }
-//      }*/
-//      for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-//        int pos = dropstart - translator->_maskArray[jdx];
-//        if (pos >= 0)
-//          candidates[pos] = 0;
-//      }
-//
-//      for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-//        int pos = dropend-1 - translator->_maskArray[jdx];
-//        if (pos >= 0)
-//          candidates[pos] = 0;
-//      }
-//
-//      dropstart=maxProfileLen;
-//      dropend=maxProfileLen;
-//    }
-//  }
-//
-//  if(dropstart>0) {
-//    /*for (size_t d = dropstart; d < maxProfileLen; d++) {
-//      for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-//        int pos = d - translator->_maskArray[jdx];
-//        if (pos >= 0)
-//          candidates[pos] = 0;
-//      }
-//    }*/
-//    for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-//      int pos = dropstart - translator->_maskArray[jdx];
-//      if (pos >= 0)
-//        candidates[pos] = 0;
-//    }
-//
-//    for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-//      int pos = dropend-1 - translator->_maskArray[jdx];
-//      if (pos >= 0)
-//        candidates[pos] = 0;
-//    }
-//  }
-//
-//  for (size_t idx = 0; idx < this->profileLength; idx++) {
-//    if (candidates[idx] != 0) {
-//      return true;
-//    }
-//  }
-//  return false;
-//
-//  //TODO:N's
-//}
-
-
 char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges) {
 
 
@@ -708,7 +193,6 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
         this->profile[idx].count <= dropLevelCriterion &&
         this->profile[idx - 1].count > dropLevelCriterion) {
       dropstart = idx;
-
     }
       // dropend
     else if (this->profile[idx - 1].count / this->profile[idx].count <= 0.5 &&
@@ -717,6 +201,8 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
 
       if (dropstart == this->profileLength)
         continue;
+      /*if (dropstart == 0)
+        continue;*/
 
       dropend = idx;
 
@@ -724,12 +210,14 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
         if (profile[d].count <= dropLevelCriterion)
           candidates[d] = 1;
       }
+      std::cout << "candidate drop start: " << dropstart << " dropend " << dropend << std::endl;
       dropstart=this->profileLength;
       dropend = this->profileLength;
     }
   }
 
   if(dropstart>0 && dropstart < this->profileLength) {
+    std::cout << "candidate dropstart: " << dropstart << " dropend: " << dropend << std::endl;
     for (size_t d = dropstart; d < this->profileLength; d++) {
       if (profile[d].count <= dropLevelCriterion)
         candidates[d] = 1;
@@ -740,7 +228,11 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
   unsigned short kmerSpan = translator->getSpan();
   unsigned short kmerWeight = translator->getWeight();
   size_t maxProfileLen = this->profileLength + kmerSpan - 1;
-
+std::cout << "maxprofile: " << std::endl;
+  for(int i=0; i<maxProfileLen;i++)
+{
+std::cout << i << ": " << maxProfile[i] << std::endl;
+}
   dropstart = 0;
   dropend = maxProfileLen;
 
@@ -761,6 +253,8 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
       if (dropstart == maxProfileLen)
         continue;
 
+
+      std::cout << "masking dropstart: " << dropstart << " dropend: " << dropend << std::endl;
       dropend = idx;
       if (maskOnlyDropEdges) {
 
@@ -795,7 +289,7 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
   }
 
   if(dropstart>0 && dropstart < maxProfileLen) {
-
+std::cout << "masking dropstart: " << dropstart << " dropend: " << dropend << std::endl;
     if (maskOnlyDropEdges) {
       for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
         int pos = dropstart - translator->_maskArray[jdx];
@@ -824,10 +318,459 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
 
   for (size_t idx = 0; idx < this->profileLength; idx++) {
     if (candidates[idx] != 0)
-      return true;
+      {
+std::cout << "Remaingin candidate: " << idx << std::endl;
+return true;}
   }
 
   return false;
 
   //TODO:N's
 }
+
+char CountProfile::checkForSpuriousTransitionDropsSupported(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges) {
+
+
+
+  uint8_t candidates[this->profileLength];
+  memset(candidates, 0, sizeof(*candidates) * this->profileLength);
+
+  double correctionFactor= 0.01;
+  unsigned int dropstart = 0;
+  unsigned int dropend = this->profileLength;
+  for (size_t idx = 1; idx < this->profileLength; idx++) {
+
+    // dropstart
+    if (this->profile[idx].count / this->profile[idx - 1].count <= 0.5 &&
+        this->profile[idx].count <= dropLevelCriterion &&
+        this->profile[idx - 1].count > dropLevelCriterion) {
+
+
+      unsigned int window_width=10;
+      vector<uint32_t> window;
+      vector<uint32_t> window2;
+
+      for (size_t d=0; d<window_width; d++){
+        if(idx>d)
+          window.push_back(idx-d);
+        if(idx+d<this->profileLength)
+          window2.push_back(idx+d);
+      }
+      unsigned int window_level=*(std::min_element(std::begin(window), std::end(window)));
+      unsigned int window2_level=*(std::min_element(std::begin(window2), std::end(window2)));
+
+      if (this->profile[idx].count / (double) window_level <= 0.5)
+        dropstart = idx;
+
+    }
+      // dropend
+    else if (this->profile[idx - 1].count / this->profile[idx].count <= 0.5 &&
+             this->profile[idx - 1].count <= dropLevelCriterion &&
+             this->profile[idx].count > dropLevelCriterion) {
+
+      if (dropstart == this->profileLength)
+        continue;
+      /*if (dropstart == 0)
+        continue;*/
+
+      dropend = idx;
+
+      for (size_t d = dropstart; d < dropend; d++) {
+        if (profile[d].count <= dropLevelCriterion)
+          candidates[d] = 1;
+      }
+      std::cout << "candidate drop start: " << dropstart << " dropend " << dropend << std::endl;
+      dropstart=this->profileLength;
+      dropend = this->profileLength;
+    }
+  }
+
+  if(dropstart>0 && dropstart < this->profileLength) {
+    std::cout << "candidate dropstart: " << dropstart << " dropend: " << dropend << std::endl;
+    for (size_t d = dropstart; d < this->profileLength; d++) {
+      if (profile[d].count <= dropLevelCriterion)
+        candidates[d] = 1;
+    }
+  }
+
+
+  unsigned short kmerSpan = translator->getSpan();
+  unsigned short kmerWeight = translator->getWeight();
+  size_t maxProfileLen = this->profileLength + kmerSpan - 1;
+  std::cout << "maxprofile: " << std::endl;
+  for(int i=0; i<maxProfileLen;i++)
+  {
+    std::cout << i << ": " << maxProfile[i] << std::endl;
+  }
+  dropstart = 0;
+  dropend = maxProfileLen;
+
+  for (size_t idx = 1; idx < maxProfileLen; idx++) {
+
+    // dropstart
+    if (maxProfile[idx] / maxProfile[idx-1] < 0.5 &&
+        maxProfile[idx] <= (dropLevelCriterion + (correctionFactor*maxProfile[idx-1]+1)) &&
+        maxProfile[idx-1] > (dropLevelCriterion + (correctionFactor*maxProfile[idx-1]+1))) {
+      dropstart = idx;
+    }
+      // dropend
+    else if (maxProfile[idx-1] / maxProfile[idx] < 0.5 &&
+             maxProfile[idx-1] <= (dropLevelCriterion + (correctionFactor*maxProfile[idx]+1)) &&
+             maxProfile[idx] > (dropLevelCriterion + (correctionFactor*maxProfile[idx]+1))) {
+
+
+      if (dropstart == maxProfileLen)
+        continue;
+
+
+      std::cout << "masking dropstart: " << dropstart << " dropend: " << dropend << std::endl;
+      dropend = idx;
+      if (maskOnlyDropEdges) {
+
+        for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+          int pos = dropstart - translator->_maskArray[jdx];
+          if (pos >= 0 && pos < profileLength)
+            candidates[pos] = 0;
+        }
+
+        if (dropend > dropstart + 1) {
+          for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+            int pos = dropend - 1 - translator->_maskArray[jdx];
+            if (pos >= 0 && pos < profileLength)
+              candidates[pos] = 0;
+          }
+        }
+      }
+      else{
+        for (size_t d = dropstart; d < dropend; d++) {
+          for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+            int pos = d - translator->_maskArray[jdx];
+            if (pos >= 0 && pos < profileLength)
+              candidates[pos] = 0;
+          }
+        }
+      }
+
+
+      dropstart=maxProfileLen;
+      dropend=maxProfileLen;
+    }
+  }
+
+  if(dropstart>0 && dropstart < maxProfileLen) {
+    std::cout << "masking dropstart: " << dropstart << " dropend: " << dropend << std::endl;
+    if (maskOnlyDropEdges) {
+      for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+        int pos = dropstart - translator->_maskArray[jdx];
+        if (pos >= 0 && pos < profileLength)
+          candidates[pos] = 0;
+      }
+
+      if (dropend > dropstart + 1) {
+        for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+          int pos = dropend - 1 - translator->_maskArray[jdx];
+          if (pos >= 0 && pos < profileLength)
+            candidates[pos] = 0;
+        }
+      }
+    }
+    else {
+      for (size_t d = dropstart; d < maxProfileLen; d++) {
+        for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+          int pos = d - translator->_maskArray[jdx];
+          if (pos >= 0 && pos < profileLength)
+            candidates[pos] = 0;
+        }
+      }
+    }
+  }
+
+  for (size_t idx = 0; idx < this->profileLength; idx++) {
+    if (candidates[idx] != 0)
+    {
+      std::cout << "Remaingin candidate: " << idx << std::endl;
+      return true;}
+  }
+
+  return false;
+
+  //TODO:N's
+}
+
+
+char CountProfile::checkForSpuriousTransitionDropsWindow(uint32_t *maxProfile, unsigned int dropLevelCriterion, double perc, bool maskOnlyDropEdges) {
+
+  std::cout << "checkForSpuriousTransitionDropsWindow" << std::endl;
+  unsigned int candidates[this->profileLength];
+  memset(candidates, 0, sizeof(*candidates) * this->profileLength);
+
+ //Todo: try median and mark on the fly instead of minimum and backward marking?
+  unsigned int window_width=10;
+  vector<uint32_t> window;
+  vector<uint32_t> window2;
+
+  window.push_back(this->profile[0].count);
+
+  for (size_t idx = 1; idx < window_width+1; idx++){
+    window2.push_back(this->profile[idx].count);
+  }
+
+  unsigned short kmerSpan = translator->getSpan();
+  unsigned short kmerWeight = translator->getWeight();
+  size_t maxProfileLen = this->profileLength + kmerSpan - 1;
+
+  uint32_t window_level,window2_level,dropstart_level,dropend_level,compare_level;
+  unsigned int dropstart = this->profileLength, dropend;
+  for (size_t idx = 1; idx < this->profileLength; idx++){
+
+    window_level=*(std::min_element(std::begin(window), std::end(window)));
+    window2_level=*(std::min_element(std::begin(window2), std::end(window2)));
+    std::cout << idx << "\t" << window_level << "\t" << window2_level << std::endl;
+    if ((double) this->profile[idx].count < 0.5* (double)window_level && this->profile[idx].count < perc *dropLevelCriterion){ //drop start
+
+      std::cout << "found possible dropstart" << idx << std::endl;
+      if(dropstart == this->profileLength) {
+        std::cout << "set new dropstart" << idx << std::endl;
+        dropstart = idx;
+        dropend = this->profileLength;
+        // std::cout << "dropstart: " << dropstart << std::endl;
+        dropstart_level = window_level;
+      }
+    }
+   // else if ( (double) this->profile[idx].count > 2* (double)window_level && this->profile[idx].count == window2_level){ //drop end
+    else if ( (double) 0.5*window2_level >  (double)window_level && window2_level > 10){ //drop end
+      std::cout << "found possible dropend" << idx << std::endl;
+      if (dropstart != this->profileLength) {
+        //std::cout << "dropend: " << dropend << " without start"<< std::endl;
+        //continue;
+        //}
+
+        dropend = idx;
+        //std::cout << "dropend: " << dropend << std::endl;
+        dropend_level = this->profile[idx].count;
+
+        compare_level = std::min(dropstart_level, dropend_level);
+        for (size_t d = dropstart; d < dropend; d++) {
+          if (this->profile[d].count < 0.5 * compare_level) {
+            candidates[d] = dropstart_level;
+
+            //candidates[d] = compare_level;
+            /*if (maxProfile[d] < 0.5 * compare_level) {
+              //to_mask
+              for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+                int pos = d - translator->_maskArray[jdx];
+                if (pos >= 0 && pos < profileLength)
+                  candidates[pos] = 0;
+              }
+
+            }*/
+          }
+        }
+
+        for (size_t d = dropstart; d < dropend; d++) {
+          if (candidates[d] > 0){
+            for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+              int pos = d + translator->_maskArray[jdx];
+              if((pos < dropend || d + kmerSpan > this->profileLength) && candidates[d]*0.5 > maxProfile[pos]){
+                candidates[d] = 0;
+                break;
+              }
+            }
+          }
+        }
+
+          unsigned int tmp=0;
+          for (size_t d = dropstart; d < dropend; d++) {
+            if (candidates[d] >0)
+              tmp++;
+          }
+
+        std::cout << this->seqinfo->name << "\t" << dropstart << "\t" << dropend << "\t"
+                  << dropstart_level << "\t" << dropend_level << "\t" << tmp << "\t"
+                  << this->profileLength << "\t" << dropLevelCriterion
+                  << std::endl;
+
+        dropstart = this->profileLength;
+      } /*else
+      {
+        std::cout << this->seqinfo->name << "\t" << 0 << "\t" << idx << "\t"
+                  << 0 << "\t" << this->profile[idx].count << "\t" << idx << "\t"
+                  << this->profileLength
+                  << std::endl;
+      }*/
+
+    }
+    if (window.size()>= window_width)
+      window.erase(window.begin());
+
+    window.push_back(this->profile[idx].count);
+
+    window2.erase(window2.begin());
+    if (idx+window_width < this->profileLength)
+      window2.push_back(this->profile[idx+window_width].count);
+  }
+
+  /*for(size_t d= this->profileLength; d<maxProfileLen; d++){
+    if (maxProfile[d] < 0.5 * compare_level) {
+      //to_mask
+      for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+        int pos = d - translator->_maskArray[jdx];
+        if (pos >= 0 && pos < profileLength)
+          candidates[pos] = 0;
+      }
+  }*/
+  /*for(size_t d=0; d<this->profileLength; d++)
+    {
+      if (candidates[d] > 0){
+        for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+          int pos = d + translator->_maskArray[jdx];
+          if(candidates[d]*0.5 > maxProfile[pos]){
+            candidates[d] = 0;
+            break;
+          }
+        }
+      }
+    }*/
+  /*for(size_t d=0; d<maxProfileLen; d++){
+      if (maxProfile[d] < 0.5*candidates[d]){
+    }
+  }*/
+
+/*
+  unsigned short kmerSpan = translator->getSpan();
+  unsigned short kmerWeight = translator->getWeight();
+  size_t maxProfileLen = this->profileLength + kmerSpan - 1;
+
+  window.clear();
+  window.push_back(maxProfile[0]);
+  dropstart = maxProfileLen;
+  for (size_t idx = 1; idx < maxProfileLen; idx++){
+
+    level=*(std::min_element(std::begin(window), std::end(window)));
+    if (maxProfile[idx] < 0.5*level){ //drop start
+      dropstart = idx;
+      dropstart_level = maxProfile[idx];
+    }
+    else if (maxProfile[idx]> 0.5*level){ //drop end
+
+      if (dropstart == maxProfileLen)
+        continue;
+
+      dropend = idx;
+      dropend_level = maxProfile[idx];
+
+      compare_level = std::min(dropstart_level,dropend_level);
+      for (size_t d = dropstart; d < dropend; d++) {
+        if (maxProfile[d])
+      }
+
+      dropstart = maxProfileLen;
+
+    }
+    if (window.size()>= window_width)
+      window.erase(window.begin());
+    window.push_back(maxProfile[idx]);
+  }
+
+
+
+  for(int i=0; i<maxProfileLen;i++)
+  {
+    std::cout << i << ": " << maxProfile[i] << std::endl;
+  }
+  dropstart = 0;
+  dropend = maxProfileLen;
+
+  for (size_t idx = 1; idx < maxProfileLen; idx++) {
+
+    // dropstart
+    if (maxProfile[idx] / maxProfile[idx-1] < 0.5 &&
+        maxProfile[idx] <= (dropLevelCriterion + (correctionFactor*maxProfile[idx-1]+1)) &&
+        maxProfile[idx-1] > (dropLevelCriterion + (correctionFactor*maxProfile[idx-1]+1))) {
+      dropstart = idx;
+    }
+      // dropend
+    else if (maxProfile[idx-1] / maxProfile[idx] < 0.5 &&
+             maxProfile[idx-1] <= (dropLevelCriterion + (correctionFactor*maxProfile[idx]+1)) &&
+             maxProfile[idx] > (dropLevelCriterion + (correctionFactor*maxProfile[idx]+1))) {
+
+
+      if (dropstart == maxProfileLen)
+        continue;
+
+
+      std::cout << "masking dropstart: " << dropstart << " dropend: " << dropend << std::endl;
+      dropend = idx;
+      if (maskOnlyDropEdges) {
+
+        for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+          int pos = dropstart - translator->_maskArray[jdx];
+          if (pos >= 0 && pos < profileLength)
+            candidates[pos] = 0;
+        }
+
+        if (dropend > dropstart + 1) {
+          for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+            int pos = dropend - 1 - translator->_maskArray[jdx];
+            if (pos >= 0 && pos < profileLength)
+              candidates[pos] = 0;
+          }
+        }
+      }
+      else{
+        for (size_t d = dropstart; d < dropend; d++) {
+          for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+            int pos = d - translator->_maskArray[jdx];
+            if (pos >= 0 && pos < profileLength)
+              candidates[pos] = 0;
+          }
+        }
+      }
+
+
+      dropstart=maxProfileLen;
+      dropend=maxProfileLen;
+    }
+  }
+
+  if(dropstart>0 && dropstart < maxProfileLen) {
+    std::cout << "masking dropstart: " << dropstart << " dropend: " << dropend << std::endl;
+    if (maskOnlyDropEdges) {
+      for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+        int pos = dropstart - translator->_maskArray[jdx];
+        if (pos >= 0 && pos < profileLength)
+          candidates[pos] = 0;
+      }
+
+      if (dropend > dropstart + 1) {
+        for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+          int pos = dropend - 1 - translator->_maskArray[jdx];
+          if (pos >= 0 && pos < profileLength)
+            candidates[pos] = 0;
+        }
+      }
+    }
+    else {
+      for (size_t d = dropstart; d < maxProfileLen; d++) {
+        for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+          int pos = d - translator->_maskArray[jdx];
+          if (pos >= 0 && pos < profileLength)
+            candidates[pos] = 0;
+        }
+      }
+    }
+  }
+
+  for (size_t idx = 0; idx < this->profileLength; idx++) {
+    if (candidates[idx] != 0)
+    {
+      std::cout << "Remaingin candidate: " << idx << std::endl;
+      return true;}
+  }
+
+  return false;
+
+  //TODO:N's
+  */
+}
+

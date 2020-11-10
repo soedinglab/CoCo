@@ -70,10 +70,10 @@ public:
 
   /* advanced profile operations */
 
-  bool checkForTransitionDrops(unsigned int minCount);
-  bool checkForTransitionDropsNew(unsigned int minCount);
-  bool checkForTransitionDropsNew2(unsigned int minCount);
   char checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges=true);
+  char checkForSpuriousTransitionDropsSupported(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges=true);
+
+  char checkForSpuriousTransitionDropsWindow(uint32_t *maxProfile, unsigned int dropLevelCriterion, double perc, bool maskOnlyDropEdges);
 
   /* show tab-based table of positions and counts */
   void showProfile(FILE *fp = stdout) const;
