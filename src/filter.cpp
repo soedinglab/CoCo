@@ -71,7 +71,7 @@ int filterProcessor(CountProfile &countprofile, void *filterargs)
         break;
     }
   }*/
-  
+
   // bool filter = countprofile.checkForSpuriousTransitionDropsWindow(maxProfile, covEst, percDropLevels[0], false);
 
   //bool filter = countprofile.checkForSpuriousTransitionDropsGlobal(maxProfile, covEst, percDropLevels[0]);
