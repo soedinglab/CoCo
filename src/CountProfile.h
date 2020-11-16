@@ -71,9 +71,12 @@ public:
   /* advanced profile operations */
 
   char checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges=true);
-  char checkForSpuriousTransitionDropsSupported(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges=true);
 
   char checkForSpuriousTransitionDropsWindow(uint32_t *maxProfile, unsigned int dropLevelCriterion, double perc, bool maskOnlyDropEdges);
+
+  bool checkForSpuriousTransitionDropsGlobal(uint32_t *maxProfile, unsigned int covEst, float thr);
+
+  bool checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst, double percDrop);
 
   /* show tab-based table of positions and counts */
   void showProfile(FILE *fp = stdout) const;

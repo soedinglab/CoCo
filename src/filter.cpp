@@ -53,7 +53,8 @@ int filterProcessor(CountProfile &countprofile, void *filterargs)
   if(covEst < std::max((unsigned int)10, 2*mincount))
     return 0; //TODO
 
-  bool filter = countprofile.checkForSpuriousTransitionDrops(maxProfile, mincount, currFilterArgs->maskOnlyDropEdges);
+  //bool filter = countprofile.checkForSpuriousTransitionDrops(maxProfile, mincount, currFilterArgs->maskOnlyDropEdges);
+  /*bool filter = countprofile.checkForSpuriousTransitionDropsSupported(maxProfile, mincount, currFilterArgs->maskOnlyDropEdges);
 
   if(!filter) {
 
@@ -63,12 +64,18 @@ int filterProcessor(CountProfile &countprofile, void *filterargs)
       if (dropLevelCriterion < 1)
         continue;
 
-      filter = countprofile.checkForSpuriousTransitionDrops(maxProfile, dropLevelCriterion, currFilterArgs->maskOnlyDropEdges);
+      //filter = countprofile.checkForSpuriousTransitionDrops(maxProfile, dropLevelCriterion, currFilterArgs->maskOnlyDropEdges);
+      filter = countprofile.checkForSpuriousTransitionDropsSupported(maxProfile, dropLevelCriterion, currFilterArgs->maskOnlyDropEdges);
 
       if (filter)
         break;
     }
-  }
+  }*/
+  
+  // bool filter = countprofile.checkForSpuriousTransitionDropsWindow(maxProfile, covEst, percDropLevels[0], false);
+
+  //bool filter = countprofile.checkForSpuriousTransitionDropsGlobal(maxProfile, covEst, percDropLevels[0]);
+  bool filter = countprofile.checkForSpuriousTransitionDropsWithWindow(maxProfile, covEst, 1.0/3.0);
 
   if (filter)
     sequenceInfo2FileEntry(seqinfo, ((FilterArgs *) filterargs)->filterReads);
@@ -99,7 +106,7 @@ int filter(int argc, const char **argv, const Command *tool)
   //TODO:check parameter and if files exists
   if (opt.OP_DROP_LEVEL2.isSet) {
     for (float d : opt.dropLevel2){
-      if (d >= 0.5){
+      if (d > 0.5){
         Info(Info::ERROR) << "ERROR: found invalid argument for " << opt.OP_DROP_LEVEL2.name << " (valid range: 0-0.5)\n";
         return EXIT_FAILURE;
       }
