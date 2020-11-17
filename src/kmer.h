@@ -5,9 +5,9 @@
 #include "uint128.h"
 
 typedef uint128_t spacedKmerType;
-typedef uint64_t kmerType;
+typedef uint64_t packedKmerType;
 
-kmerType minIndex(const kmerType kmer, const unsigned short kmerSize);
+packedKmerType minIndex(packedKmerType kmer, unsigned short kmerSize);
 
 #endif // KMER
 

@@ -11,12 +11,7 @@
 
 typedef Kmer<>::Count Count;
 
-/*bool isValid(const Lookuptable &lookuptable,
-              Partition<Count> &solidKmers,
-              Kmer<>::ModelCanonical &model,
-              const KmerTranslator &translator,
-              unsigned short threeshold);
-*/
+
 LookupTableBase *buildLookuptable(string countFile,
                                   const KmerTranslator &translator,
                                   size_t minCount,
@@ -24,6 +19,12 @@ LookupTableBase *buildLookuptable(string countFile,
 
 LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator);
 
+/*bool isValid(const Lookuptable &lookuptable,
+              Partition<Count> &solidKmers,
+              Kmer<>::ModelCanonical &model,
+              const KmerTranslator &translator,
+              unsigned short threeshold);
+*/
 
 #endif // PREPROCESSING
 

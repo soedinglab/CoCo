@@ -36,11 +36,11 @@ private:
   size_t _offsetmask;
   size_t _indexmask;
 
-  inline size_t getGridPosition(kmerType kmer) const;
+  inline size_t getGridPosition(packedKmerType kmer) const;
 
-  inline size_t getOffset(kmerType kmer) const;
+  inline size_t getOffset(packedKmerType kmer) const;
 
-  inline std::pair<size_t, size_t> getIndexGridRange(kmerType kmer) const;
+  inline std::pair<size_t, size_t> getIndexGridRange(packedKmerType kmer) const;
 
 public:
 
@@ -50,15 +50,15 @@ public:
 
   ~Lookuptable();
 
-  void assignKmertoGrid(kmerType kmer);
+  void assignKmertoGrid(packedKmerType kmer);
 
   void setupIndexGridTable();
 
-  size_t addElement(kmerType kmer, unsigned int count);
+  size_t addElement(packedKmerType kmer, unsigned int count);
 
-  void finalSetupTables(size_t countThreeshold = 1);
+  void finalSetupTables(size_t countThreshold = 1);
 
-  unsigned int getCount(const kmerType kmer) const;
+  unsigned int getCount(const packedKmerType kmer) const;
 };
 
 #endif // LOOKUPTABLE_H

@@ -8,7 +8,7 @@
 
 class LookupTableBase {
 public:
-  virtual unsigned int getCount(const kmerType kmer) const = 0;
+  virtual unsigned int getCount(const packedKmerType kmer) const = 0;
 };
 
 #endif //LOOKUPTABLEBASE_H

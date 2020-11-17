@@ -16,7 +16,7 @@
 
 struct __attribute__((__packed__)) CountProfileEntry {
   uint8_t valid;
-  uint32_t count;          /* max count of spaced k-mers starting (matching) <readPos> */
+  uint32_t count;
 };
 
 class CountProfile {
@@ -27,14 +27,9 @@ private:
   const LookupTableBase *lookuptable;
 
   SequenceInfo *seqinfo;
-  //const char* seqNuc;
-  //const char* seqName;
-  size_t maxprofileLength = 0,    /* maximal length of profile,
-                                     corresponds to the allocated size of <profile> */
-            profileLength = 0;    /* length of current profile,
-                                     corresponds to the used size of <profile>*/
 
-
+  uint32_t profile_length_alloc = 0,  /* corresponds to the allocated size of <profile> */
+           profile_length = 0;        /* length of current profile, corresponds to the used size of <profile>*/
 
 public:
 
@@ -50,36 +45,31 @@ public:
   /* getter */
   const char *getSeqName() { return (seqinfo->name.c_str()); }
 
-  unsigned int getProfileLen() { return (profileLength); }
+  unsigned int getProfileLen() { return (profile_length); }
 
   SequenceInfo *getSeqInfo() { return (seqinfo); }
 
-  /* basic profile operations */
-  uint32_t* maximize();
+  /* show tab-based table of positions and counts */
+  void showProfile(FILE *fp = stdout) const;
+  void showMaximzedProfile(FILE *fp = stdout) const;
+
+  /*** basic profile operations ***/
+  uint32_t* maximize() const;
 
   void addCountPerPosition(std::vector<uint32_t> &summedCountProfile);
 
-  /* calculate abundance estimation value as 67% quantile over count profile */
-  unsigned int calc67quantile();
+  unsigned int calcXquantile(double quantile, const std::vector<uint32_t> &positionsOfInterest = std::vector<uint32_t>());
 
   unsigned int calcMedian();
 
-  unsigned int calcMedian(std::vector<uint32_t> &positionsOfInterest);
+  unsigned int calcMedian(const std::vector<uint32_t> &positionsOfInterest);
 
-  unsigned int calcXquantile(double quantile, std::vector<uint32_t> &positionsOfInterest);
+  /*** advanced profile operations ***/
 
-  /* advanced profile operations */
-
-  char checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges=true);
-
-  char checkForSpuriousTransitionDropsWindow(uint32_t *maxProfile, unsigned int dropLevelCriterion, double perc, bool maskOnlyDropEdges);
-
-  bool checkForSpuriousTransitionDropsGlobal(uint32_t *maxProfile, unsigned int covEst, float thr);
+  //outdated
+  bool checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges=true);
 
   bool checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst, double percDrop);
-
-  /* show tab-based table of positions and counts */
-  void showProfile(FILE *fp = stdout) const;
 
 };
 

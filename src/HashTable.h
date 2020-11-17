@@ -16,7 +16,7 @@ public:
     hashTable = kc_c1_init();
   }
 
-  unsigned int getCount(const kmerType kmer) const {
+  unsigned int getCount(const packedKmerType kmer) const {
     khint_t itr;
     int absent;
     itr = kc_c1_put(this->hashTable, kmer, &absent);
@@ -24,7 +24,7 @@ public:
     return kh_val(this->hashTable, itr);
   }
 
-  void increaseCount(kmerType kmer) {
+  void increaseCount(packedKmerType kmer) {
     khint_t itr;
     int absent;
     itr = kc_c1_put(this->hashTable, kmer, &absent);

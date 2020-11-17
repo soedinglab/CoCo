@@ -26,7 +26,7 @@ int processSeqFile(string seqFilename,
   Info(Info::INFO) << "process seqFile...\n";
   FILE *seqFile = openFileOrDie(seqFilename, "r");
 
-  //TODO: check what happens if one thread have problems wit a file, kill whole process then
+  //TODO: check what happens if one thread have problems with a file, kill whole process then
   int fd = fileno(seqFile);
   kseq_t *seq = kseq_init(fd);
 

@@ -6,9 +6,6 @@
 #define WINDOW_SIZE 4
 #define SIGNIFICANT_LEVEL_DIFF 10
 
-#define MIN_UPPER_LEVEL_POSITIONS 3
-#define MIN_UPPER_LEVEL_POSITIONS_NEW 1
-
 CountProfile::CountProfile(const KmerTranslator *translator,
                            const LookupTableBase *lookuptable) {
   this->translator = translator;
@@ -29,14 +26,14 @@ void CountProfile::fill(SequenceInfo *seqinfo, size_t length) {
 
   assert(length >= kmerSpan);
   this->seqinfo = seqinfo;
-  this->profileLength = length - kmerSpan + 1;
+  this->profile_length = length - kmerSpan + 1;
 
 
   // check size of array and create new one in case of too small size
-  if (this->profileLength > this->maxprofileLength) {
+  if (profile_length > profile_length_alloc) {
     delete[] this->profile;
-    this->profile = new CountProfileEntry[this->profileLength];
-    this->maxprofileLength = this->profileLength;
+    this->profile = new CountProfileEntry[profile_length];
+    this->profile_length_alloc = profile_length;
   }
 
   spacedKmerType kmer = 0, nStore = 0;
@@ -51,101 +48,94 @@ void CountProfile::fill(SequenceInfo *seqinfo, size_t length) {
     }
 
     if (idx >= kmerSpan - 1) {
-      // check if spaced k-mer contains 'N'
-      if ((nStore & (spacedKmerType) 2199023255551) != 0) { //if ((nStore & translator->_mask) != 0)
+      // check if k-mer contains 'N' (or any other invalid character)
+      if  ((nStore & translator->_mask) != 0) {
         profile[idx - (kmerSpan - 1)].count = 0;
         profile[idx - (kmerSpan - 1)].valid = 0;
         continue;
       }
 
-      kmerType packedKmer = translator->kmer2minPackedKmer(kmer);
+      packedKmerType packedKmer = translator->kmer2minPackedKmer(kmer);
       uint32_t count = lookuptable->getCount(packedKmer);
       profile[idx - (kmerSpan - 1)].count = count;
       profile[idx - (kmerSpan - 1)].valid = 1;
     }
   }
 
-  /*std::cout << "count profile" << std::endl;
-  for (size_t idx = 0; idx < this->profileLength; idx++) {
-    std::cout << idx << ":" << this->profile[idx].count << std::endl;
-  }*/
+
   //TODO: continue until maxprofillength to reset count and valid flag? not necessary
 }
 
-uint32_t *CountProfile::maximize() {
+
+void CountProfile::showProfile(FILE *fp) const {
+  for (size_t idx = 0; idx < profile_length; idx++) {
+    fprintf(fp, "%u\t%u\n", idx, profile[idx].count);
+  }
+}
+
+void CountProfile::showMaximzedProfile(FILE *fp) const {
+
+  uint32_t *maxProfile = maximize();
+  unsigned short kmerSpan = translator->getSpan();
+
+  for (size_t idx = 0; idx < profile_length + kmerSpan - 1; idx++) {
+    fprintf(fp, "%u\t%u\n", idx, maxProfile[idx]);
+  }
+}
+
+uint32_t *CountProfile::maximize() const {
 
   unsigned short kmerSpan = translator->getSpan();
   unsigned short kmerWeight = translator->getWeight();
 
-  size_t maxProfileLen = this->profileLength + kmerSpan - 1;
+  size_t maxProfileLen = profile_length + kmerSpan - 1;
   uint32_t *maxProfile = new uint32_t[maxProfileLen];
   for (size_t idx = 0; idx < maxProfileLen; idx++)
     maxProfile[idx] = 1;
 
-  for (size_t idx = 0; idx < this->profileLength; idx++) {
+  for (size_t idx = 0; idx < profile_length; idx++) {
     for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
       size_t pos = idx + translator->_maskArray[jdx];
       if (this->profile[idx].valid)
         maxProfile[pos] = std::max(this->profile[idx].count, maxProfile[pos]);
     }
   }
-
-  /*std::cout << "maximized count profile" << std::endl;
-  for (size_t idx = 0; idx < maxProfileLen; idx++) {
-   std::cout << idx << ":" << maxProfile[idx] << std::endl;
-  }*/
 
   return maxProfile;
 }
 
 void CountProfile::addCountPerPosition(std::vector<uint32_t> &summedCountProfile)
 {
-  if (summedCountProfile.size() < this->profileLength)
-    summedCountProfile.resize(this->profileLength,0);
+  if (summedCountProfile.size() < profile_length)
+    summedCountProfile.resize(profile_length,0);
 
-  for (size_t idx = 0; idx < this->profileLength; idx++)
-   summedCountProfile[idx] += profile[idx].count;
+  for (size_t idx = 0; idx < profile_length; idx++)
+    summedCountProfile[idx] += profile[idx].count;
 }
 
 
+unsigned int CountProfile::calcXquantile(double quantile, const std::vector<uint32_t> &positionsOfInterest) {
 
-void CountProfile::showProfile(FILE *fp) const {
-  for (size_t idx = 0; idx < profileLength; idx++) {
-    fprintf(fp, "%u\t%u\n", idx, profile[idx].count);
-  }
+  unsigned int totalPos = 0 ;
 
-  /*unsigned short kmerSpan = translator->getSpan();
-  unsigned short kmerWeight = translator->getWeight();
-
-  size_t maxProfileLen = this->profileLength + kmerSpan - 1;
-  uint32_t maxProfile[maxProfileLen];
-  for (size_t idx = 0; idx < maxProfileLen; idx++)
-    maxProfile[idx] = 1;
-
-  for (size_t idx = 0; idx < this->profileLength; idx++) {
-    for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-      size_t pos = idx + translator->_maskArray[jdx];
-      if (this->profile[idx].valid)
-        maxProfile[pos] = std::max(this->profile[idx].count, maxProfile[pos]);
+  //copy count values
+  uint32_t *counts;
+  if (positionsOfInterest.empty()){
+    totalPos = profile_length;
+    counts = new uint32_t[totalPos];
+    for (size_t idx = 0; idx < totalPos; idx++) {
+      counts[idx] = profile[idx].count;
     }
   }
-  for (size_t idx = 0; idx < maxProfileLen; idx++) {
-    fprintf(fp, "%u\t%u\n", idx, maxProfile[idx]);
-  }*/
-}
-
-
-unsigned int CountProfile::calcXquantile(double quantile, std::vector<uint32_t> &positionsOfInterest) {
-  unsigned int totalPos = 0 ;
-  for (size_t idx = 0; idx < positionsOfInterest.size(); idx++) {
-    if (positionsOfInterest[idx] < profileLength)
-      totalPos++;
-  }
-  //copy count values
-  uint32_t *counts = new uint32_t[totalPos];
-
-  for (size_t idx = 0; idx < totalPos; idx++) {
-    counts[idx] = profile[positionsOfInterest[idx]].count;
+  else {
+    for (size_t idx = 0; idx < positionsOfInterest.size(); idx++) {
+      if (positionsOfInterest[idx] < profile_length)
+        totalPos++;
+    }
+    counts = new uint32_t[totalPos];
+    for (size_t idx = 0; idx < totalPos; idx++) {
+      counts[idx] = profile[positionsOfInterest[idx]].count;
+    }
   }
 
   // sort in ascending order
@@ -158,37 +148,27 @@ unsigned int CountProfile::calcXquantile(double quantile, std::vector<uint32_t> 
 }
 
 unsigned int CountProfile::calcMedian() {
-  //copy count values
-  uint32_t *counts = new uint32_t[profileLength];
-
-  for (size_t idx = 0; idx < profileLength; idx++) {
-    counts[idx] = profile[idx].count;
-  }
-
-  // sort in ascending order
-  sort(counts, counts + profileLength);
-
-  auto median = counts[(uint32_t) (0.5 * (double) this->profileLength)];
-
-  delete[] counts;
-  return median;
+  return(calcXquantile(0.5));
 }
 
-unsigned int CountProfile::calcMedian(std::vector<uint32_t> &positionsOfInterest) {
+unsigned int CountProfile::calcMedian(const std::vector<uint32_t> &positionsOfInterest) {
 
   return(calcXquantile(0.5, positionsOfInterest));
 }
 
 
-char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges) {
+bool CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges) {
 
-  uint8_t candidates[this->profileLength];
-  memset(candidates, 0, sizeof(*candidates) * this->profileLength);
+  uint8_t candidates[profile_length];
+  memset(candidates, 0, sizeof(*candidates) * profile_length);
 
-  double correctionFactor= 0.01;
+  double correctionFactor= 0.001;
   unsigned int dropstart = 0;
-  unsigned int dropend = this->profileLength;
-  for (size_t idx = 1; idx < this->profileLength; idx++) {
+  unsigned int dropend = profile_length;
+
+  // 1) find drops -> candidates
+
+  for (size_t idx = 1; idx < profile_length; idx++) {
 
     // dropstart
     if (this->profile[idx].count / this->profile[idx - 1].count <= 0.5 &&
@@ -201,7 +181,7 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
              this->profile[idx - 1].count <= dropLevelCriterion &&
              this->profile[idx].count > dropLevelCriterion) {
 
-      if (dropstart == this->profileLength)
+      if (dropstart == profile_length)
         continue;
       /*if (dropstart == 0)
         continue;*/
@@ -213,14 +193,14 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
           candidates[d] = 1;
       }
 
-      dropstart=this->profileLength;
-      dropend = this->profileLength;
+      dropstart = profile_length;
+      dropend = profile_length;
     }
   }
 
-  if(dropstart>0 && dropstart < this->profileLength) {
+  if(dropstart>0 && dropstart < profile_length) {
 
-    for (size_t d = dropstart; d < this->profileLength; d++) {
+    for (size_t d = dropstart; d < profile_length; d++) {
       if (profile[d].count <= dropLevelCriterion)
         candidates[d] = 1;
     }
@@ -228,10 +208,12 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
 
   unsigned short kmerSpan = translator->getSpan();
   unsigned short kmerWeight = translator->getWeight();
-  size_t maxProfileLen = this->profileLength + kmerSpan - 1;
-
+  size_t maxProfileLen = profile_length + kmerSpan - 1;
   dropstart = 0;
   dropend = maxProfileLen;
+
+  /* 2) check if drop remains on maximized profile -> normal drop (spurious position)
+        or if drop disappear on maximized profile -> transition drop (spurious order) */
 
   for (size_t idx = 1; idx < maxProfileLen; idx++) {
 
@@ -246,24 +228,22 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
              maxProfile[idx-1] <= (dropLevelCriterion + (correctionFactor*maxProfile[idx]+1)) &&
              maxProfile[idx] > (dropLevelCriterion + (correctionFactor*maxProfile[idx]+1))) {
 
-
       if (dropstart == maxProfileLen)
         continue;
-
 
       dropend = idx;
       if (maskOnlyDropEdges) {
 
         for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
           int pos = dropstart - translator->_maskArray[jdx];
-          if (pos >= 0 && pos < profileLength)
+          if (pos >= 0 && pos < profile_length)
             candidates[pos] = 0;
         }
 
         if (dropend > dropstart + 1) {
           for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
             int pos = dropend - 1 - translator->_maskArray[jdx];
-            if (pos >= 0 && pos < profileLength)
+            if (pos >= 0 && pos < profile_length)
               candidates[pos] = 0;
           }
         }
@@ -272,13 +252,11 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
         for (size_t d = dropstart; d < dropend; d++) {
           for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
             int pos = d - translator->_maskArray[jdx];
-            if (pos >= 0 && pos < profileLength)
+            if (pos >= 0 && pos < profile_length)
               candidates[pos] = 0;
           }
         }
       }
-
-
       dropstart=maxProfileLen;
       dropend=maxProfileLen;
     }
@@ -289,14 +267,14 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
     if (maskOnlyDropEdges) {
       for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
         int pos = dropstart - translator->_maskArray[jdx];
-        if (pos >= 0 && pos < profileLength)
+        if (pos >= 0 && pos < profile_length)
           candidates[pos] = 0;
       }
 
       if (dropend > dropstart + 1) {
         for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
           int pos = dropend - 1 - translator->_maskArray[jdx];
-          if (pos >= 0 && pos < profileLength)
+          if (pos >= 0 && pos < profile_length)
             candidates[pos] = 0;
         }
       }
@@ -305,14 +283,14 @@ char CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
       for (size_t d = dropstart; d < maxProfileLen; d++) {
         for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
           int pos = d - translator->_maskArray[jdx];
-          if (pos >= 0 && pos < profileLength)
+          if (pos >= 0 && pos < profile_length)
             candidates[pos] = 0;
         }
       }
     }
   }
 
-  for (size_t idx = 0; idx < this->profileLength; idx++) {
+  for (size_t idx = 0; idx < this->profile_length; idx++) {
     if (candidates[idx] != 0)
       return true;
   }
@@ -329,8 +307,8 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
   unsigned short kmerSpan = this->translator->getSpan();
   unsigned short kmerWeight = translator->getWeight();
 
-  unsigned int corrValues[this->profileLength];
-  memset(corrValues, 0, sizeof(*corrValues) * this->profileLength);
+  unsigned int corrValues[profile_length];
+  memset(corrValues, 0, sizeof(*corrValues) * profile_length);
 
   // correct values with probability for observing the same sequencing error multiple times
   std::vector<unsigned int> corrWindow;
@@ -340,8 +318,8 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
     corrWindow.push_back(this->profile[idx].count);
   corrValues[0] = corrFactor * *(std::max_element(corrWindow.begin(), corrWindow.end())) + 1;
 
-  for(unsigned int idx = 1; idx < this->profileLength; idx++) {
-    if (idx + kmerSpan/2 < this->profileLength)
+  for(unsigned int idx = 1; idx < profile_length; idx++) {
+    if (idx + kmerSpan/2 < profile_length)
       corrWindow.push_back(this->profile[idx + kmerSpan/2].count);
     if (idx > kmerSpan/2)
       corrWindow.erase(corrWindow.begin());
@@ -350,10 +328,10 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
 
   }
 
-  unsigned int candidates[this->profileLength];
-  memset(candidates, 0, sizeof(*candidates) * this->profileLength);
+  unsigned int candidates[profile_length];
+  memset(candidates, 0, sizeof(*candidates) * profile_length);
 
-  unsigned int maxProfileLength = this->profileLength + kmerSpan - 1;
+  unsigned int maxProfileLength = profile_length + kmerSpan - 1;
 
   vector<uint32_t> window_back;
   vector<uint32_t> window_front;
@@ -365,11 +343,14 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
   }
 
   uint32_t dropstart_level = UINT_MAX, dropend_level = UINT_MAX, compare_level;
-  unsigned int dropstart = this->profileLength, dropend = this->profileLength;
+  unsigned int dropstart = profile_length, dropend = profile_length;
+
+  /* 1) find candidates */
 
   if(this->profile[0].count < covEst/3.0)
     dropstart = 0;
-  for (size_t idx = 1; idx < this->profileLength; idx++){
+
+  for (size_t idx = 1; idx < profile_length; idx++){
 
     uint32_t window_back_level = *(std::min_element(std::begin(window_back), std::end(window_back)));
     uint32_t window_front_level = *(std::min_element(std::begin(window_front), std::end(window_front)));
@@ -380,7 +361,7 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
 
       //drop start
       dropstart = idx;
-      dropend = this->profileLength;
+      dropend = profile_length;
       dropstart_level = window_back_level;
     }
 
@@ -389,9 +370,10 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
               && window_front_level - window_back_level >= SIGNIFICANT_LEVEL_DIFF) || window_front_level > (double)covEst/3.0)){
 
       //drop end (only considered if we already observed a dropstart or if dropstart=0)
-      if (dropstart != this->profileLength) {
+      if (dropstart != this->profile_length) {
         dropend = idx;
 
+        // mark candidates
         dropend_level = window_front_level;
         compare_level = std::min(dropstart_level, dropend_level);
         // set all positions within drop boundaries as candidates if they are smaller than percDrop * compare_level
@@ -401,13 +383,16 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
           }
         }
 
+        /* 2) check if drop remains on maximized profile -> normal drop (spurious position)
+              or if drop disappear on maximized profile -> transition drop (spurious order) */
+
         // check candidates
         for (size_t d = dropstart; d < dropend; d++) {
           if (maxProfile[d] < percDrop * compare_level && \
              ((d > 0 && maxProfile[d] < percDrop * maxProfile[d - 1]) || maxProfile[d] < percDrop * maxProfile[d + 1])) {
             for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
               int pos = d - translator->_maskArray[jdx];
-              if (pos >= dropstart && pos < this->profileLength)
+              if (pos >= dropstart && pos < profile_length)
                 candidates[pos] = 0;
             }
           }
@@ -415,10 +400,10 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
       }
 
       // reset values
-      dropstart = this->profileLength;
+      dropstart = profile_length;
       dropstart_level = UINT_MAX;
       dropend_level = UINT_MAX;
-      dropend = this->profileLength;
+      dropend = profile_length;
     }
 
     // update windows
@@ -427,12 +412,12 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
     window_back.push_back(this->profile[idx].count);
 
     window_front.erase(window_front.begin());
-    if (idx + WINDOW_SIZE < this->profileLength)
+    if (idx + WINDOW_SIZE < profile_length)
       window_front.push_back(this->profile[idx+WINDOW_SIZE].count);
   }
 
-  // check if there is a drop region until the end of the read (dropstart without dropend)
-  if(dropstart != 0 && dropstart != this->profileLength){
+  // edge case: check if there is a drop region until the end of the read (dropstart without dropend)
+  if(dropstart != 0 && dropstart != profile_length){
     for (size_t d = dropstart; d < dropend; d++) {
       if (this->profile[d].count < percDrop * dropstart_level) {
         candidates[d] = dropstart_level;
@@ -445,7 +430,7 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
         for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
           int pos = d - translator->_maskArray[jdx];
           if (pos >= dropstart)
-            if(pos < this->profileLength)
+            if(pos < profile_length)
               candidates[pos] = 0;
         }
       }
@@ -453,7 +438,7 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
   }
 
   // check for unexplained drops -> transition drops
-  for(unsigned int idx=0; idx< this->profileLength; idx++){
+  for(unsigned int idx=0; idx < profile_length; idx++){
     if (candidates[idx] != 0)
       return true;
   }

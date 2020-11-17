@@ -26,16 +26,15 @@ Lookuptable::~Lookuptable() {
   free(this->offsetTable);
 }
 
-inline size_t Lookuptable::getGridPosition(kmerType kmer) const {
+inline size_t Lookuptable::getGridPosition(packedKmerType kmer) const {
   return (kmer & _indexmask) >> LOGOFFSETSIZE;
 }
 
-inline size_t Lookuptable::getOffset(kmerType kmer) const {
+inline size_t Lookuptable::getOffset(packedKmerType kmer) const {
   return (kmer & _offsetmask);
 }
 
-
-void Lookuptable::assignKmertoGrid(kmerType kmer) {
+void Lookuptable::assignKmertoGrid(packedKmerType kmer) {
   size_t gridPosition = getGridPosition(kmer);
   indexGridTable[gridPosition]++;
 }
@@ -51,7 +50,7 @@ void Lookuptable::setupIndexGridTable() {
   }
 }
 
-size_t Lookuptable::addElement(kmerType kmer, unsigned int count) {
+size_t Lookuptable::addElement(packedKmerType kmer, unsigned int count) {
   size_t prevWritingPosition = 0;
   const size_t gridPosition = getGridPosition(kmer);
   const size_t writingPosition = indexGridTable[gridPosition];
@@ -108,14 +107,14 @@ void Lookuptable::finalSetupTables(size_t countThreshold) {
   offsetTable = (IndexEntry *) realloc(offsetTable, maxNumberItems * sizeof(IndexEntry));
 }
 
-inline std::pair<size_t, size_t> Lookuptable::getIndexGridRange(kmerType kmer) const {
+inline std::pair<size_t, size_t> Lookuptable::getIndexGridRange(packedKmerType kmer) const {
   size_t gridPosition = getGridPosition(kmer);
   size_t indexGridSize = indexGridTable[gridPosition + 1] -
                          indexGridTable[gridPosition];
   return std::make_pair(indexGridTable[gridPosition], indexGridSize);
 }
 
-unsigned int Lookuptable::getCount(const kmerType kmer) const {
+unsigned int Lookuptable::getCount(const packedKmerType kmer) const {
 
   const std::pair<size_t, size_t> grid = getIndexGridRange(kmer);
   const size_t kmerOffset = getOffset(kmer);

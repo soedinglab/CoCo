@@ -6,7 +6,11 @@
 
 #ifdef __SSSE3__
 
-uint64_t revComplement_intr(const uint64_t kmer, const unsigned short k) {
+
+/* calculate reverse copmplement with SSE3 instructions
+   Note: do not use typdef for packedKmerType here, because this function only works for uint64_t kmer
+   if packedKmerType definition change use another function */
+uint64_t revComplement_intr(uint64_t kmer, unsigned short k) {
 
   // broadcast 64bit to 128 bit
   __m128i x = _mm_cvtsi64_si128(kmer);
@@ -47,16 +51,15 @@ uint64_t revComplement_intr(const uint64_t kmer, const unsigned short k) {
 
 #endif
 
+packedKmerType revComplement(packedKmerType kmer, unsigned short kmerSize) {
 
-kmerType revComplement(const kmerType kmer, const unsigned short kmerSize) {
-
-  kmerType revCompKmer = 0;
+  packedKmerType revCompKmer = 0;
 
 #ifdef __SSSE3__
   revCompKmer = revComplement_intr(kmer, kmerSize);
 #else
   kmerType kmer_cp = kmer;
-  kmerType mask = (kmerType) 3;
+  kmerType mask = (packedKmerType) 3;
 
   for (int idx = 0; idx < kmerSize; idx++){
     kmerType nuc = (kmer_cp & mask);
@@ -67,11 +70,11 @@ kmerType revComplement(const kmerType kmer, const unsigned short kmerSize) {
 #endif
 
   return revCompKmer;
-
 }
 
-kmerType minIndex(const kmerType kmer, const unsigned short kmerSize) {
-  kmerType revCompKmer = revComplement(kmer, kmerSize);
+
+packedKmerType minIndex(packedKmerType kmer, unsigned short kmerSize) {
+  packedKmerType revCompKmer = revComplement(kmer, kmerSize);
 
   return kmer < revCompKmer ? kmer : revCompKmer;
 }

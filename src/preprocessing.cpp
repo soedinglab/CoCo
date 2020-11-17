@@ -9,48 +9,6 @@
 
 KSEQ_INIT(int, read)
 
-bool isValid(const Lookuptable &lookuptable,
-             Partition<Count> &solidKmers,
-             Kmer<>::ModelCanonical &model,
-             const KmerTranslator &translator,
-             unsigned short threshold) {
-
-  Iterator<Count> *it = solidKmers.iterator();
-  LOCAL (it);
-
-  for (it->first(); !it->isDone(); it->next()) {
-    const Count &count = it->item();
-    kmerType packedKmer =
-      translator.kmer2minPackedKmer(largeInt2uint128(count.value));
-
-    unsigned int lookupCount = lookuptable.getCount(packedKmer);
-    std::string kmer = model.toString(count.value);
-
-    //std::cout << lookupCount << "\t" << count.abundance << std::endl;
-
-    // abundance < threshold:
-    // kmer should not exist in lookuptable, except different kmers match to
-    // the same packedKmer by using spacemask
-    if (count.abundance < threshold && lookupCount != 0 && lookupCount < threshold) {
-
-      Info(Info::ERROR)  << "ERROR: count value " << lookupCount
-                         << "found for packed kmer "
-                         << packedKmer << "generated from " << kmer
-                         << " is smaller than threeshold" << threshold << "\n";
-      return false;
-    }
-
-    // check count values
-    if ((unsigned) count.abundance > threshold && (unsigned) count.abundance > lookupCount) {
-      Info(Info::ERROR) << "ERROR: check lookuptable counts failed, value " << lookupCount
-                        << " for packed kmer " << packedKmer << "generated from"
-                        << kmer << "is smaller than count.abundance="
-                        << count.abundance << "found in h5 file " << "\n";
-      return false;
-    }
-  }
-  return true;
-}
 
 LookupTableBase *buildLookuptable(string countFile,
                                   const KmerTranslator &translator,
@@ -74,10 +32,10 @@ LookupTableBase *buildLookuptable(string countFile,
   //retrieve the partition holding the couples [kmer,abundance]
 
   Partition<Count> &solidKmers = dskGroup.getPartition<Count>("solid");
-
   assert(translator.getSpan() == kmerSize);
 
   Info(Info::INFO) << "create lookuptable...\n";
+
   // create lookuptable
   Lookuptable *lookuptable = new Lookuptable(solidKmers.getNbItems(), corrFactor);
   // fill lookuptable
@@ -92,7 +50,7 @@ LookupTableBase *buildLookuptable(string countFile,
     for (it->first(); !it->isDone(); it->next()) {
       const Count &count = it->item();
 
-      kmerType packedKmer =
+      packedKmerType packedKmer =
         translator.kmer2minPackedKmer(largeInt2uint128(count.value));
       lookuptable->assignKmertoGrid(packedKmer);
     }
@@ -104,7 +62,7 @@ LookupTableBase *buildLookuptable(string countFile,
     // add elements, increase grid values in doing so
     for (it->first(); !it->isDone(); it->next()) {
       const Count &count = it->item();
-      kmerType packedKmer =
+      packedKmerType packedKmer =
         translator.kmer2minPackedKmer(largeInt2uint128(count.value));
       lookuptable->addElement(packedKmer, count.abundance);
     }
@@ -127,6 +85,7 @@ LookupTableBase *buildLookuptable(string countFile,
 }
 
 LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator) {
+
   unsigned int kmerSpan = translator.getSpan();
   HashTable *hashtable = new HashTable();
 
@@ -134,7 +93,7 @@ LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator
   int fd = fileno(kmerCountFile);
   kseq_t *seq = kseq_init(fd);
   spacedKmerType spacedKmer, mask = ((((spacedKmerType) 1) << (spacedKmerType) (kmerSpan * 2)) - 1);
-  kmerType x;
+  packedKmerType x;
 
   Info(Info::INFO) << "count k-mers...\n";
   while (kseq_read(seq) >= 0) {
@@ -173,4 +132,46 @@ LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator
 }
 
 
+//DEBUG
+bool isValid(const Lookuptable &lookuptable,
+             Partition<Count> &solidKmers,
+             Kmer<>::ModelCanonical &model,
+             const KmerTranslator &translator,
+             unsigned short threshold) {
 
+  Iterator<Count> *it = solidKmers.iterator();
+  LOCAL (it);
+
+  for (it->first(); !it->isDone(); it->next()) {
+    const Count &count = it->item();
+    packedKmerType packedKmer =
+      translator.kmer2minPackedKmer(largeInt2uint128(count.value));
+
+    unsigned int lookupCount = lookuptable.getCount(packedKmer);
+    std::string kmer = model.toString(count.value);
+
+    //std::cout << lookupCount << "\t" << count.abundance << std::endl;
+
+    // abundance < threshold:
+    // kmer should not exist in lookuptable, except different kmers match to
+    // the same packedKmer by using spacemask
+    if (count.abundance < threshold && lookupCount != 0 && lookupCount < threshold) {
+
+      Info(Info::ERROR)  << "ERROR: count value " << lookupCount
+                         << "found for packed kmer "
+                         << packedKmer << "generated from " << kmer
+                         << " is smaller than threshold" << threshold << "\n";
+      return false;
+    }
+
+    // check count values
+    if ((unsigned) count.abundance > threshold && (unsigned) count.abundance > lookupCount) {
+      Info(Info::ERROR) << "ERROR: check lookuptable counts failed, value " << lookupCount
+                        << " for packed kmer " << packedKmer << "generated from"
+                        << kmer << "is smaller than count.abundance="
+                        << count.abundance << "found in h5 file " << "\n";
+      return false;
+    }
+  }
+  return true;
+}

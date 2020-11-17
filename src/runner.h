@@ -1,7 +1,7 @@
 // Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 
-#ifndef PROCESSREADS
-#define PROCESSREADS
+#ifndef RUNNER
+#define RUNNER
 
 #include "CountProfile.h"
 #include "LookuptableBase.h"
@@ -30,5 +30,5 @@ void process_sampleList(vector<string> *sampleList, std::string resultFileName,
                         KmerTranslator *translator,
                         int (*processCountProfile)(CountProfile &, FILE*));*/
 
-#endif // PROCESSREADS
+#endif // RUNNER
 
