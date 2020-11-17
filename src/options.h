@@ -61,6 +61,7 @@ public:
   std::vector<float> dropLevel2;
   //unsigned int kmerWeight;
   unsigned int threads;
+  int countMode;
   int verbose;
   bool aligned;
   bool softFilter;
@@ -71,7 +72,6 @@ public:
   std::vector<cocoOption*> abundanceEstimatorWorkflow;
   std::vector<cocoOption*> consensusWorkflow;
 
-
   OPTION(OP_SEQ_FILE)
   OPTION(OP_COUNT_FILE)
   OPTION(OP_OUTPREFIX)
@@ -79,9 +79,12 @@ public:
   OPTION(OP_DROP_LEVEL2)
   OPTION(OP_ALIGNED)
   OPTION(OP_SOFT_FILTER)
+  OPTION(OP_COUNT_MODE)
   OPTION(OP_THREADS)
   OPTION(OP_VERBOSE)
 
+  static const int COUNT_MODE_SUM = 0;
+  static const int COUNT_MODE_MAX = 1;
 
 protected:
   Options();

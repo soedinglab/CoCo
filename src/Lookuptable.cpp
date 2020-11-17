@@ -4,17 +4,20 @@
 #include <iostream>
 #include <string.h>
 #include "Lookuptable.h"
-#include "util.h"
+
 #include "Info.h"
+#include "options.h"
+#include "util.h"
 
 
-Lookuptable::Lookuptable(const size_t nbItems, float corrFactor) {
+Lookuptable::Lookuptable(const size_t nbItems, int countMode, float corrFactor) {
   // TODO: assert(LOGINDEXSIZE+LOGOFFSETSIZE == 2*ksize);
 
   indexGridTable = (size_t *) calloc(indexGridTableSize, sizeof(size_t));
   offsetTable = (IndexEntry *) calloc(nbItems, sizeof(IndexEntry));
   maxNumberItems = nbItems;
   numberItems = 0;
+  mode = countMode;
 
   /* set masks */
   _indexmask = (ipow(2, LOGINDEXSIZE) - 1) << LOGOFFSETSIZE;
@@ -66,8 +69,10 @@ size_t Lookuptable::addElement(packedKmerType kmer, unsigned int count) {
   }
   for (size_t pos = prevWritingPosition; pos < writingPosition; pos++) {
     if (offsetTable[pos].count != 0 && offsetTable[pos].indexOffset == offset) {
-      //offsetTable[pos].count += count;
-      offsetTable[pos].count = std::max(offsetTable[pos].count,count);
+      if (mode == Options::COUNT_MODE_SUM)
+        offsetTable[pos].count += count;
+      else if (mode == Options::COUNT_MODE_MAX)
+        offsetTable[pos].count = std::max(offsetTable[pos].count,count);
       return pos;
     }
   }

@@ -55,7 +55,7 @@ int profile(int argc, const char **argv, const Command *tool) {
   if (opt.OP_COUNT_FILE.isSet) {
 
     string countFile = opt.countFile;
-    lookuptable = buildLookuptable(countFile, *translator, 0, 1);
+    lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0, 1);
   } else { // count k-mers itself and fill hash-lookuptable
 
     lookuptable = buildHashTable(seqFile, *translator);

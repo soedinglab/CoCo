@@ -47,7 +47,7 @@ int abundanceEstimator(int argc, const char **argv, const Command *tool) {
   if (opt.OP_COUNT_FILE.isSet) {
 
     string countFile = opt.countFile;
-    lookuptable = buildLookuptable(countFile, *translator, 0, 1);
+    lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0, 1);
   } else { // count k-mers itself and fill hash-lookuptable
 
     lookuptable = buildHashTable(seqFile, *translator);
@@ -55,7 +55,7 @@ int abundanceEstimator(int argc, const char **argv, const Command *tool) {
 
   if (lookuptable == NULL) {
 
-    Info(Info::ERROR) <<"Generating lookuptablefailed\n";
+    Info(Info::ERROR) <<"Generating lookuptable failed\n";
     return EXIT_FAILURE;
   }
 
@@ -68,17 +68,6 @@ int abundanceEstimator(int argc, const char **argv, const Command *tool) {
     }
   }
 
-  //    else
-//    {
-//      retval = processSeqFileParallel(seqFile,
-//                                      resultFile,
-//                                      lookuptable,
-//                                      translator,
-//                                      writeAbundanceEstimation,
-//                                      opt.threads);
-//    }
-//  }
-//
 
   fclose(abundanceargs.abundanceFile);
   delete lookuptable;

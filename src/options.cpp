@@ -14,8 +14,8 @@
 Options *Options::instance = NULL;
 
 Options::Options() :
-  OP_SEQ_FILE(OP_SEQ_FILE_ID, "seqFile", "--seqFile",
-              "sequence file (reads or contigs in fasta format)",
+  OP_SEQ_FILE(OP_SEQ_FILE_ID, "seqfile", "--seqfile",
+              "sequence file (reads or contigs in fasta/fastq format)",
               typeid(std::string), (void *) &seqFile, PROFILE | FILTER | ABUNDANCE_ESTIMATOR | CONSENSUS),
   OP_COUNT_FILE(OP_COUNT_FILE_ID, "counts", "--counts",
                 "pre computed kmer count file in hdf5 format (dsk output format), Note: only supports 41-mers yet",
@@ -33,9 +33,12 @@ Options::Options() :
               "less strict filtering mode due to more strict masking strategy ",
               typeid(bool), (void *) &softFilter, 0),
   OP_ALIGNED(OP_ALIGNED_ID, "aligned", "--aligned",
-             "optimize abundance estimation, only works if all reads have the same length and span the same region!",
+             "optimize abundance estimation, only works if all reads span the same region! (amplicon sequence data)",
               typeid(bool), (void *) &aligned, 0),
-  OP_THREADS(OP_THREADS_ID, "threads", "--threads", "number of threads, not supported yet, default: 1", typeid(int), (void *) &threads, 0),
+  OP_COUNT_MODE(OP_COUNT_MODE_ID, "count-mode", "--count-mode",
+                "way to store counts for concurrent kmers (expert option):\n0: sum\n1: maximize (default)",
+                typeid(std::string), (void *) &countMode, 0),
+  OP_THREADS(OP_THREADS_ID, "threads", "--threads", "number of threads, not supported yet (default: 1)", typeid(int), (void *) &threads, 0),
   OP_VERBOSE(OP_VERBOSE_ID, "verbose", "--verbose", "verbosity level, 0: quiet 1: Errors, 2: +Warnings, 3: +Info, 4: +Debug, "\
                             "default: 3", typeid(int), (void *) &verbose, 0)
   {
@@ -51,6 +54,7 @@ Options::Options() :
   profileWorkflow.push_back(&OP_SEQ_FILE);
   profileWorkflow.push_back(&OP_COUNT_FILE);
   profileWorkflow.push_back(&OP_OUTPREFIX);
+  profileWorkflow.push_back(&OP_COUNT_MODE);
   profileWorkflow.push_back(&OP_THREADS);
   profileWorkflow.push_back(&OP_VERBOSE);
 
@@ -62,6 +66,7 @@ Options::Options() :
   filterWorkflow.push_back(&OP_DROP_LEVEL2);
   filterWorkflow.push_back(&OP_ALIGNED);
   filterWorkflow.push_back(&OP_SOFT_FILTER);
+  filterWorkflow.push_back(&OP_COUNT_MODE);
   filterWorkflow.push_back(&OP_THREADS);
   filterWorkflow.push_back(&OP_VERBOSE);
 
@@ -69,6 +74,7 @@ Options::Options() :
   abundanceEstimatorWorkflow.push_back(&OP_SEQ_FILE);
   abundanceEstimatorWorkflow.push_back(&OP_COUNT_FILE);
   abundanceEstimatorWorkflow.push_back(&OP_OUTPREFIX);
+  abundanceEstimatorWorkflow.push_back(&OP_COUNT_MODE);
   abundanceEstimatorWorkflow.push_back(&OP_THREADS);
   abundanceEstimatorWorkflow.push_back(&OP_VERBOSE);
 
@@ -80,6 +86,8 @@ void Options::setDefaults() {
 
   aligned = false;
   softFilter = false;
+
+  countMode = COUNT_MODE_MAX;
 
   threads = 1; //TODO
   verbose = Info::INFO;
@@ -118,6 +126,7 @@ void Options::parseOptions(int argc, const char *argv[],
     {"drop-level2",    required_argument, NULL, 0},
     {"aligned",    no_argument, NULL, 0},
     {"soft",    no_argument, NULL, 0},
+    {"count-mode",   required_argument, NULL, 0},
     {"threads",   required_argument, NULL, 0},
     {"verbose",   required_argument, NULL, 0},
     {NULL,        no_argument,       NULL, 0}

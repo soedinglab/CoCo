@@ -9,6 +9,7 @@
 #include "LookuptableBase.h"
 #include "kmer.h"
 
+
 /* k-mer-index = (first p bits << I) | (last I bits) */
 #define LOGINDEXSIZE 30 /* p bits, guarantee ~8GB for indexGridTable*/
 #define LOGOFFSETSIZE 24 /* I bits */
@@ -36,6 +37,8 @@ private:
   size_t _offsetmask;
   size_t _indexmask;
 
+  int mode;
+
   inline size_t getGridPosition(packedKmerType kmer) const;
 
   inline size_t getOffset(packedKmerType kmer) const;
@@ -46,7 +49,7 @@ public:
 
   Lookuptable() {};
 
-  Lookuptable(size_t nbItems, float corrFactor);
+  Lookuptable(size_t nbItems, int countMode, float corrFactor);
 
   ~Lookuptable();
 

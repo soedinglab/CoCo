@@ -10,7 +10,7 @@
 KSEQ_INIT(int, read)
 
 
-LookupTableBase *buildLookuptable(string countFile,
+LookupTableBase *buildLookuptable(string countFile,int countMode,
                                   const KmerTranslator &translator,
                                   size_t minCount,
                                   float corrFactor) {
@@ -37,7 +37,7 @@ LookupTableBase *buildLookuptable(string countFile,
   Info(Info::INFO) << "create lookuptable...\n";
 
   // create lookuptable
-  Lookuptable *lookuptable = new Lookuptable(solidKmers.getNbItems(), corrFactor);
+  Lookuptable *lookuptable = new Lookuptable(solidKmers.getNbItems(), countMode, corrFactor);
   // fill lookuptable
   {
     Iterator<Count> *it = solidKmers.iterator();

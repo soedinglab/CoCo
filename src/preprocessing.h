@@ -12,7 +12,7 @@
 typedef Kmer<>::Count Count;
 
 
-LookupTableBase *buildLookuptable(string countFile,
+LookupTableBase *buildLookuptable(string countFile, int countMode,
                                   const KmerTranslator &translator,
                                   size_t minCount,
                                   float corrFactor);

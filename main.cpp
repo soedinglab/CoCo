@@ -51,19 +51,19 @@ std::vector<struct Command> commands =
     {"filter", filter, &opt.filterWorkflow, "denoise read file",
       "identify reads containing spurious nucleotide order as chimeras, indels, ... ",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      " --seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+      " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       FILTER
     },
     {"profile", profile, &opt.profileWorkflow, "print spaced k-mer count profiles (devtool)",
       "dev tool to write for every sequence the spaced k-mer count profile in a tab separated plain text file",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      " --seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+      " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       PROFILE
     },
     {"abundance", abundanceEstimator, &opt.abundanceEstimatorWorkflow, "estimate abundance values",
       "Give for every read an estimated value for the abundance",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      " --seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+      " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       ABUNDANCE_ESTIMATOR
     },
 
