@@ -10,8 +10,8 @@ private:
   unsigned short span;   /* kmer size */
   unsigned short weight; /* number of informative positions */
 
-  spacedKmerType _mask;
-  unsigned char *_maskArray;
+  spacedKmerType _span_mask;
+  unsigned char *_mask_array;
 
 public:
   KmerTranslator();

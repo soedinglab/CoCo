@@ -35,22 +35,17 @@ int filterProcessor(CountProfile &countprofile, void *filterargs)
   /* estimate coverage value */
   unsigned int covEst;
   if(currFilterArgs->shrinkedPlainPositions.size() == 0){
-    std::cout << "calcMedian" << std::endl;
+
     covEst = countprofile.calcMedian();
   } else {
-    std::cout << "calc 67q" << std::endl;
     //covEst = countprofile.calcMedian(currFilterArgs->shrinkedPlainPositions);
     covEst = countprofile.calcXquantile(0.67, currFilterArgs->shrinkedPlainPositions);
   }
 
-  std::cout << "seqinfo->name" << std::endl;
-  Info(Info::DEBUG) << seqinfo->name;
-  Info(Info::DEBUG) << covEst;
   Info(Info::DEBUG) << seqinfo->name << "\t" << covEst << "\n";
 
   uint32_t *maxProfile = countprofile.maximize();
 
-  std::cout << "maximze" << std::endl;
   //TODO: wobbly
 
   unsigned int mincount = ((FilterArgs *) filterargs)->dropLevel1;
@@ -86,14 +81,12 @@ int filterProcessor(CountProfile &countprofile, void *filterargs)
   bool filter = countprofile.checkForSpuriousTransitionDropsWithWindow(maxProfile, covEst, 1.0/3.0);
   delete[] maxProfile;
 
-  std::cout << "filter" << std::endl;
 
   if (filter)
     sequenceInfo2FileEntry(seqinfo, ((FilterArgs *) filterargs)->filterReads);
   else
     sequenceInfo2FileEntry(seqinfo, ((FilterArgs *) filterargs)->cleanedReads);
 
-  //std::cout << "end filter" << std::endl;
   return 0;
 }
 
@@ -104,12 +97,10 @@ typedef struct{
 
 int sumCounts(CountProfile &countprofile, void *stat)
 {
-   std::cout << ((ProfileStatistic *) stat)->numSequences << std::endl;
+
   ((ProfileStatistic *) stat)->numSequences += 1;
   countprofile.addCountPerPosition(((ProfileStatistic *) stat)->summedCounts);
-  std::cout << "finish addCountPerPosition" << std::endl;
-  std::cout << "size: " << ((ProfileStatistic *) stat)->summedCounts.size() << std::endl;
-  std::cout.flush();
+
   return 0;
 }
 
@@ -163,13 +154,11 @@ int filter(int argc, const char **argv, const Command *tool)
     processSeqFile(seqFile, lookuptable, translator, sumCounts, &stat);
 
     vector<uint32_t> summedCountsSorted = stat.summedCounts;
-    std::cout << "before sort: " << std::endl;
     sort(summedCountsSorted.begin(), summedCountsSorted.end());
-    std::cout << "after sort: " << std::endl;
+
     unsigned int windowSize = FREQUENT_COUNT_WINDOWSIZE;
     double maxDensity = 0, maxDenseCount = 0;
     for (size_t idx = 0; idx < summedCountsSorted.size() - windowSize; idx++) {
-      std::cout << "idx: " << idx << std::endl;
       double density =
         (double) windowSize / ((double) (summedCountsSorted[idx + windowSize] - summedCountsSorted[idx]));
       if (density > maxDensity) {
@@ -177,10 +166,10 @@ int filter(int argc, const char **argv, const Command *tool)
         maxDenseCount = (summedCountsSorted[idx + windowSize] + summedCountsSorted[idx]) / 2;
       }
     }
-std::cout << "maxDenseCount: " << maxDenseCount << std::endl;
+
     double bandwidth = FREQUENT_COUNT_BANDWIDTH;
     unsigned int sharedCountThr = maxDenseCount + bandwidth * maxDenseCount + 1;
-    std::cout << "sharedCountThr: " << sharedCountThr << std::endl;
+
     for (size_t idx = 0; idx < stat.summedCounts.size(); idx++) {
       if (stat.summedCounts[idx] <= sharedCountThr)
         shrinkedPlainPositions.push_back(idx);
