@@ -13,7 +13,7 @@
 
 
 #include "src/util.h"
-#include "src/options.h"
+#include "src/Options.h"
 #include "src/Command.h"
 #include "src/Info.h"
 

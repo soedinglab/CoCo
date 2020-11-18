@@ -11,6 +11,8 @@ CountProfile::CountProfile(const KmerTranslator *translator,
   this->translator = translator;
   this->lookuptable = lookuptable;
   this->profile = NULL;
+  this->profile_length = 0;
+  this->profile_length_alloc;
 }
 
 CountProfile::~CountProfile() {
@@ -31,6 +33,7 @@ void CountProfile::fill(SequenceInfo *seqinfo, size_t length) {
 
   // check size of array and create new one in case of too small size
   if (profile_length > profile_length_alloc) {
+    std::cout << "resize profile" <<std::endl;
     delete[] this->profile;
     this->profile = new CountProfileEntry[profile_length];
     this->profile_length_alloc = profile_length;
@@ -106,11 +109,15 @@ uint32_t *CountProfile::maximize() const {
 
 void CountProfile::addCountPerPosition(std::vector<uint32_t> &summedCountProfile)
 {
+  std::cout << "profile_length: " << profile_length << std::endl;
+  std::cout << "summedCountProfile.size(): " << summedCountProfile.size() << std::endl;
   if (summedCountProfile.size() < profile_length)
     summedCountProfile.resize(profile_length,0);
-
+  std::cout << "profile_length: " << profile_length << std::endl;
+  std::cout << "summedCountProfile.size(): " << summedCountProfile.size() << std::endl;
   for (size_t idx = 0; idx < profile_length; idx++)
     summedCountProfile[idx] += profile[idx].count;
+
 }
 
 

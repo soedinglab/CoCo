@@ -35,6 +35,8 @@ int processSeqFile(string seqFilename,
   fseek(seqFile, chunkStart, SEEK_SET);
   /* iterate over every single fasta/fastq entry  */
   while (kseq_read(seq) >= 0) {
+    std::cout << "read sequence" << std::endl;
+    std::cout.flush();
     const size_t len = seq->seq.l;
     const char *seqName = seq->name.s;
 
@@ -47,14 +49,16 @@ int processSeqFile(string seqFilename,
     /* fill profile */
     SequenceInfo *seqinfo = new SequenceInfo{seq->name.s, seq->comment.s!=NULL ? string(seq->comment.s) : string(""), seq->seq.s,
                                              seq->qual.s!=NULL ? string(seq->qual.s) : string(""), seq->qual.s!=NULL ? '@':'>'};
+    std::cout << seqinfo->name << " " << seqinfo->comment<< " " << seqinfo->seq<< " " << seqinfo->qual << " " <<seqinfo->sep << std::endl;
     countprofile.fill(seqinfo, len);
-
+    std::cout << "after fill" << std::endl;
     /* use function pointer for what to do with profile */
     processCountProfile(countprofile, processArgs);
-
+    std::cout << "finish process" << std::endl;
+    std::cout.flush();
+    delete seqinfo;
     if (lseek(fd, 0, SEEK_CUR) > chunkEnd)
       break;
-
   }
   kseq_destroy(seq);
   fclose(seqFile);

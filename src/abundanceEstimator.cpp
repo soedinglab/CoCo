@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "Command.h"
-#include "options.h"
+#include "Options.h"
 #include "types.h"
 #include "KmerTranslator.h"
 #include "Lookuptable.h"
@@ -24,6 +24,7 @@ typedef struct {
 int abundanceEstimatationProcessor(CountProfile &countprofile, void *abundanceargs) {
   // estimate abundance value
   // TODO
+  return 0;
 }
 
 
@@ -47,7 +48,7 @@ int abundanceEstimator(int argc, const char **argv, const Command *tool) {
   if (opt.OP_COUNT_FILE.isSet) {
 
     string countFile = opt.countFile;
-    lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0, 1);
+    lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0);
   } else { // count k-mers itself and fill hash-lookuptable
 
     lookuptable = buildHashTable(seqFile, *translator);

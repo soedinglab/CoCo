@@ -5,10 +5,9 @@
 #include <limits.h>
 #include <string.h>
 
-#include "options.h"
+#include "Options.h"
 #include "Info.h"
 #include "util.h"
-
 
 
 Options *Options::instance = NULL;
@@ -35,12 +34,13 @@ Options::Options() :
   OP_ALIGNED(OP_ALIGNED_ID, "aligned", "--aligned",
              "optimize abundance estimation, only works if all reads span the same region! (amplicon sequence data)",
               typeid(bool), (void *) &aligned, 0),
-  OP_COUNT_MODE(OP_COUNT_MODE_ID, "count-mode", "--count-mode",
-                "way to store counts for concurrent kmers (expert option):\n0: sum\n1: maximize (default)",
-                typeid(std::string), (void *) &countMode, 0),
   OP_THREADS(OP_THREADS_ID, "threads", "--threads", "number of threads, not supported yet (default: 1)", typeid(int), (void *) &threads, 0),
   OP_VERBOSE(OP_VERBOSE_ID, "verbose", "--verbose", "verbosity level, 0: quiet 1: Errors, 2: +Warnings, 3: +Info, 4: +Debug, "\
-                            "default: 3", typeid(int), (void *) &verbose, 0)
+                            "default: 3", typeid(int), (void *) &verbose, 0),
+  // expert options
+  OP_COUNT_MODE(OP_COUNT_MODE_ID, "count-mode", "--count-mode",
+                "way to store counts for concurrent kmers (expert option)\n0: sum\n1: maximize (default)",
+                typeid(int), (void *) &countMode, 0)
   {
   if (instance) {
     std::cerr << "Parameter instance already exists!\n";
@@ -119,7 +119,7 @@ void Options::parseOptions(int argc, const char *argv[],
 
   static const struct option longOpts[] = {
     {"help",      no_argument,       NULL, 'h'},
-    {"seqFile",   required_argument, NULL, 0},
+    {"seqfile",   required_argument, NULL, 0},
     {"counts",    required_argument, NULL, 0},
     {"outprefix",    required_argument, NULL, 0},
     {"drop-level1",    required_argument, NULL, 0},

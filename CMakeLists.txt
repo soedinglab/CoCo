@@ -13,13 +13,10 @@ include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 add_definitions("-DGIT_SHA1=${GIT_SHA1}")
 
-
-#set(COCO_SOURCE_DIR src)
 set(coco_source_files
-    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-        src/filter.cpp kmer-cnt/khashl.h)
-include_directories(kseq)
-include_directories(kmer-cnt)
+    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+include_directories(lib/kseq)
+include_directories(lib/kmer-cnt)
 #include_directories(src)
 
 list (APPEND KSIZE_DEFAULT_LIST 64)
@@ -32,9 +29,7 @@ include_directories (${gatb-core-includes})
 link_directories (${gatb-core-extra-libraries-path})
 
 add_subdirectory(src)
-#add_library(${coco_header_files}
-#           ${coco_source_files})
 
-#file (GLOB_RECURSE  SOURCE_FILES  ${COCO_SOURCE_DIR}/*)
+
 add_executable(coco ${coco_source_files} ${coco_header_files})
 target_link_libraries (coco ${gatb-core-libraries})

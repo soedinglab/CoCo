@@ -13,6 +13,10 @@ KmerTranslator::KmerTranslator() {
                                          33, 34, 35, 37, 39, 40};
 }
 
+KmerTranslator::~KmerTranslator() {
+  delete[] _maskArray;
+}
+
 unsigned short KmerTranslator::getSpan() const {
   return span;
 }

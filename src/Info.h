@@ -29,7 +29,7 @@ public:
   static void setVerboseLevel (int i);
 
   template<typename T>
-  Info& operator<<( T t)
+  Info& operator<<(const T& t)
   {
     if (level <= verboseLevel) {
       if (level == INFO) {
@@ -44,4 +44,4 @@ public:
 
 
 
-#endif //NFO_H
+#endif //INFO_H

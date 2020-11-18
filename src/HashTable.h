@@ -16,6 +16,10 @@ public:
     hashTable = kc_c1_init();
   }
 
+  ~HashTable() {
+    kc_c1_destroy(hashTable);
+  }
+
   unsigned int getCount(const packedKmerType kmer) const {
     khint_t itr;
     int absent;

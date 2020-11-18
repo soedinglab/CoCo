@@ -6,11 +6,11 @@
 #include "Lookuptable.h"
 
 #include "Info.h"
-#include "options.h"
+#include "Options.h"
 #include "util.h"
 
 
-Lookuptable::Lookuptable(const size_t nbItems, int countMode, float corrFactor) {
+Lookuptable::Lookuptable(const size_t nbItems, int countMode) {
   // TODO: assert(LOGINDEXSIZE+LOGOFFSETSIZE == 2*ksize);
 
   indexGridTable = (size_t *) calloc(indexGridTableSize, sizeof(size_t));

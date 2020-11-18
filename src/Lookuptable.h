@@ -49,7 +49,7 @@ public:
 
   Lookuptable() {};
 
-  Lookuptable(size_t nbItems, int countMode, float corrFactor);
+  Lookuptable(size_t nbItems, int countMode);
 
   ~Lookuptable();
 

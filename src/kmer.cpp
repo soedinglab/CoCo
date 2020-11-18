@@ -8,8 +8,8 @@
 
 
 /* calculate reverse copmplement with SSE3 instructions
-   Note: do not use typdef for packedKmerType here, because this function only works for uint64_t kmer
-   if packedKmerType definition change use another function */
+   Note: do not use packedKmerType here, because this function only works for uint64_t kmer
+   if packedKmerType definition changes, use another function */
 uint64_t revComplement_intr(uint64_t kmer, unsigned short k) {
 
   // broadcast 64bit to 128 bit

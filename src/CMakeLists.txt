@@ -2,7 +2,7 @@ set(coco_header_files
         ${coco_header_files}
         ${CMAKE_CURRENT_SOURCE_DIR}/Command.h
         ${CMAKE_CURRENT_SOURCE_DIR}/Info.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/options.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/Options.h
         ${CMAKE_CURRENT_SOURCE_DIR}/util.h
         ${CMAKE_CURRENT_SOURCE_DIR}/types.h
         ${CMAKE_CURRENT_SOURCE_DIR}/HashTable.h
@@ -25,8 +25,9 @@ set(coco_source_files
         ${CMAKE_CURRENT_SOURCE_DIR}/Info.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/abundanceEstimator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/consensus.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/filter.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/profile.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/options.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Options.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/types.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/uint128.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/kmer.cpp

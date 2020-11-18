@@ -10,10 +10,9 @@
 KSEQ_INIT(int, read)
 
 
-LookupTableBase *buildLookuptable(string countFile,int countMode,
+LookupTableBase *buildLookuptable(string countFile, int countMode,
                                   const KmerTranslator &translator,
-                                  size_t minCount,
-                                  float corrFactor) {
+                                  uint32_t minCount) {
   unsigned int kmerSpan = translator.getSpan();
 
   /* get dsk kmer-count storage */
@@ -37,7 +36,7 @@ LookupTableBase *buildLookuptable(string countFile,int countMode,
   Info(Info::INFO) << "create lookuptable...\n";
 
   // create lookuptable
-  Lookuptable *lookuptable = new Lookuptable(solidKmers.getNbItems(), countMode, corrFactor);
+  Lookuptable *lookuptable = new Lookuptable(solidKmers.getNbItems(), countMode);
   // fill lookuptable
   {
     Iterator<Count> *it = solidKmers.iterator();
@@ -86,6 +85,9 @@ LookupTableBase *buildLookuptable(string countFile,int countMode,
 
 LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator) {
 
+  Info(Info::WARNING) << "Warning: using internal hash table to count k-mers is not "\
+                         "recommended for larger datasets: use --counts instead\n";
+  
   unsigned int kmerSpan = translator.getSpan();
   HashTable *hashtable = new HashTable();
 

@@ -14,8 +14,7 @@ typedef Kmer<>::Count Count;
 
 LookupTableBase *buildLookuptable(string countFile, int countMode,
                                   const KmerTranslator &translator,
-                                  size_t minCount,
-                                  float corrFactor);
+                                  uint32_t minCount);
 
 LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator);
 

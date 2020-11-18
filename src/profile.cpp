@@ -7,7 +7,7 @@
 
 #include "Command.h"
 #include "Info.h"
-#include "options.h"
+#include "Options.h"
 #include "types.h"
 #include "KmerTranslator.h"
 #include "CountProfile.h"
@@ -48,14 +48,13 @@ int profile(int argc, const char **argv, const Command *tool) {
   KmerTranslator *translator = new KmerTranslator();
   string seqFile = opt.seqFile;
 
-
   LookupTableBase *lookuptable;
 
   // use precomputed counts and fill lookuptable
   if (opt.OP_COUNT_FILE.isSet) {
 
     string countFile = opt.countFile;
-    lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0, 1);
+    lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0);
   } else { // count k-mers itself and fill hash-lookuptable
 
     lookuptable = buildHashTable(seqFile, *translator);

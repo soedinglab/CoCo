@@ -7,7 +7,7 @@
 
 #include "Command.h"
 #include "Info.h"
-#include "options.h"
+#include "Options.h"
 #include "types.h"
 #include "KmerTranslator.h"
 #include "preprocessing.h"
@@ -34,24 +34,32 @@ int filterProcessor(CountProfile &countprofile, void *filterargs)
 
   /* estimate coverage value */
   unsigned int covEst;
-  if(currFilterArgs->shrinkedPlainPositions.size() == 0)
+  if(currFilterArgs->shrinkedPlainPositions.size() == 0){
+    std::cout << "calcMedian" << std::endl;
     covEst = countprofile.calcMedian();
-  else {
+  } else {
+    std::cout << "calc 67q" << std::endl;
     //covEst = countprofile.calcMedian(currFilterArgs->shrinkedPlainPositions);
     covEst = countprofile.calcXquantile(0.67, currFilterArgs->shrinkedPlainPositions);
   }
 
+  std::cout << "seqinfo->name" << std::endl;
+  Info(Info::DEBUG) << seqinfo->name;
+  Info(Info::DEBUG) << covEst;
   Info(Info::DEBUG) << seqinfo->name << "\t" << covEst << "\n";
 
   uint32_t *maxProfile = countprofile.maximize();
 
+  std::cout << "maximze" << std::endl;
   //TODO: wobbly
 
   unsigned int mincount = ((FilterArgs *) filterargs)->dropLevel1;
-  std::vector<float> percDropLevels = ((FilterArgs *) filterargs)->dropLevel2;
+  //std::vector<float> percDropLevels = ((FilterArgs *) filterargs)->dropLevel2;
 
-  if(covEst < std::max((unsigned int)10, 2*mincount))
+  if(covEst < std::max((unsigned int)10, 2*mincount)) {
+    delete[] maxProfile;
     return 0; //TODO
+  }
 
   //bool filter = countprofile.checkForSpuriousTransitionDrops(maxProfile, mincount, currFilterArgs->maskOnlyDropEdges);
   /*bool filter = countprofile.checkForSpuriousTransitionDropsSupported(maxProfile, mincount, currFilterArgs->maskOnlyDropEdges);
@@ -76,11 +84,17 @@ int filterProcessor(CountProfile &countprofile, void *filterargs)
 
   //bool filter = countprofile.checkForSpuriousTransitionDropsGlobal(maxProfile, covEst, percDropLevels[0]);
   bool filter = countprofile.checkForSpuriousTransitionDropsWithWindow(maxProfile, covEst, 1.0/3.0);
+  delete[] maxProfile;
+
+  std::cout << "filter" << std::endl;
 
   if (filter)
     sequenceInfo2FileEntry(seqinfo, ((FilterArgs *) filterargs)->filterReads);
   else
     sequenceInfo2FileEntry(seqinfo, ((FilterArgs *) filterargs)->cleanedReads);
+
+  //std::cout << "end filter" << std::endl;
+  return 0;
 }
 
 typedef struct{
@@ -90,10 +104,13 @@ typedef struct{
 
 int sumCounts(CountProfile &countprofile, void *stat)
 {
-
+   std::cout << ((ProfileStatistic *) stat)->numSequences << std::endl;
   ((ProfileStatistic *) stat)->numSequences += 1;
   countprofile.addCountPerPosition(((ProfileStatistic *) stat)->summedCounts);
-
+  std::cout << "finish addCountPerPosition" << std::endl;
+  std::cout << "size: " << ((ProfileStatistic *) stat)->summedCounts.size() << std::endl;
+  std::cout.flush();
+  return 0;
 }
 
 int filter(int argc, const char **argv, const Command *tool)
@@ -124,7 +141,7 @@ int filter(int argc, const char **argv, const Command *tool)
   if (opt.OP_COUNT_FILE.isSet) {
 
     string countFile = opt.countFile;
-    lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0, 1);
+    lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0);
   } else { // count k-mers itself and fill hash-lookuptable
 
     lookuptable = buildHashTable(seqFile, *translator);
@@ -142,14 +159,17 @@ int filter(int argc, const char **argv, const Command *tool)
     Info(Info::INFO) << "try to optimize coverage estimation\n";
 
     ProfileStatistic stat = {0, std::vector<uint32_t>{}};
+
     processSeqFile(seqFile, lookuptable, translator, sumCounts, &stat);
 
     vector<uint32_t> summedCountsSorted = stat.summedCounts;
+    std::cout << "before sort: " << std::endl;
     sort(summedCountsSorted.begin(), summedCountsSorted.end());
-
+    std::cout << "after sort: " << std::endl;
     unsigned int windowSize = FREQUENT_COUNT_WINDOWSIZE;
     double maxDensity = 0, maxDenseCount = 0;
     for (size_t idx = 0; idx < summedCountsSorted.size() - windowSize; idx++) {
+      std::cout << "idx: " << idx << std::endl;
       double density =
         (double) windowSize / ((double) (summedCountsSorted[idx + windowSize] - summedCountsSorted[idx]));
       if (density > maxDensity) {
@@ -157,10 +177,10 @@ int filter(int argc, const char **argv, const Command *tool)
         maxDenseCount = (summedCountsSorted[idx + windowSize] + summedCountsSorted[idx]) / 2;
       }
     }
-
+std::cout << "maxDenseCount: " << maxDenseCount << std::endl;
     double bandwidth = FREQUENT_COUNT_BANDWIDTH;
     unsigned int sharedCountThr = maxDenseCount + bandwidth * maxDenseCount + 1;
-
+    std::cout << "sharedCountThr: " << sharedCountThr << std::endl;
     for (size_t idx = 0; idx < stat.summedCounts.size(); idx++) {
       if (stat.summedCounts[idx] <= sharedCountThr)
         shrinkedPlainPositions.push_back(idx);
