@@ -13,6 +13,8 @@
 #include "KmerTranslator.h"
 #include "types.h"
 
+#define SIGNIFICANT_LEVEL_DIFF 10
+
 
 struct __attribute__((__packed__)) CountProfileEntry {
   uint8_t valid;
@@ -69,7 +71,8 @@ public:
   //outdated
   bool checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges=true);
 
-  bool checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst, double percDrop);
+  bool checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst, double localPercDrop, \
+                                                 double globalPercDrop, bool maskOnlyDropEdges=true);
 
 };
 

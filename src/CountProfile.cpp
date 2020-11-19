@@ -4,7 +4,7 @@
 #include <cstring>
 
 #define WINDOW_SIZE 4
-#define SIGNIFICANT_LEVEL_DIFF 10
+
 
 CountProfile::CountProfile(const KmerTranslator *translator,
                            const LookupTableBase *lookuptable) {
@@ -304,7 +304,9 @@ bool CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
 }
 
 
-bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst, double percDrop)
+bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst,
+                                                             double localPercDrop, double globalPercDrop,
+                                                             bool maskOnlyDropEdges)
 {
 
   unsigned short kmerSpan = this->translator->getSpan();
@@ -350,7 +352,7 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
 
   /* 1) find candidates */
 
-  if(this->profile[0].count < covEst/3.0)
+  if(this->profile[0].count < covEst * globalPercDrop)
     dropstart = 0;
 
   for (size_t idx = 1; idx < profile_length; idx++){
@@ -358,9 +360,9 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
     uint32_t window_back_level = *(std::min_element(std::begin(window_back), std::end(window_back)));
     uint32_t window_front_level = *(std::min_element(std::begin(window_front), std::end(window_front)));
 
-    if ((double) this->profile[idx].count < percDrop * ((double) window_back_level-(double)corrValues[idx-1]) &&\
+    if ((double) this->profile[idx].count < localPercDrop * ((double) window_back_level-(double)corrValues[idx-1]) &&\
         window_back_level - this->profile[idx].count >= SIGNIFICANT_LEVEL_DIFF && \
-        this->profile[idx].count < (double)covEst/3.0){
+        this->profile[idx].count < (double)covEst * globalPercDrop){
 
       //drop start
       dropstart = idx;
@@ -369,8 +371,8 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
     }
 
     else if (window_front.size() == WINDOW_SIZE && \
-            ((percDrop * ((double) window_front_level - (double) corrValues[idx] ) >  (double) window_back_level
-              && window_front_level - window_back_level >= SIGNIFICANT_LEVEL_DIFF) || window_front_level > (double)covEst/3.0)){
+            ((localPercDrop * ((double) window_front_level - (double) corrValues[idx] ) >  (double) window_back_level
+              && window_front_level - window_back_level >= SIGNIFICANT_LEVEL_DIFF) || window_front_level > (double)covEst * globalPercDrop)){
 
       //drop end (only considered if we already observed a dropstart or if dropstart=0)
       if (dropstart != this->profile_length) {
@@ -381,7 +383,7 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
         compare_level = std::min(dropstart_level, dropend_level);
         // set all positions within drop boundaries as candidates if they are smaller than percDrop * compare_level
         for (size_t d = dropstart; d < dropend; d++) {
-          if (this->profile[d].count < percDrop * compare_level) {
+          if (this->profile[d].count < localPercDrop * compare_level) {
             candidates[d] = compare_level;
           }
         }
@@ -391,8 +393,8 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
 
         // check candidates
         for (size_t d = dropstart; d < dropend; d++) {
-          if (maxProfile[d] < percDrop * compare_level && \
-             ((d > 0 && maxProfile[d] < percDrop * maxProfile[d - 1]) || maxProfile[d] < percDrop * maxProfile[d + 1])) {
+          if (maxProfile[d] < localPercDrop * compare_level && (!maskOnlyDropEdges || \
+             ((d > 0 && maxProfile[d] < localPercDrop * maxProfile[d - 1]) || maxProfile[d] < localPercDrop * maxProfile[d + 1]))) {
             for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
               int pos = d - translator->_mask_array[jdx];
               if (pos >= dropstart && pos < profile_length)
@@ -422,14 +424,14 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
   // edge case: check if there is a drop region until the end of the read (dropstart without dropend)
   if(dropstart != 0 && dropstart != profile_length){
     for (size_t d = dropstart; d < dropend; d++) {
-      if (this->profile[d].count < percDrop * dropstart_level) {
+      if (this->profile[d].count < localPercDrop * dropstart_level) {
         candidates[d] = dropstart_level;
       }
     }
     for (size_t d = dropstart; d < maxProfileLength; d++) {
-      if (maxProfile[d] < percDrop * dropstart_level && \
-         ((d > 0 && maxProfile[d] < percDrop * maxProfile[d - 1]) || \
-          (d + 1 < maxProfileLength &&  maxProfile[d] < percDrop * maxProfile[d + 1]))) {
+      if (maxProfile[d] < localPercDrop * dropstart_level && (!maskOnlyDropEdges ||\
+         ((d > 0 && maxProfile[d] < localPercDrop * maxProfile[d - 1]) || \
+          (d + 1 < maxProfileLength &&  maxProfile[d] < localPercDrop * maxProfile[d + 1])))) {
         for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
           int pos = d - translator->_mask_array[jdx];
           if (pos >= dropstart)

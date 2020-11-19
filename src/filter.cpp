@@ -20,8 +20,9 @@
 typedef struct {
   FILE *filterReads;
   FILE *cleanedReads;
-  unsigned int dropLevel1;
-  std::vector<float> dropLevel2;
+  FILE *wobblyReads;
+  float dropLevel1;
+  float dropLevel2;
   std::vector<uint32_t> shrinkedPlainPositions;
   bool maskOnlyDropEdges;
 } FilterArgs;
@@ -34,11 +35,11 @@ int filterProcessor(CountProfile &countprofile, void *filterargs)
 
   /* estimate coverage value */
   unsigned int covEst;
-  if(currFilterArgs->shrinkedPlainPositions.size() == 0){
+  if(currFilterArgs->shrinkedPlainPositions.empty()){
 
     covEst = countprofile.calcMedian();
   } else {
-    //covEst = countprofile.calcMedian(currFilterArgs->shrinkedPlainPositions);
+
     covEst = countprofile.calcXquantile(0.67, currFilterArgs->shrinkedPlainPositions);
   }
 
@@ -46,39 +47,18 @@ int filterProcessor(CountProfile &countprofile, void *filterargs)
 
   uint32_t *maxProfile = countprofile.maximize();
 
-  //TODO: wobbly
 
-  unsigned int mincount = ((FilterArgs *) filterargs)->dropLevel1;
-  //std::vector<float> percDropLevels = ((FilterArgs *) filterargs)->dropLevel2;
 
-  if(covEst < std::max((unsigned int)10, 2*mincount)) {
+  if(covEst <= SIGNIFICANT_LEVEL_DIFF) {
     delete[] maxProfile;
-    return 0; //TODO
+    sequenceInfo2FileEntry(seqinfo, ((FilterArgs *) filterargs)->wobblyReads);
+    return 0;
   }
 
-  //bool filter = countprofile.checkForSpuriousTransitionDrops(maxProfile, mincount, currFilterArgs->maskOnlyDropEdges);
-  /*bool filter = countprofile.checkForSpuriousTransitionDropsSupported(maxProfile, mincount, currFilterArgs->maskOnlyDropEdges);
-
-  if(!filter) {
-
-    for (float p : percDropLevels) {
-      unsigned int dropLevelCriterion = p * covEst;
-
-      if (dropLevelCriterion < 1)
-        continue;
-
-      //filter = countprofile.checkForSpuriousTransitionDrops(maxProfile, dropLevelCriterion, currFilterArgs->maskOnlyDropEdges);
-      filter = countprofile.checkForSpuriousTransitionDropsSupported(maxProfile, dropLevelCriterion, currFilterArgs->maskOnlyDropEdges);
-
-      if (filter)
-        break;
-    }
-  }*/
-
-  // bool filter = countprofile.checkForSpuriousTransitionDropsWindow(maxProfile, covEst, percDropLevels[0], false);
-
-  //bool filter = countprofile.checkForSpuriousTransitionDropsGlobal(maxProfile, covEst, percDropLevels[0]);
-  bool filter = countprofile.checkForSpuriousTransitionDropsWithWindow(maxProfile, covEst, 1.0/3.0);
+  float dropLevel1 = ((FilterArgs *) filterargs)->dropLevel1;
+  float dropLevel2 = ((FilterArgs *) filterargs)->dropLevel2;
+  bool maskOnlyDropEdges = ((FilterArgs *) filterargs)->maskOnlyDropEdges;
+  bool filter = countprofile.checkForSpuriousTransitionDropsWithWindow(maxProfile, covEst, dropLevel1, dropLevel2, maskOnlyDropEdges);
   delete[] maxProfile;
 
 
@@ -112,13 +92,13 @@ int filter(int argc, const char **argv, const Command *tool)
   //TODO: print parameters
 
   //TODO:check parameter and if files exists
-  if (opt.OP_DROP_LEVEL2.isSet) {
-    for (float d : opt.dropLevel2){
-      if (d > 0.5){
-        Info(Info::ERROR) << "ERROR: found invalid argument for " << opt.OP_DROP_LEVEL2.name << " (valid range: 0-0.5)\n";
-        return EXIT_FAILURE;
-      }
-    }
+  if (opt.OP_DROP_LEVEL1.isSet && (opt.dropLevel1 < 0 || opt.dropLevel1 > 0.33)){
+      Info(Info::ERROR) << "ERROR: found invalid argument for " << opt.OP_DROP_LEVEL1.name << " (valid range: 0-0.33)\n";
+      return EXIT_FAILURE;
+  }
+  if (opt.OP_DROP_LEVEL2.isSet && (opt.dropLevel2 < 0 || opt.dropLevel2 > 0.33)){
+      Info(Info::ERROR) << "ERROR: found invalid argument for " << opt.OP_DROP_LEVEL2.name << " (valid range: 0-0.33)\n";
+      return EXIT_FAILURE;
   }
 
   initialize();
@@ -197,20 +177,23 @@ int filter(int argc, const char **argv, const Command *tool)
     outprefix = opt.outprefix;
   else
     outprefix = getFilename(seqFile);
+
   string ext = getFileExtension(seqFile);
-  FilterArgs filterargs = {openFileOrDie(outprefix + ".spurious" + ext, "w"),
-                           openFileOrDie(outprefix + ".cleaned" + ext, "w"),
+  FilterArgs filterargs = {openFileOrDie(outprefix + ".coco_" + tool->cmd + ".spurious" + ext, "w"),
+                           openFileOrDie(outprefix + ".coco_" + tool->cmd + ".cleaned" + ext, "w"),
+                           openFileOrDie(outprefix + ".coco_" + tool->cmd + ".wobbly" + ext, "w"),
                            opt.dropLevel1, opt.dropLevel2, shrinkedPlainPositions, maskOnlyDropEdges};
 
-  processSeqFile(seqFile, lookuptable, translator, filterProcessor, &filterargs);
+  int returnVal = processSeqFile(seqFile, lookuptable, translator, filterProcessor, &filterargs);
 
   fclose(filterargs.filterReads);
+  fclose(filterargs.wobblyReads);
   fclose(filterargs.cleanedReads);
 
   delete lookuptable;
   delete translator;
 
-  return EXIT_SUCCESS;
+  return returnVal;
 }
 
 

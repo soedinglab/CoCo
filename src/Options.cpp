@@ -14,26 +14,26 @@ Options *Options::instance = NULL;
 
 Options::Options() :
   OP_SEQ_FILE(OP_SEQ_FILE_ID, "seqfile", "--seqfile",
-              "sequence file (reads or contigs in fasta/fastq format)",
-              typeid(std::string), (void *) &seqFile, PROFILE | FILTER | ABUNDANCE_ESTIMATOR | CONSENSUS),
+               "sequence file (reads or contigs in fasta/fastq format)",
+               typeid(std::string), (void *) &seqFile, PROFILE | FILTER | ABUNDANCE_ESTIMATOR | CONSENSUS),
   OP_COUNT_FILE(OP_COUNT_FILE_ID, "counts", "--counts",
-                "pre computed kmer count file in hdf5 format (dsk output format), Note: only supports 41-mers yet",
-                typeid(std::string), (void *) &countFile, 0),
+               "pre computed kmer count file in hdf5 format (dsk output format), Note: only supports 41-mers yet",
+               typeid(std::string), (void *) &countFile, 0),
   OP_OUTPREFIX(OP_OUTPREFIX_ID, "outprefix", "--outprefix",
                "prefix to use for resultfile(s)",
                typeid(std::string), (void *) &outprefix, 0),
   OP_DROP_LEVEL1(OP_DROP_LEVEL1_ID, "drop-level1", "--drop-level1",
-               "absolute min count value used in step 1 to filter at drop positions",
-               typeid(int), (void *) &dropLevel1, 0),
+               "local drop criterion (range 0-0.33)",
+               typeid(float), (void *) &dropLevel1, 0),
   OP_DROP_LEVEL2(OP_DROP_LEVEL2_ID, "drop-level2", "--drop-level2",
-              "comma-separated list of percentage values, used iteratively in step 2 to filter relative to the abundance level (range 0-0.5)",
-              typeid(std::vector<float>), (void *) &dropLevel2, 0),
+               "global drop criterion (range 0-0.33)",
+               typeid(float), (void *) &dropLevel2, 0),
   OP_SOFT_FILTER(OP_SOFT_FILTER_ID, "soft", "--soft",
-              "less strict filtering mode due to more strict masking strategy ",
-              typeid(bool), (void *) &softFilter, 0),
+               "less strict filtering mode due to more strict masking strategy ",
+               typeid(bool), (void *) &softFilter, 0),
   OP_ALIGNED(OP_ALIGNED_ID, "aligned", "--aligned",
-             "optimize abundance estimation, only works if all reads span the same region! (amplicon sequence data)",
-              typeid(bool), (void *) &aligned, 0),
+               "optimize abundance estimation for reads that span the same region (amplicon sequence data)",
+               typeid(bool), (void *) &aligned, 0),
   OP_THREADS(OP_THREADS_ID, "threads", "--threads", "number of threads, not supported yet (default: 1)", typeid(int), (void *) &threads, 0),
   OP_VERBOSE(OP_VERBOSE_ID, "verbose", "--verbose", "verbosity level, 0: quiet 1: Errors, 2: +Warnings, 3: +Info, 4: +Debug, "\
                             "default: 3", typeid(int), (void *) &verbose, 0),
@@ -41,6 +41,7 @@ Options::Options() :
   OP_COUNT_MODE(OP_COUNT_MODE_ID, "count-mode", "--count-mode",
                 "way to store counts for concurrent kmers (expert option)\n0: sum\n1: maximize (default)",
                 typeid(int), (void *) &countMode, 0)
+
   {
   if (instance) {
     std::cerr << "Parameter instance already exists!\n";
@@ -81,8 +82,8 @@ Options::Options() :
 }
 
 void Options::setDefaults() {
-  dropLevel1 = 1;
-  dropLevel2 = {0.0078, 0.0156, 0.0312, 0.0625, 0.1250};
+  dropLevel1 = 0.33;
+  dropLevel2 = 0.33;
 
   aligned = false;
   softFilter = false;

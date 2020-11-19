@@ -57,8 +57,8 @@ public:
   std::string seqFile;
   std::string countFile;
   std::string outprefix;
-  unsigned int dropLevel1;
-  std::vector<float> dropLevel2;
+  float dropLevel1;
+  float dropLevel2;
   //unsigned int kmerWeight;
   unsigned int threads;
   int countMode;
