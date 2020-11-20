@@ -4,6 +4,7 @@
 #include <getopt.h>
 #include <limits.h>
 #include <string.h>
+#include <assert.h>
 
 #include "Options.h"
 #include "Info.h"
@@ -39,7 +40,7 @@ Options::Options() :
                             "default: 3", typeid(int), (void *) &verbose, 0),
   // expert options
   OP_COUNT_MODE(OP_COUNT_MODE_ID, "count-mode", "--count-mode",
-                "way to store counts for concurrent kmers (expert option)\n0: sum\n1: maximize (default)",
+                "way to store counts for concurrent kmers (expert option)\n 0: sum\n 1: maximize (default)",
                 typeid(int), (void *) &countMode, 0)
 
   {
@@ -104,9 +105,33 @@ void printToolUsage(const Command &command, const int FLAG) {
 
   if (FLAG == EXTENDED) {
     const std::vector<cocoOption*> &options = *command.opt;
+
+    size_t maxParamWidth = 0;
     for (size_t idx = 0; idx < options.size(); idx++) {
-      //TODO: layout, maxwidth + 2 space in the beginning
-      usage << options[idx]->display << "\t" << options[idx]->description << "\n";
+      maxParamWidth = std::max(strlen(options[idx]->display),maxParamWidth);
+    }
+
+    size_t frontParamWidth = 2;
+    maxParamWidth+=6;
+      size_t descriptionStart = 0;
+      std::string paramString;
+    for (size_t idx = 0; idx < options.size(); idx++) {
+        paramString.clear();
+      paramString += std::string(frontParamWidth, ' ') + options[idx]->display + std::string(maxParamWidth < strlen(options[idx]->display)? 1 : maxParamWidth- strlen(options[idx]->display), ' ');
+
+      descriptionStart = paramString.length();
+      char *descr = strdup(options[idx]->description);
+      char *ptr = strtok(descr, "\n");
+      paramString += std::string(ptr);
+      ptr = strtok(NULL, "\n");
+      while(ptr != NULL) {
+          paramString += "\n" + std::string(descriptionStart,' ') + std::string(ptr);
+          ptr = strtok(NULL, "\n");
+      }
+
+
+          usage << paramString << "\n";
+        //usage << options[idx]->display << "\t" << options[idx]->description << "\n";
     }
   }
   std::cerr << usage.str() << "\n";
@@ -196,7 +221,7 @@ void Options::parseOptions(int argc, const char *argv[],
             continue;
           }
         }
-        //assert(false); //TODO
+        assert(false);
         break;
       }
 
@@ -216,7 +241,6 @@ void Options::parseOptions(int argc, const char *argv[],
     EXIT(EXIT_FAILURE);
   }
 
-  //TODO: valid range?
   for (cocoOption *option: options) {
     //Check if option is required for current tool
     if (command.id & option->required) {
