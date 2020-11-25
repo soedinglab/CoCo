@@ -71,12 +71,22 @@ int filterProcessor(CountProfile &countprofile, void *filterargs)
 }
 
 typedef struct{
-  unsigned int numSequences;
-  std::vector<uint32_t> summedCounts;
+  uint64_t numSequences;
+  uint32_t minProfileLen;
+  uint32_t maxProfileLen;
+  std::vector<uint64_t> summedCounts;
 } ProfileStatistic;
 
 int sumCounts(CountProfile &countprofile, void *stat)
 {
+  unsigned int len = countprofile.getProfileLen();
+  if (len > ((ProfileStatistic *) stat)->maxProfileLen) {
+      ((ProfileStatistic *) stat)->maxProfileLen = len;
+  }
+  if (len < ((ProfileStatistic *) stat)->minProfileLen ||
+      ((ProfileStatistic *) stat)->minProfileLen == 0 ) {
+      ((ProfileStatistic *) stat)->minProfileLen = len;
+  }
 
   ((ProfileStatistic *) stat)->numSequences += 1;
   countprofile.addCountPerPosition(((ProfileStatistic *) stat)->summedCounts);
@@ -127,13 +137,14 @@ int filter(int argc, const char **argv, const Command *tool)
   vector<uint32_t> shrinkedPlainPositions{};
   if (opt.OP_ALIGNED.isSet) {
 
-    Info(Info::INFO) << "try to optimize coverage estimation\n";
+    Info(Info::INFO) << "prepare for optimized coverage estimation\n";
 
-    ProfileStatistic stat = {0, std::vector<uint32_t>{}};
+    ProfileStatistic stat = {0, 0, 0, std::vector<uint64_t>{}};
 
-    processSeqFile(seqFile, lookuptable, translator, sumCounts, &stat);
+    processSeqFile(seqFile, lookuptable, translator, sumCounts, &stat, true);
 
-    vector<uint32_t> summedCountsSorted = stat.summedCounts;
+    vector<uint64_t> summedCountsSorted = stat.summedCounts;
+    summedCountsSorted.resize(stat.minProfileLen);
     sort(summedCountsSorted.begin(), summedCountsSorted.end());
 
     unsigned int windowSize = FREQUENT_COUNT_WINDOWSIZE;
@@ -148,7 +159,7 @@ int filter(int argc, const char **argv, const Command *tool)
     }
 
     double bandwidth = FREQUENT_COUNT_BANDWIDTH;
-    unsigned int sharedCountThr = maxDenseCount + bandwidth * maxDenseCount + 1;
+    uint64_t sharedCountThr = maxDenseCount + bandwidth * maxDenseCount + 1;
 
     for (size_t idx = 0; idx < stat.summedCounts.size(); idx++) {
       if (stat.summedCounts[idx] <= sharedCountThr)
@@ -159,7 +170,7 @@ int filter(int argc, const char **argv, const Command *tool)
       Info(Info::WARNING) << "WARNING: the optimization for coverage estimation (set by --aligned paramter) can not be " \
                            "performed, because less than 2*k positions have counts smaller than the calculated threshold "\
                            "for shared counts. The average profile is probably to spiky to optimize the coverage, " \
-                           "estimation. ";
+                           "estimation.\n";
       shrinkedPlainPositions.clear();
       /*shrinkedPlainPositions.reserve(stat.summedCounts.size());
       for (size_t idx = 0; idx < stat.summedCounts.size(); idx++) {

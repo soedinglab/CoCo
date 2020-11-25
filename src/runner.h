@@ -15,6 +15,7 @@ int processSeqFile(string seqFilename,
                    const KmerTranslator *translator,
                    int (*processCountProfile)(CountProfile &, void *),
                    void *processArgs,
+                   bool silent = false,
                    size_t chunkStart = 0,
                    size_t chunkEnd = std::numeric_limits<uint64_t>::max());
 

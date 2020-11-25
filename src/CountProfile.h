@@ -58,7 +58,7 @@ public:
   /*** basic profile operations ***/
   uint32_t* maximize() const;
 
-  void addCountPerPosition(std::vector<uint32_t> &summedCountProfile);
+  void addCountPerPosition(std::vector<uint64_t> &summedCountProfile);
 
   unsigned int calcXquantile(double quantile, const std::vector<uint32_t> &positionsOfInterest = std::vector<uint32_t>());
 

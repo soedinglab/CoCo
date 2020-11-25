@@ -221,7 +221,6 @@ void Options::parseOptions(int argc, const char *argv[],
             continue;
           }
         }
-        assert(false);
         break;
       }
 

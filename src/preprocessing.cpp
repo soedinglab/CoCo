@@ -85,8 +85,11 @@ LookupTableBase *buildLookuptable(string countFile, int countMode,
 
 LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator) {
 
+  Info(Info::WARNING) << "Warning: counting kmers only on seqfile argument, this only makes sense if it's equal to the cleaned not clustered(!) reads\n";
+
   Info(Info::WARNING) << "Warning: using internal hash table to count k-mers is not "\
                          "recommended for larger datasets: use --counts instead\n";
+
   
   unsigned int kmerSpan = translator.getSpan();
   HashTable *hashtable = new HashTable();

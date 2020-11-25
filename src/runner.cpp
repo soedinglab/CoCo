@@ -20,10 +20,13 @@ int processSeqFile(string seqFilename,
                    const KmerTranslator *translator,
                    int (*processCountProfile)(CountProfile &, void *),
                    void *processArgs,
+                   bool silent,
                    size_t chunkStart,
-                   size_t chunkEnd) {
+                   size_t chunkEnd)
+{
 
-  Info(Info::INFO) << "process seqFile...\n";
+  if (!silent)
+    Info(Info::INFO) << "process seqFile...\n";
   FILE *seqFile = openFileOrDie(seqFilename, "r");
 
   //TODO: check what happens if one thread have problems with a file, kill whole process then
@@ -59,8 +62,8 @@ int processSeqFile(string seqFilename,
   }
   kseq_destroy(seq);
   fclose(seqFile);
-
-  Info(Info::INFO) << "...completed\n";
+  if (!silent)
+    Info(Info::INFO) << "...completed\n";
   return EXIT_SUCCESS;
 }
 

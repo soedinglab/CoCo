@@ -107,7 +107,7 @@ uint32_t *CountProfile::maximize() const {
   return maxProfile;
 }
 
-void CountProfile::addCountPerPosition(std::vector<uint32_t> &summedCountProfile)
+void CountProfile::addCountPerPosition(std::vector<uint64_t> &summedCountProfile)
 {
   if (summedCountProfile.size() < profile_length)
     summedCountProfile.resize(profile_length,0);
