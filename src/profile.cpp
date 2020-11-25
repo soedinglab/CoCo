@@ -34,7 +34,7 @@ int showProfile(CountProfile &countprofile, void *profileargs) {
   }
   fwrite("\n", sizeof(char), 1, fp);
   countprofile.showProfile(fp);
-
+  return 0;
 }
 
 int profile(int argc, const char **argv, const Command *tool) {

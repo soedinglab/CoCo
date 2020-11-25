@@ -200,17 +200,9 @@ void Options::parseOptions(int argc, const char *argv[],
               *((bool *) options[idx]->value) = true;
               options[idx]->isSet = true;
 
-            } else if (typeid(std::vector<float>) == options[idx]->type) {
+            } else if (typeid(float) == options[idx]->type) {
 
-              std::vector<float> list;
-              char *elem = strtok(optarg, ",");
-              while (elem != NULL)
-              {
-                list.push_back(std::stof(elem));
-                elem = strtok(NULL,",");
-              }
-
-              *((std::vector<float> *) options[idx]->value) = list;
+              *((float *) options[idx]->value) = std::stof(optarg);
               options[idx]->isSet = true;
 
             } else {
