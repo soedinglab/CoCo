@@ -16,13 +16,15 @@ Options *Options::instance = NULL;
 Options::Options() :
   OP_SEQ_FILE(OP_SEQ_FILE_ID, "seqfile", "--seqfile",
                "sequence file (reads or contigs in fasta/fastq format)",
-               typeid(std::string), (void *) &seqFile, PROFILE | FILTER | ABUNDANCE_ESTIMATOR | CONSENSUS),
+               typeid(std::string), (void *) &seqFile, PROFILE | FILTER | ABUNDANCE_ESTIMATOR | CORRECTOR | CONSENSUS),
   OP_COUNT_FILE(OP_COUNT_FILE_ID, "counts", "--counts",
                "pre computed kmer count file in hdf5 format (dsk output format), Note: only supports 41-mers yet",
                typeid(std::string), (void *) &countFile, 0),
   OP_OUTPREFIX(OP_OUTPREFIX_ID, "outprefix", "--outprefix",
                "prefix to use for resultfile(s)",
                typeid(std::string), (void *) &outprefix, 0),
+  OP_DRY_RUN(OP_DRY_RUN_ID, "dry-run", "--dry-run",
+             "perform a trial run that doesn't make any changes", typeid(bool), (void *) &dryRun, 0),
   OP_DROP_LEVEL1(OP_DROP_LEVEL1_ID, "drop-level1", "--drop-level1",
                "local drop criterion (range 0-0.33)",
                typeid(float), (void *) &dropLevel1, 0),
@@ -80,7 +82,15 @@ Options::Options() :
   abundanceEstimatorWorkflow.push_back(&OP_THREADS);
   abundanceEstimatorWorkflow.push_back(&OP_VERBOSE);
 
-}
+  //corrector
+  correctionWorkflow.push_back(&OP_SEQ_FILE);
+  correctionWorkflow.push_back(&OP_COUNT_FILE);
+  correctionWorkflow.push_back(&OP_OUTPREFIX);
+  correctionWorkflow.push_back(&OP_DRY_RUN);
+  correctionWorkflow.push_back(&OP_COUNT_MODE);
+  correctionWorkflow.push_back(&OP_VERBOSE);
+
+  }
 
 void Options::setDefaults() {
   dropLevel1 = 0.33;
@@ -88,6 +98,7 @@ void Options::setDefaults() {
 
   aligned = false;
   softFilter = false;
+  dryRun = true; //TODO: change later
 
   countMode = COUNT_MODE_MAX;
 
@@ -148,6 +159,7 @@ void Options::parseOptions(int argc, const char *argv[],
     {"seqfile",   required_argument, NULL, 0},
     {"counts",    required_argument, NULL, 0},
     {"outprefix",    required_argument, NULL, 0},
+    {"dry-run",    required_argument, NULL, 0},
     {"drop-level1",    required_argument, NULL, 0},
     {"drop-level2",    required_argument, NULL, 0},
     {"aligned",    no_argument, NULL, 0},

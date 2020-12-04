@@ -68,11 +68,13 @@ public:
 
   /*** advanced profile operations ***/
 
-  //outdated
-  bool checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges=true);
+  bool correction(uint32_t *maxProfile, unsigned int covEst,  bool dryRun);
 
   bool checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst, double localPercDrop, \
                                                  double globalPercDrop, bool maskOnlyDropEdges=true);
+  //outdated
+  bool checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges=true);
+
 
 };
 

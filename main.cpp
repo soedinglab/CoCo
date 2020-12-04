@@ -43,6 +43,8 @@ extern int filter(int argc, const char **argv, const struct Command *tool);
 
 extern int abundanceEstimator(int argc, const char **argv, const struct Command *tool);
 
+extern int correction(int argc, const char **argv, const struct Command *tool);
+
 extern int consensus(int argc, const char **argv, const struct Command *tool);
 
 Options &opt = Options::getInstance();
@@ -65,6 +67,12 @@ std::vector<struct Command> commands =
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
       " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       ABUNDANCE_ESTIMATOR
+    },
+    {"correction", correction, &opt.correctionWorkflow, "correct sequencing errors",
+     "identify reads with sequencing errors (and correct them <- not yet) ",
+     "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
+     " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+     CORRECTOR
     },
 
     /*{"consensus", consensus, &opt.consensusWorkflow, "calculate consensus reads ",

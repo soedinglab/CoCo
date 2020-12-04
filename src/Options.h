@@ -65,16 +65,19 @@ public:
   int verbose;
   bool aligned;
   bool softFilter;
+  bool dryRun;
 
   std::vector<cocoOption*> empty;
   std::vector<cocoOption*> filterWorkflow;
   std::vector<cocoOption*> profileWorkflow;
   std::vector<cocoOption*> abundanceEstimatorWorkflow;
+  std::vector<cocoOption*> correctionWorkflow;
   std::vector<cocoOption*> consensusWorkflow;
 
   OPTION(OP_SEQ_FILE)
   OPTION(OP_COUNT_FILE)
   OPTION(OP_OUTPREFIX)
+  OPTION(OP_DRY_RUN)
   OPTION(OP_DROP_LEVEL1)
   OPTION(OP_DROP_LEVEL2)
   OPTION(OP_ALIGNED)

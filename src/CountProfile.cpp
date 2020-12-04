@@ -159,6 +159,51 @@ unsigned int CountProfile::calcMedian(const std::vector<uint32_t> &positionsOfIn
   return(calcXquantile(0.5, positionsOfInterest));
 }
 
+bool CountProfile::correction(uint32_t *maxProfile, unsigned int covEst,  bool dryRun){
+
+    unsigned short kmerSpan = this->translator->getSpan();
+    unsigned short kmerWeight = translator->getWeight();
+  unsigned int maxProfileLength = profile_length + kmerSpan - 1;
+    unsigned int corrValues[maxProfileLength];
+    memset(corrValues, 0, sizeof(*corrValues) * maxProfileLength);
+
+    // correct values with probability for observing the same sequencing error multiple times
+    std::vector<unsigned int> corrWindow;
+    double corrFactor = 0.001;
+
+    for(unsigned int idx = 0; idx < kmerSpan/2+1; idx++)
+        corrWindow.push_back(maxProfile[idx]);
+    corrValues[0] = corrFactor * *(std::max_element(corrWindow.begin(), corrWindow.end())) + 1;
+
+    for(unsigned int idx = 1; idx < maxProfileLength; idx++) {
+        if (idx + kmerSpan/2 < maxProfileLength)
+            corrWindow.push_back(maxProfile[idx + kmerSpan/2]);
+        if (idx > kmerSpan/2)
+            corrWindow.erase(corrWindow.begin());
+        unsigned int max = *(std::max_element(corrWindow.begin(), corrWindow.end()));
+        corrValues[idx] = (unsigned int)(corrFactor * max+1);
+
+    }
+
+    // 1. find sequencing errors
+
+
+    unsigned int candidates[maxProfileLength];
+    memset(candidates, 0, sizeof(*candidates) * maxProfileLength);
+
+    for (size_t idx = 0; idx < maxProfileLength; idx++){
+        if ((double) maxProfile[idx] <= 1 + (double)corrValues[idx]) {
+            candidates[idx] = 1;
+            if (dryRun)
+              return true;
+        }
+    }
+    
+    //  2. correct sequencing errors
+    // TODO
+
+    return false;
+}
 
 bool CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges) {
 

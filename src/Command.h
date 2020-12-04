@@ -6,7 +6,7 @@
 #include <vector>
 
 enum coco_commands {
-  PROFILE = 1, FILTER = 2, ABUNDANCE_ESTIMATOR = 8, CONSENSUS = 16
+  PROFILE = 1, FILTER = 2, ABUNDANCE_ESTIMATOR = 8, CORRECTOR = 16, CONSENSUS =32
 };
 struct cocoOption;
 
