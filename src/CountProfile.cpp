@@ -181,26 +181,25 @@ bool CountProfile::correction(uint32_t *maxProfile, unsigned int covEst,  bool d
         if (idx > kmerSpan/2)
             corrWindow.erase(corrWindow.begin());
         unsigned int max = *(std::max_element(corrWindow.begin(), corrWindow.end()));
-        corrValues[idx] = (unsigned int)(corrFactor * max+1);
+        corrValues[idx] = (unsigned int)(corrFactor * max + 1);
 
     }
 
     // 1. find sequencing errors
 
-
     unsigned int candidates[maxProfileLength];
     memset(candidates, 0, sizeof(*candidates) * maxProfileLength);
 
     for (size_t idx = 0; idx < maxProfileLength; idx++){
-        if ((double) maxProfile[idx] <= 1 + (double)corrValues[idx]) {
+        if (maxProfile[idx] <= 1 + corrValues[idx]) {
             candidates[idx] = 1;
-            if (dryRun)
+            if (dryRun && maxProfile[idx] <= 0.1 * covEst) //TODO: change 10% later for correction
               return true;
         }
     }
     
     //  2. correct sequencing errors
-    // TODO
+    // TODO: 1. majority voting? 2. local covEst 3. global covEst (= median)
 
     return false;
 }

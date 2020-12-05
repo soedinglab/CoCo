@@ -45,7 +45,7 @@ int correctionProcessor(CountProfile &countprofile, void *args)
   if (currArgs->dryRun) {
     if (changed) {
       fwrite(seqinfo->name.c_str(), sizeof(char), seqinfo->name.size(), currArgs->correctedReads);
-        fwrite("\n", sizeof(char), 1, currArgs->correctedReads);
+      fwrite("\n", sizeof(char), 1, currArgs->correctedReads);
     }
   } else {
 
@@ -79,6 +79,7 @@ int correction(int argc, const char **argv, const Command *tool)
 
     string countFile = opt.countFile;
     lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0);
+    //TODO: change mincount if correction work properly
   } else { // count k-mers itself and fill hash-lookuptable
 
     lookuptable = buildHashTable(seqFile, *translator);
