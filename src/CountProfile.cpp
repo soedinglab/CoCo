@@ -1,6 +1,7 @@
 // Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 #include "CountProfile.h"
 #include "mathsupport.h"
+#include "Info.h"
 #include <cstring>
 
 #define WINDOW_SIZE 4
@@ -191,17 +192,29 @@ bool CountProfile::correction(uint32_t *maxProfile, unsigned int covEst,  bool d
     memset(candidates, 0, sizeof(*candidates) * maxProfileLength);
 
     for (size_t idx = 0; idx < maxProfileLength; idx++){
-        if (maxProfile[idx] <= 1 + corrValues[idx]) {
+        if (maxProfile[idx] <= 1 + corrValues[idx] && maxProfile[idx] <= 0.1 * covEst) {
             candidates[idx] = 1;
-            if (dryRun && maxProfile[idx] <= 0.1 * covEst) //TODO: change 10% later for correction
-              return true;
+            /*if (dryRun && maxProfile[idx] <= 0.1 * covEst) {//TODO: change 10% later for correction
+                 return true;
+            }*/
         }
     }
+
+    // only for now to print seqerror positions
+    bool foundErrorPos = false;
+    for (size_t idx = 0; idx < maxProfileLength; idx++){
+      if (candidates[idx] == 1){
+        foundErrorPos = true;
+        Info(Info::DEBUG) << seqinfo->name.c_str() << "\t" << idx << "\n";
+      }
+    }
+    return foundErrorPos;
     
+
     //  2. correct sequencing errors
     // TODO: 1. majority voting? 2. local covEst 3. global covEst (= median)
 
-    return false;
+    // return false;
 }
 
 bool CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges) {
@@ -494,3 +507,4 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
 
   return false;
 }
+
