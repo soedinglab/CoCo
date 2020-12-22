@@ -148,7 +148,8 @@ int correction(int argc, const char **argv, const Command *tool)
       }
       perm_count++;
   }
-  delete msk;
+
+
   return returnVal;
 }
 
