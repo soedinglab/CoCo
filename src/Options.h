@@ -61,6 +61,7 @@ public:
   float dropLevel2;
   //unsigned int kmerWeight;
   unsigned int threads;
+  int stepsize;
   int countMode;
   int verbose;
   bool aligned;
@@ -85,6 +86,7 @@ public:
   OPTION(OP_COUNT_MODE)
   OPTION(OP_THREADS)
   OPTION(OP_VERBOSE)
+  OPTION(OP_STEPSIZE)
 
   static const int COUNT_MODE_SUM = 0;
   static const int COUNT_MODE_MAX = 1;

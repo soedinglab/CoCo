@@ -40,6 +40,8 @@ Options::Options() :
   OP_THREADS(OP_THREADS_ID, "threads", "--threads", "number of threads, not supported yet (default: 1)", typeid(int), (void *) &threads, 0),
   OP_VERBOSE(OP_VERBOSE_ID, "verbose", "--verbose", "verbosity level, 0: quiet 1: Errors, 2: +Warnings, 3: +Info, 4: +Debug, "\
                             "default: 3", typeid(int), (void *) &verbose, 0),
+  OP_STEPSIZE(OP_STEPSIZE_ID, "stepsize", "--stepsize", "specify how many permutations should be skipped in lexicographic order when running correction.",
+              typeid(int), (void *) &stepsize, 0),
   // expert options
   OP_COUNT_MODE(OP_COUNT_MODE_ID, "count-mode", "--count-mode",
                 "way to store counts for concurrent kmers (expert option)\n 0: sum\n 1: maximize (default)",
@@ -89,6 +91,7 @@ Options::Options() :
   correctionWorkflow.push_back(&OP_DRY_RUN);
   correctionWorkflow.push_back(&OP_COUNT_MODE);
   correctionWorkflow.push_back(&OP_VERBOSE);
+  correctionWorkflow.push_back(&OP_STEPSIZE);
 
   }
 
@@ -167,6 +170,7 @@ void Options::parseOptions(int argc, const char *argv[],
     {"count-mode",   required_argument, NULL, 0},
     {"threads",   required_argument, NULL, 0},
     {"verbose",   required_argument, NULL, 0},
+    {"stepsize", required_argument, NULL, 0},
     {NULL,        no_argument,       NULL, 0}
   };
 

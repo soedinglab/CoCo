@@ -14,7 +14,7 @@ add_definitions("-DGIT_SHA1=${GIT_SHA1}")
 include_directories(lib/kseq)
 include_directories(lib/kmer-cnt)
 
-set(coco_source_files ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+set(coco_source_files ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp src/mask_permuter.cpp src/mask_permuter.h)
 
 list (APPEND KSIZE_DEFAULT_LIST 64)
 SET (GATB_CORE_EXCLUDE_TOOLS     1)

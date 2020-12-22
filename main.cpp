@@ -111,7 +111,6 @@ void printUsage(const int mode = SIMPLE) {
 }
 
 int main(int argc, const char *argv[]) {
-
   if (argc < 2) {
     printUsage(SIMPLE);
     return (EXIT_FAILURE);

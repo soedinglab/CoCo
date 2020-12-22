@@ -4,6 +4,9 @@
 
 #include "kmer.h"
 
+//Debug
+#include <iostream>
+
 class KmerTranslator {
 
 private:
@@ -26,7 +29,14 @@ public:
 
   unsigned short getWeight() const;
 
+  void setSW(unsigned short newSpan, unsigned short newWeight);
+
+  void setMask(unsigned char *newMask);
+
   friend class CountProfile;
+
+  //debug
+  void printmask();
   
 };
 
