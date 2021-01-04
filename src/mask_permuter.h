@@ -25,7 +25,7 @@ public:
 
     bool get_next(std::vector<int> &ovec);
 
-    bool get_next(unsigned char* arr);
+    bool get_next(unsigned char* arr, std::vector<int> &ovec);
 
     void reset_sw(int span, int weight);
 

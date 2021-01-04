@@ -8,6 +8,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <sys/stat.h>
 
 #include "Command.h"
 #include "Info.h"
@@ -65,9 +66,17 @@ int correction(int argc, const char **argv, const Command *tool)
   opt.parseOptions(argc, argv, *tool);
   //TODO: print parameters
   //TODO:check parameter and if files exists
-  //Added by Anton
+
+  //check if output file exists
+  struct stat buffer;
+  string outputfile = opt.outprefix + ".coco_" + tool->cmd + ".txt";
+  if (stat(outputfile.c_str(), &buffer) == 0) {
+      Info(Info::ERROR) << "ERROR: Outputfile already exists!\n";
+      return EXIT_FAILURE;
+    }
+
   //Init mask_permuter class with span 41 and weight 27
-  int span=41;
+  int span = 41;
   int weight = 27;
   mask_permuter mask(span, weight);
 
@@ -80,7 +89,8 @@ int correction(int argc, const char **argv, const Command *tool)
   int perm_count = 0;
   int returnVal;
   unsigned char *msk = new unsigned char[weight];
-  while(mask.get_next(msk)) {
+  std::vector<int> vmsk;
+  while(mask.get_next(msk, vmsk)) {
       if(perm_count % opt.stepsize == 0) {
           KmerTranslator *translator = new KmerTranslator();
           //reset translator with span, weight and new mask
@@ -119,6 +129,19 @@ int correction(int argc, const char **argv, const Command *tool)
           else {
               outprefix = getFilename(seqFile);
           }
+          //prepare mask for file
+          std::string smsk = ">MASK:";
+          for(int i=0; i<weight; i++){
+            smsk += std::to_string(vmsk[i]) + " ";
+          }
+
+
+          //add mask to file
+
+          FILE * coco_corr = openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "a");
+          fwrite(smsk.c_str(), sizeof(char), smsk.length(), coco_corr);
+          fwrite("\n", sizeof(char), 1, coco_corr);
+          fclose(coco_corr);
 
           string ext = getFileExtension(seqFile);
 
@@ -127,7 +150,7 @@ int correction(int argc, const char **argv, const Command *tool)
           if (opt.dryRun) {
               args = {true,
                       NULL,
-                      openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "w")
+                      openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "a")
                       };
               //Info(Info::INFO) << "Perform only a dry run without correction\n";
           } else {
@@ -144,11 +167,10 @@ int correction(int argc, const char **argv, const Command *tool)
               fclose(args.correctedReadsFasta);
 
           delete lookuptable;
-          delete translator;
+          //delete translator;
       }
       perm_count++;
   }
-
 
   return returnVal;
 }

@@ -52,11 +52,12 @@ bool mask_permuter::get_next(std::vector<int> &ovec){
     return check;
 }
 
-bool mask_permuter::get_next(unsigned char* msk){
+bool mask_permuter::get_next(unsigned char* msk, std::vector<int> &ovec){
     bool check = update_permpos();
     for(int i=0; i<curr_permpos.size(); i++){
         msk[i] = curr_permpos[i];
     }
+    ovec = curr_permpos;
     return check;
 }
 
