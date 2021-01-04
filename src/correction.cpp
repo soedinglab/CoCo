@@ -78,6 +78,13 @@ int correction(int argc, const char **argv, const Command *tool)
   //Init mask_permuter class with span 41 and weight 27
   int span = 41;
   int weight = 27;
+  if (opt.span != 0){
+      span = opt.span;
+  }
+
+  if (opt.weight != 0){
+      weight = opt.weight;
+  }
   mask_permuter mask(span, weight);
 
 

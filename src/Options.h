@@ -62,6 +62,8 @@ public:
   //unsigned int kmerWeight;
   unsigned int threads;
   int stepsize;
+  int span;
+  int weight;
   int countMode;
   int verbose;
   bool aligned;
@@ -87,6 +89,8 @@ public:
   OPTION(OP_THREADS)
   OPTION(OP_VERBOSE)
   OPTION(OP_STEPSIZE)
+  OPTION(OP_SPAN)
+  OPTION(OP_WEIGHT)
 
   static const int COUNT_MODE_SUM = 0;
   static const int COUNT_MODE_MAX = 1;
