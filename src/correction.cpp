@@ -64,8 +64,7 @@ int correction(int argc, const char **argv, const Command *tool)
 {
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);
-  //TODO: print parameters
-  //TODO:check parameter and if files exists
+
 
   //check if output file exists
   struct stat buffer;
@@ -74,7 +73,6 @@ int correction(int argc, const char **argv, const Command *tool)
       Info(Info::ERROR) << "ERROR: Outputfile already exists!\n";
       return EXIT_FAILURE;
     }
-
   //Init mask_permuter class with span 41 and weight 27
   int span = 41;
   int weight = 27;
@@ -87,18 +85,36 @@ int correction(int argc, const char **argv, const Command *tool)
   }
   mask_permuter mask(span, weight);
 
+  //set permutation range
+  long int permNum = mask.get_permNum();
+  float pmStart = opt.pmstart;
+  float pmStop = opt.pmstop;
+  long int startPos, stopPos;
+  if (pmStart == 0 && pmStop == 0){
+      startPos = 0;
+      stopPos = permNum;
+  }
+  else{
+      startPos = pmStart * permNum;
+      stopPos = pmStop * permNum;
+  }
+  if (startPos >= stopPos){
+      Info(Info::ERROR) << "ERROR: pmstart must be larger than pmstop!\n";
+      return EXIT_FAILURE;
+  }
 
   opt.dryRun = true; //TODO: change later
   Info(Info::WARNING) << "WARNING: Parameter " << opt.OP_DRY_RUN.display <<
                          " is automatically set to true because the correction step is not implemented yet\n";
   initialize();
-
-  int perm_count = 0;
+    //perm_count % opt.stepsize == 0
+  long int perm_count = 0;
   int returnVal;
   unsigned char *msk = new unsigned char[weight];
   std::vector<int> vmsk;
   while(mask.get_next(msk, vmsk)) {
-      if(perm_count % opt.stepsize == 0) {
+      if((perm_count >= startPos && perm_count <= stopPos) &&
+      (perm_count == startPos || perm_count % opt.stepsize == 0)) {
           KmerTranslator *translator = new KmerTranslator();
           //reset translator with span, weight and new mask
           translator->setSW(span, weight);
@@ -137,7 +153,7 @@ int correction(int argc, const char **argv, const Command *tool)
               outprefix = getFilename(seqFile);
           }
           //prepare mask for file
-          std::string smsk = ">MASK:";
+          std::string smsk = ">MASK-" + to_string(perm_count) + ":";
           for(int i=0; i<weight; i++){
             smsk += std::to_string(vmsk[i]) + " ";
           }

@@ -64,6 +64,8 @@ public:
   int stepsize;
   int span;
   int weight;
+  float pmstart;
+  float pmstop;
   int countMode;
   int verbose;
   bool aligned;
@@ -91,6 +93,8 @@ public:
   OPTION(OP_STEPSIZE)
   OPTION(OP_SPAN)
   OPTION(OP_WEIGHT)
+  OPTION(OP_PMSTART)
+  OPTION(OP_PMSTOP)
 
   static const int COUNT_MODE_SUM = 0;
   static const int COUNT_MODE_MAX = 1;

@@ -61,6 +61,12 @@ bool mask_permuter::get_next(unsigned char* msk, std::vector<int> &ovec){
     return check;
 }
 
+long int mask_permuter::get_permNum(){
+    int hspan = span/2;
+    int hweight = weight/2;
+    return fact(hspan)/(fact(hweight)*fact((hspan-hweight)));
+}
+
 bool mask_permuter::update_permpos(){
     bool check;
     if (!init) {
@@ -112,6 +118,14 @@ bool mask_permuter::permuter(){
         return false;
     }
 }
+
+long long int mask_permuter::fact(long long int num){
+    if(num <= 1){
+        return 1;
+    }
+    return num * fact(num-1);
+}
+
 
 /*debug function to print out a vector*/
 void mask_permuter::show_vec(std::vector<int> vec) {

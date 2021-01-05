@@ -45,6 +45,10 @@ Options::Options() :
               typeid(int), (void *) &stepsize, 0),
   OP_SPAN(OP_SPAN_ID, "span", "--span", "specify span of kmer mask as int. Default is 41.", typeid(int), (void *) &span, 0),
   OP_WEIGHT(OP_WEIGHT_ID, "weight", "--weight", "specify weight of kmer mask. Default is 27.", typeid(int), (void *) &weight, 0),
+  OP_PMSTART(OP_PMSTART_ID, "pmstart", "--pmstart", "specify start point of permutation in lexicographic order in percent of the number of possible permutations.",
+             typeid(float), (void *) &pmstart, 0),
+  OP_PMSTOP(OP_PMSTOP_ID, "pmstop", "--pmstop", "specify stop point of permutation in lexicographic order in percent of the number of possible permutations.",
+            typeid(float), (void *) &pmstop, 0),
   // expert options
   OP_COUNT_MODE(OP_COUNT_MODE_ID, "count-mode", "--count-mode",
                 "way to store counts for concurrent kmers (expert option)\n 0: sum\n 1: maximize (default)",
@@ -97,6 +101,8 @@ Options::Options() :
   correctionWorkflow.push_back(&OP_STEPSIZE);
   correctionWorkflow.push_back(&OP_SPAN);
   correctionWorkflow.push_back(&OP_WEIGHT);
+  correctionWorkflow.push_back(&OP_PMSTART);
+  correctionWorkflow.push_back(&OP_PMSTOP);
 
 
   }
@@ -179,6 +185,8 @@ void Options::parseOptions(int argc, const char *argv[],
     {"stepsize", required_argument, NULL, 0},
     {"span", required_argument, NULL, 0},
     {"weight", required_argument, NULL, 0},
+    {"pmstart", required_argument, NULL, 0},
+    {"pmstop", required_argument, NULL, 0},
     {NULL,        no_argument,       NULL, 0}
   };
 
