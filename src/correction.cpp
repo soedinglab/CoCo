@@ -86,10 +86,10 @@ int correction(int argc, const char **argv, const Command *tool)
   mask_permuter mask(span, weight);
 
   //set permutation range
-  long int permNum = mask.get_permNum();
+  unsigned int permNum = mask.get_permNum();
   float pmStart = opt.pmstart;
   float pmStop = opt.pmstop;
-  long int startPos, stopPos;
+  unsigned int startPos, stopPos;
   if (pmStart == 0 && pmStop == 0){
       startPos = 0;
       stopPos = permNum;

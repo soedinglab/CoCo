@@ -27,7 +27,7 @@ public:
 
     bool get_next(unsigned char* arr, std::vector<int> &ovec);
 
-    long int get_permNum();
+    unsigned int get_permNum();
 
     void reset_sw(int span, int weight);
 
@@ -39,8 +39,6 @@ private:
     bool permuter();
 
     bool update_permpos();
-
-    long long int fact(long long int num);
 
     //debug function
     static void show_vec(std::vector<int> vec);
