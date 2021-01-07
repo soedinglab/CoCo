@@ -31,6 +31,8 @@ public:
 
     void reset_sw(int span, int weight);
 
+    void set_rand(unsigned int start, unsigned int stop, unsigned int maskNum);
+
 private:
     void init_mask();
 

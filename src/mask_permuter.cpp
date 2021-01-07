@@ -6,6 +6,8 @@
 #include <vector>
 #include <iostream>
 #include <cmath>
+#include <random>
+#include <algorithm>
 
 #include "mask_permuter.h"
 
@@ -27,7 +29,7 @@ mask_permuter::~mask_permuter() = default;
 void mask_permuter::init_mask(){
     int infloc = 0;
     base_mask = {};
-    for (int i = 0; i < span/2; i++){
+    for(int i = 0; i < span/2; i++){
         if(infloc >= (span/2) - (weight/2)) {
             base_mask.push_back(1);
             infloc++;
@@ -43,6 +45,27 @@ void mask_permuter::reset_sw(int nspan, int nweight) {
     span = nspan;
     weight = nweight;
     init_mask();
+}
+
+void mask_permuter::set_rand(unsigned int start, unsigned int stop, unsigned int maskNum){
+    unsigned int maxPerm = get_permNum();
+    std::random_device rd;
+    if(stop == 0){
+        stop = maxPerm;
+    }
+    std::vector<unsigned int> masks;
+    for(int i=0; i<maskNum; ++i){
+        unsigned int rnum;
+        while(true){
+            rnum = rd()%stop+1;
+            if(!(std::find(masks.begin(), masks.end(), rnum) != masks.end())){
+                break;
+            }
+        }
+        masks.push_back(rnum);
+    }
+    //TODO: finish random mask id generation and write a get next function that gives masks back preferably in order so sort mask first
+
 }
 
 /*Public function that returns the coco mask
@@ -65,7 +88,8 @@ bool mask_permuter::get_next(unsigned char* msk, std::vector<int> &ovec){
 unsigned int mask_permuter::get_permNum(){
     int hspan = span/2;
     int hweight = weight/2;
-    return tgamma(hspan+1)/(tgamma(hweight+1)*tgamma((hspan-hweight)+1));
+    unsigned long long int perms = tgamma(hspan+1)/(tgamma(hweight+1)*tgamma((hspan-hweight)+1));
+    return perms;
 }
 
 bool mask_permuter::update_permpos(){

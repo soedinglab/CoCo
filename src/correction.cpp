@@ -86,28 +86,29 @@ int correction(int argc, const char **argv, const Command *tool)
   mask_permuter mask(span, weight);
 
   //set permutation range
-  unsigned int permNum = mask.get_permNum();
-  float pmStart = opt.pmstart;
-  float pmStop = opt.pmstop;
+  unsigned long long int maxPerm = mask.get_permNum();
+
+  //set mask operation range (lexicographically)
+  unsigned long long int pmStart = opt.pmstart;
+  unsigned long long int pmStop = opt.pmstop;
   unsigned int startPos, stopPos;
-  if (pmStart == 0 && pmStop == 0){
-      startPos = 0;
-      stopPos = permNum;
+  if (pmStop == 0){
+      pmStop = maxPerm;
   }
-  else{
-      startPos = pmStart * permNum;
-      stopPos = pmStop * permNum;
-  }
-  if (startPos >= stopPos){
-      Info(Info::ERROR) << "ERROR: pmstart must be larger than pmstop!\n";
+  if (pmStart >= pmStop || pmStart >= maxPerm || pmStop > maxPerm){
+      Info(Info::ERROR) << "ERROR: pmstart must be smaller than pmstop"
+                           " and should not exceed the maximum of " << maxPerm << "\n";
       return EXIT_FAILURE;
   }
+
+  //if rand is set draw specified number of masks
+
 
   opt.dryRun = true; //TODO: change later
   Info(Info::WARNING) << "WARNING: Parameter " << opt.OP_DRY_RUN.display <<
                          " is automatically set to true because the correction step is not implemented yet\n";
   initialize();
-    //perm_count % opt.stepsize == 0
+
   long int perm_count = 0;
   int returnVal;
   unsigned char *msk = new unsigned char[weight];
@@ -120,8 +121,12 @@ int correction(int argc, const char **argv, const Command *tool)
           translator->setSW(span, weight);
           translator->setMask(msk);
 
-          //debug check if _mask is set in translator
-          translator->printmask();
+          //prepare mask for file
+          std::string smsk = ">MASK-" + to_string(perm_count) + ":";
+          translator->printmask(smsk); //debug check if _mask is set in translator
+          for(int i=0; i<weight; i++){
+              smsk += std::to_string(vmsk[i]) + " ";
+          }
 
           string seqFile = opt.seqFile;
 
@@ -152,15 +157,8 @@ int correction(int argc, const char **argv, const Command *tool)
           else {
               outprefix = getFilename(seqFile);
           }
-          //prepare mask for file
-          std::string smsk = ">MASK-" + to_string(perm_count) + ":";
-          for(int i=0; i<weight; i++){
-            smsk += std::to_string(vmsk[i]) + " ";
-          }
-
 
           //add mask to file
-
           FILE * coco_corr = openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "a");
           fwrite(smsk.c_str(), sizeof(char), smsk.length(), coco_corr);
           fwrite("\n", sizeof(char), 1, coco_corr);

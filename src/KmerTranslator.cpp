@@ -57,7 +57,7 @@ packedKmerType KmerTranslator::kmer2minPackedKmer(const spacedKmerType kmer) con
   return (minIndex(packedKmer, weight));
 }
 
-void KmerTranslator::printmask(){
+void KmerTranslator::printmask(std::string prefix = ''){
     for(int i = 0; i<weight; i++){
         std::cerr << _mask_array[i]+0 << " ";
     }
