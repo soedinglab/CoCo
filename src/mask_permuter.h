@@ -12,11 +12,14 @@ class mask_permuter {
 
     std::vector<int> base_mask;
     std::vector<int> curr_permpos;
-    std::vector<unsigned int> rand_masks;
+    std::vector<int> rand_masks;
+    int rand_pos = 0;
     int span;
     int weight;
+    int perm_count = -1;
+    int max_perm = 0;
     bool init = true;
-    bool randomize = false;
+    bool set_random = false;
 
 public:
     mask_permuter();
@@ -25,15 +28,17 @@ public:
 
     ~mask_permuter();
 
+    void reset_sw(int span, int weight);
+
+    void set_rand(int start, int stop, int maskNum);
+
     bool get_next(std::vector<int> &ovec);
 
     bool get_next(unsigned char* arr, std::vector<int> &ovec);
 
-    unsigned int get_permNum();
+    int get_maxPerm();
 
-    void reset_sw(int span, int weight);
-
-    void set_rand(unsigned int start, unsigned int stop, unsigned int maskNum);
+    int get_permCount();
 
 private:
     void init_mask();
@@ -42,7 +47,11 @@ private:
 
     bool permuter();
 
+    bool skip_perm();
+
     bool update_permpos();
+
+    int calc_maxPerm();
 
     //debug function
     static void show_vec(std::vector<int> vec);

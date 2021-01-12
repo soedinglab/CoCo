@@ -73,7 +73,7 @@ int correction(int argc, const char **argv, const Command *tool)
       Info(Info::ERROR) << "ERROR: Outputfile already exists!\n";
       return EXIT_FAILURE;
     }
-  //Init mask_permuter class with span 41 and weight 27
+  //Init mask_permuter class with span 41 and weight 27 per default
   int span = 41;
   int weight = 27;
   if (opt.span != 0){
@@ -86,13 +86,12 @@ int correction(int argc, const char **argv, const Command *tool)
   mask_permuter mask(span, weight);
 
   //set permutation range
-  unsigned long long int maxPerm = mask.get_permNum();
+  int maxPerm = mask.get_maxPerm();
 
   //set mask operation range (lexicographically)
   //TODO: Check that operational range still works after overhaul
-  unsigned long long int pmStart = opt.pmstart;
-  unsigned long long int pmStop = opt.pmstop;
-  unsigned int startPos, stopPos;
+  int pmStart = opt.pmstart;
+  int pmStop = opt.pmstop;
   if (pmStop == 0){
       pmStop = maxPerm;
   }
@@ -103,18 +102,46 @@ int correction(int argc, const char **argv, const Command *tool)
   }
 
 
+  //check that not both, --rand and --stepsize are set at the same time
+  if(opt.rand != 0 && opt.stepsize != 0){
+      Info(Info::ERROR) << "ERROR: --stepsize and --rand are mutually exclusive!\n";
+      return EXIT_FAILURE;
+  }
+
+  //randomize mask_permuter if specified by user and set stepsize
+  int stepsize;
+  if (opt.rand != 0){
+      stepsize = 1;
+      try {
+          mask.set_rand(pmStart, pmStop, opt.rand);
+      }
+      catch(const char *exec){
+          Info(Info::ERROR) << exec;
+          return EXIT_FAILURE;
+      }
+  }
+  else {
+      stepsize = opt.stepsize;
+  }
+
+
   opt.dryRun = true; //TODO: change later
   Info(Info::WARNING) << "WARNING: Parameter " << opt.OP_DRY_RUN.display <<
                          " is automatically set to true because the correction step is not implemented yet\n";
   initialize();
 
-  long int perm_count = 0;
   int returnVal;
   unsigned char *msk = new unsigned char[weight];
   std::vector<int> vmsk;
+  int perm_count;
   while(mask.get_next(msk, vmsk)) {
-      if((perm_count >= startPos && perm_count <= stopPos) &&
-      (perm_count == startPos || perm_count % opt.stepsize == 0)) {
+      perm_count = mask.get_permCount();
+      std::cout << "psta psto: " << pmStart << " " << pmStop << "\n";
+      std::cout << "pcount: " << perm_count << "\n";
+      std::cout << "cond: " << (perm_count-pmStart) % stepsize << "\n";
+      if((perm_count >= pmStart && perm_count <= pmStop) &&
+      (perm_count-pmStart) % stepsize == 0){
+          //(perm_count == pmStart || perm_count-pmStart % stepsize == 0)) {
           KmerTranslator *translator = new KmerTranslator();
           //reset translator with span, weight and new mask
           translator->setSW(span, weight);
@@ -189,7 +216,6 @@ int correction(int argc, const char **argv, const Command *tool)
           delete lookuptable;
           //delete translator;
       }
-      perm_count++;
   }
 
   return returnVal;

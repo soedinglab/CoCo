@@ -13,36 +13,17 @@
 
 
 
-
+//public functions
 mask_permuter::mask_permuter() = default;
 
 mask_permuter::mask_permuter(int nspan, int nweight) {
     reset_sw(nspan, nweight);
+    max_perm = calc_maxPerm();
     //init span and weight from arguments
     init_mask(); //initialize mask as defined by span and weight
 }
 
 mask_permuter::~mask_permuter() = default;
-
-/*initializes mask as smallest lexicographical
- * sequence.*/
-//TODO: Make start and end of mask always informative
-void mask_permuter::init_mask(){
-    //informative location counter (1)
-    int infloc = 0;
-    base_mask = {};
-    //generate mask
-    for(int i = 0; i < span/2; i++){
-        if(infloc >= (span/2) - (weight/2)) {
-            base_mask.push_back(1);
-            infloc++;
-        }
-        else {
-            base_mask.push_back(0);
-            infloc++;
-        }
-    }
-}
 
 void mask_permuter::reset_sw(int nspan, int nweight) {
     span = nspan;
@@ -50,15 +31,20 @@ void mask_permuter::reset_sw(int nspan, int nweight) {
     init_mask();
 }
 
-void mask_permuter::set_rand(unsigned int start, unsigned int stop, unsigned int maskNum){
-    unsigned int maxPerm = get_permNum();
+void mask_permuter::set_rand(int start, int stop, int maskNum){
+    unsigned int maxPerm =get_maxPerm();
+    perm_count = 0;
+    //check if permutation is still first
+    if(perm_count != 0){
+        throw "Error: 'set_rand' can not be used if the mask was already permuted!\n";
+    }
     //check if stop is set and if not set it to maximum possible
     if(stop == 0){
         stop = maxPerm;
     }
     //number of unique masks to draw can't be larger than specified range
     if (maskNum>(stop-start+1)){
-        throw "Error";
+        throw "Error: 'mask_permuter.cpp' number of unique masks to draw can't be larger than specified range\n";
     }
     //random number is generated from hardware
     std::random_device rd;
@@ -67,8 +53,8 @@ void mask_permuter::set_rand(unsigned int start, unsigned int stop, unsigned int
     //range of randomly generated numbers set
     std::uniform_int_distribution<> distr(start,stop);
     //vector for sampled mask IDs
-    std::vector<unsigned int> masks;
-    unsigned int rnum;
+    std::vector<int> masks;
+    int rnum;
     //draw masks and make sure that each one is unique in vector "masks".
     for (int i=0; i<maskNum; ++i){
         while(true) {
@@ -81,7 +67,14 @@ void mask_permuter::set_rand(unsigned int start, unsigned int stop, unsigned int
     }
     //sort mask IDs since they are generated in increasing order
     std::sort(masks.begin(), masks.end());
+    set_random = true;
+    std::cout << "random mask: ";
+    for (int &ii: masks){
+        std::cout << ii << " ";
+    }
+    std::cout << "\n";
     rand_masks = masks;
+
 }
 
 /*Public function that returns the coco mask
@@ -101,25 +94,34 @@ bool mask_permuter::get_next(unsigned char* msk, std::vector<int> &ovec){
     return check;
 }
 
-unsigned int mask_permuter::get_permNum(){
-    int hspan = span/2;
-    int hweight = weight/2;
-    unsigned long long int perms = tgamma(hspan+1)/(tgamma(hweight+1)*tgamma((hspan-hweight)+1));
-    return perms;
+int mask_permuter::get_maxPerm(){
+    return max_perm;
 }
 
-bool mask_permuter::update_permpos(){
-    bool check;
+int mask_permuter::get_permCount(){
+    return perm_count;
+}
 
-    if (!init) {
-        check = permuter(); //update curr_permpos with next permutation
+
+//private functions
+/*initializes mask as smallest lexicographical
+ * sequence.*/
+//TODO: Make start and end of mask always informative
+void mask_permuter::init_mask(){
+    //informative location counter (1)
+    int infloc = 0;
+    base_mask = {};
+    //generate mask
+    for(int i = 0; i < span/2; i++){
+        if(infloc >= (span/2) - (weight/2)) {
+            base_mask.push_back(1);
+            infloc++;
+        }
+        else {
+            base_mask.push_back(0);
+            infloc++;
+        }
     }
-    else {
-        mask_mkr(base_mask);
-        init = false;
-        check = true;
-    }
-    return check;
 }
 
 /*converts mask (gapped kmer) composed of 1s and 0s into
@@ -157,18 +159,63 @@ void mask_permuter::mask_mkr(std::vector<int> mask){
     }
 }
 
-
 /* Generates next permutation of base_mask
  * until lexicographically largest sequence
  * is met.*/
-bool mask_permuter::permuter(){
-    if(std::next_permutation(base_mask.begin(), base_mask.end())) {
+bool mask_permuter::permuter() {
+    perm_count += 1;
+    if(perm_count == 0){
         mask_mkr(base_mask);
+        return true;
+    }
+    else{
+        if(std::next_permutation(base_mask.begin(), base_mask.end())){
+            mask_mkr(base_mask);
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+}
+
+
+bool mask_permuter::skip_perm(){
+    if(std::next_permutation(base_mask.begin(), base_mask.end())) {
+        perm_count += 1;
         return true;
     }
     else{
         return false;
     }
+}
+
+bool mask_permuter::update_permpos(){
+    bool check;
+    unsigned int rmask;
+    //if random is set all masks that are not drawn by set_rand are skipped
+    if(set_random){
+        rmask = rand_masks[rand_pos];
+        rand_pos += 1;
+        while(true){
+            if (rmask-1 == perm_count){
+                break;
+            }
+            else if (rand_pos > rand_masks.size()){
+                return false;
+            }
+            skip_perm();
+        }//TODO: Find out what to do with perm_count and where to increment it. Because start of -1 needed to allow to get mask 0.
+    }
+    check=permuter(); //update curr_permpos with next permutation
+    return check;
+}
+
+int mask_permuter::calc_maxPerm(){
+    int hspan = span/2;
+    int hweight = weight/2;
+    unsigned long long int perms = tgamma(hspan+1)/(tgamma(hweight+1)*tgamma((hspan-hweight)+1));
+    return perms;
 }
 
 /*debug function to print out a vector*/
