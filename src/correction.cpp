@@ -89,6 +89,7 @@ int correction(int argc, const char **argv, const Command *tool)
   unsigned long long int maxPerm = mask.get_permNum();
 
   //set mask operation range (lexicographically)
+  //TODO: Check that operational range still works after overhaul
   unsigned long long int pmStart = opt.pmstart;
   unsigned long long int pmStop = opt.pmstop;
   unsigned int startPos, stopPos;
@@ -100,8 +101,6 @@ int correction(int argc, const char **argv, const Command *tool)
                            " and should not exceed the maximum of " << maxPerm << "\n";
       return EXIT_FAILURE;
   }
-
-  //if rand is set draw specified number of masks
 
 
   opt.dryRun = true; //TODO: change later

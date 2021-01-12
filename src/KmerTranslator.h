@@ -36,7 +36,7 @@ public:
   friend class CountProfile;
 
   //debug
-  void printmask(std::string prefix = '');
+  void printmask(const std::string &prefix);
   
 };
 
