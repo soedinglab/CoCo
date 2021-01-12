@@ -12,9 +12,11 @@ class mask_permuter {
 
     std::vector<int> base_mask;
     std::vector<int> curr_permpos;
+    std::vector<unsigned int> rand_masks;
     int span;
     int weight;
     bool init = true;
+    bool randomize = false;
 
 public:
     mask_permuter();

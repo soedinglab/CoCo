@@ -26,9 +26,12 @@ mask_permuter::~mask_permuter() = default;
 
 /*initializes mask as smallest lexicographical
  * sequence.*/
+//TODO: Make start and end of mask always informative
 void mask_permuter::init_mask(){
+    //informative location counter (1)
     int infloc = 0;
     base_mask = {};
+    //generate mask
     for(int i = 0; i < span/2; i++){
         if(infloc >= (span/2) - (weight/2)) {
             base_mask.push_back(1);
@@ -49,23 +52,36 @@ void mask_permuter::reset_sw(int nspan, int nweight) {
 
 void mask_permuter::set_rand(unsigned int start, unsigned int stop, unsigned int maskNum){
     unsigned int maxPerm = get_permNum();
-    std::random_device rd;
+    //check if stop is set and if not set it to maximum possible
     if(stop == 0){
         stop = maxPerm;
     }
+    //number of unique masks to draw can't be larger than specified range
+    if (maskNum>(stop-start+1)){
+        throw "Error";
+    }
+    //random number is generated from hardware
+    std::random_device rd;
+    //generator is seeded
+    std::mt19937 gen(rd());
+    //range of randomly generated numbers set
+    std::uniform_int_distribution<> distr(start,stop);
+    //vector for sampled mask IDs
     std::vector<unsigned int> masks;
-    for(int i=0; i<maskNum; ++i){
-        unsigned int rnum;
-        while(true){
-            rnum = rd()%stop+1;
+    unsigned int rnum;
+    //draw masks and make sure that each one is unique in vector "masks".
+    for (int i=0; i<maskNum; ++i){
+        while(true) {
+            rnum = distr(gen);
             if(!(std::find(masks.begin(), masks.end(), rnum) != masks.end())){
+                masks.push_back(rnum);
                 break;
             }
         }
-        masks.push_back(rnum);
     }
-    //TODO: finish random mask id generation and write a get next function that gives masks back preferably in order so sort mask first
-
+    //sort mask IDs since they are generated in increasing order
+    std::sort(masks.begin(), masks.end());
+    rand_masks = masks;
 }
 
 /*Public function that returns the coco mask
@@ -94,6 +110,7 @@ unsigned int mask_permuter::get_permNum(){
 
 bool mask_permuter::update_permpos(){
     bool check;
+
     if (!init) {
         check = permuter(); //update curr_permpos with next permutation
     }
@@ -105,10 +122,17 @@ bool mask_permuter::update_permpos(){
     return check;
 }
 
+/*converts mask (gapped kmer) composed of 1s and 0s into
+ * positions indicating the informative locations (1)*/
 void mask_permuter::mask_mkr(std::vector<int> mask){
-    int mod; //modifies generation of symmetric part
+    //modifies generation of symmetric part for even and uneven masks
+    int mod;
     curr_permpos = {};
+    //init counter for informative positions
     int i = 0;
+    /*iterate through permuted left half of mask
+     * and add positions of informative locations
+     * to curr_permpos*/
     for (const int &t: mask) {
         if (t == 1) {
             curr_permpos.push_back(i);
@@ -118,6 +142,8 @@ void mask_permuter::mask_mkr(std::vector<int> mask){
             i++;
         }
     }
+    /*add middle informative position if span is uneven
+     * and set mod to calculate symmetric positions accordingly */
     if (span%2 != 0) {
         curr_permpos.push_back((span/2));
         mod = 0;
@@ -125,6 +151,7 @@ void mask_permuter::mask_mkr(std::vector<int> mask){
     else{
         mod = 1;
     }
+    //add symmetric right side of mask (gapped kmer)
     for (int k=(weight/2)-1; k>=0; k--){
         curr_permpos.push_back((span/2)+((span/2)-mod)-curr_permpos[k]);
     }
