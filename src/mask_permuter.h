@@ -28,8 +28,6 @@ public:
 
     ~mask_permuter();
 
-    void reset_sw(int span, int weight);
-
     void set_rand(int start, int stop, int maskNum);
 
     bool get_next(std::vector<int> &ovec);
@@ -41,6 +39,8 @@ public:
     int get_permCount();
 
 private:
+    void reset_sw(int span, int weight);
+
     void init_mask();
 
     void mask_mkr(std::vector<int> mask);

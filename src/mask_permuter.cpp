@@ -17,19 +17,14 @@
 mask_permuter::mask_permuter() = default;
 
 mask_permuter::mask_permuter(int nspan, int nweight) {
+    //init span and weight from arguments
     reset_sw(nspan, nweight);
     max_perm = calc_maxPerm();
-    //init span and weight from arguments
-    init_mask(); //initialize gapped kmer as defined by span and weight
+    //initialize gapped kmer as defined by span and weight
+    init_mask();
 }
 
 mask_permuter::~mask_permuter() = default;
-
-void mask_permuter::reset_sw(int nspan, int nweight) {
-    span = nspan;
-    weight = nweight;
-    init_mask();
-}
 
 void mask_permuter::set_rand(int start, int stop, int maskNum){
     unsigned int maxPerm =get_maxPerm();
@@ -73,7 +68,7 @@ void mask_permuter::set_rand(int start, int stop, int maskNum){
         initial_mask = false;
     }
     //debug output
-    std::cerr << "random gapped kmer: ";
+    std::cerr << "Randomly chosen gapped kmers: ";
     for (int &ii: masks){
         std::cerr << ii << " ";
     }
@@ -112,22 +107,29 @@ int mask_permuter::get_permCount(){
 
 
 //private functions
+void mask_permuter::reset_sw(int nspan, int nweight) {
+    span = nspan;
+    weight = nweight;
+    init_mask();
+}
+
 /*initializes gapped kmer as smallest lexicographical
  * sequence.*/
 //TODO: Make start and end of mask always informative
 void mask_permuter::init_mask(){
-    //informative location counter (1)
-    int infloc = 0;
-    base_mask = {};
-    //generate gapped kmer
-    for(int i = 0; i < span/2; i++){
-        if(infloc >= (span/2) - (weight/2)) {
+    //informative location counter
+    int uinfloc = 0;
+    //always first position informative
+    base_mask = {1};
+    //generate gapped kmer (minus one position)
+    for(int i = 0; i < (span/2)-1; i++){
+        if(uinfloc >= (span/2) - (weight/2)) {
             base_mask.push_back(1);
-            infloc++;
+            uinfloc++;
         }
         else {
             base_mask.push_back(0);
-            infloc++;
+            uinfloc++;
         }
     }
 }
@@ -138,6 +140,9 @@ void mask_permuter::mask_mkr(std::vector<int> mask){
     //modifies generation of symmetric part for even and uneven gapped kmers
     int mod;
     curr_permpos = {};
+    //first position is always informative
+    //curr_permpos.push_back(0);
+
     //init counter for informative positions
     int i = 0;
     /*iterate through permuted left half of gapped kmer
@@ -179,7 +184,7 @@ bool mask_permuter::permuter() {
     }
     //get next permutation of base mask (gapped kmer) and apply mask_mkr
     else{
-        if(std::next_permutation(base_mask.begin(), base_mask.end())){
+        if(std::next_permutation(base_mask.begin()+1, base_mask.end())){
             mask_mkr(base_mask);
             perm_count += 1;
             return true;
@@ -226,9 +231,9 @@ bool mask_permuter::update_permpos(){
 
 //calculate maximum number of permutations
 int mask_permuter::calc_maxPerm(){
-    int hspan = span/2;
-    int hweight = weight/2;
-    unsigned long long int perms = tgamma(hspan+1)/(tgamma(hweight+1)*tgamma((hspan-hweight)+1));
+    int hspan = (span/2)-1;
+    int hweight = (weight/2)-1;
+    int perms = tgamma(hspan+1)/(tgamma(hweight+1)*tgamma((hspan-hweight)+1));
     return perms;
 }
 
