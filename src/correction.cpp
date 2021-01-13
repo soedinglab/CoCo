@@ -89,7 +89,7 @@ int correction(int argc, const char **argv, const Command *tool)
   int maxPerm = mask.get_maxPerm();
 
   //set mask operation range (lexicographically)
-  //TODO: Check that operational range still works after overhaul
+  //TODO: Move start and stop of range into mask_permuter
   int pmStart = opt.pmstart;
   int pmStop = opt.pmstop;
   if (pmStop == 0){
@@ -136,9 +136,6 @@ int correction(int argc, const char **argv, const Command *tool)
   int perm_count;
   while(mask.get_next(msk, vmsk)) {
       perm_count = mask.get_permCount();
-      std::cout << "psta psto: " << pmStart << " " << pmStop << "\n";
-      std::cout << "pcount: " << perm_count << "\n";
-      std::cout << "cond: " << (perm_count-pmStart) % stepsize << "\n";
       if((perm_count >= pmStart && perm_count <= pmStop) &&
       (perm_count-pmStart) % stepsize == 0){
           //(perm_count == pmStart || perm_count-pmStart % stepsize == 0)) {

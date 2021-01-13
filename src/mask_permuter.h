@@ -1,5 +1,5 @@
 //
-// Written by Anton Robert Georg Farr on 01.12.20. <anton.farr@gmail.com>
+// Created by Anton Robert Georg Farr on 01.12.20. <anton.farr@gmail.com>
 //
 
 #ifndef MASK_PERMUTER_MASK_PERMUTER_H
@@ -16,9 +16,9 @@ class mask_permuter {
     int rand_pos = 0;
     int span;
     int weight;
-    int perm_count = -1;
+    int perm_count = 0;
     int max_perm = 0;
-    bool init = true;
+    bool initial_mask = true;
     bool set_random = false;
 
 public:

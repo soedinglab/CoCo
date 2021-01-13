@@ -41,16 +41,19 @@ Options::Options() :
   OP_VERBOSE(OP_VERBOSE_ID, "verbose", "--verbose", "verbosity level, 0: quiet 1: Errors, 2: +Warnings, 3: +Info, 4: +Debug, "\
                             "default: 3", typeid(int), (void *) &verbose, 0),
   //parameters added by Anton
-  OP_STEPSIZE(OP_STEPSIZE_ID, "stepsize", "--stepsize", "specify how many permutations should be skipped in lexicographic order when running correction.",
+  OP_STEPSIZE(OP_STEPSIZE_ID, "stepsize", "--stepsize",
+              "specify how many gapped kmer permutations should be skipped in lexicographic order\nwhen running correction. This does not function with '--rand'!",
               typeid(int), (void *) &stepsize, 0),
   OP_SPAN(OP_SPAN_ID, "span", "--span", "specify span of kmer mask as int. Default is 41.", typeid(int), (void *) &span, 0),
   OP_WEIGHT(OP_WEIGHT_ID, "weight", "--weight", "specify weight of kmer mask. Default is 27.", typeid(int), (void *) &weight, 0),
-  OP_PMSTART(OP_PMSTART_ID, "pmstart", "--pmstart", "specify start point of permutation in lexicographic order.",
+  OP_PMSTART(OP_PMSTART_ID, "pmstart", "--pmstart",
+             "specify start point of permutation range. Works with '--stepsize' and '--rand'.",
              typeid(int), (void *) &pmstart, 0),
-  OP_PMSTOP(OP_PMSTOP_ID, "pmstop", "--pmstop", "specify stop point of permutation in lexicographic order.",
+  OP_PMSTOP(OP_PMSTOP_ID, "pmstop", "--pmstop",
+            "specify stop point of permutation range. Works with '--stepsize' and '--rand'.",
             typeid(int), (void *) &pmstop, 0),
   OP_RAND(OP_RAND_ID, "rand", "--rand",
-          "Specify how many masks should be chosen at random. This does not function together with, '--stepsize'!",
+          "Specify how many gapped kmers should be chosen at random.\nThis does not function together with, '--stepsize'!",
             typeid(int), (void *) &rand, 0),
   // expert options
   OP_COUNT_MODE(OP_COUNT_MODE_ID, "count-mode", "--count-mode",
