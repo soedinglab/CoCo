@@ -28,6 +28,7 @@ private:
   const KmerTranslator *translator;
   const LookupTableBase *lookuptable;
 
+  std::vector<int> indexVec;
   SequenceInfo *seqinfo;
 
   uint32_t profile_length_alloc = 0,  /* corresponds to the allocated size of <profile> */
@@ -75,6 +76,11 @@ public:
   //outdated
   bool checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges=true);
 
+  //get idx vector
+  std::vector<int> getIdx();
+
+  //reset idx vector
+  void resetIdx();
 
 };
 

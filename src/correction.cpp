@@ -49,7 +49,13 @@ int correctionProcessor(CountProfile &countprofile, void *args)
   delete[] maxProfile;
   if (currArgs->dryRun) {
     if (changed) {
+      std::vector<int> indexes = countprofile.getIdx();
+      countprofile.resetIdx();
+      std::stringstream idxss;
+      idxss << " SNP:";
+      std::copy(indexes.begin(), indexes.end(), std::ostream_iterator<int>(idxss, " "));
       fwrite(seqinfo->name.c_str(), sizeof(char), seqinfo->name.size(), currArgs->correctedReads);
+      fwrite(idxss.str().c_str(), sizeof(char), idxss.str().length(), currArgs->correctedReads);
       fwrite("\n", sizeof(char), 1, currArgs->correctedReads);
     }
   } else {

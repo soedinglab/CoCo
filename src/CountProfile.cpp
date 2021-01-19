@@ -197,6 +197,7 @@ bool CountProfile::correction(uint32_t *maxProfile, unsigned int covEst,  bool d
             candidates[idx] = 1;
             if (dryRun && maxProfile[idx] <= 0.1 * covEst) {//TODO: change 10% later for correction
                  foundErrorPos = true;
+                 indexVec.push_back(idx);
                  Info(Info::DEBUG) << seqinfo->name.c_str() << "\t" << idx << "\n";
             }
         }
@@ -501,5 +502,13 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
   }
 
   return false;
+}
+
+std::vector<int> CountProfile::getIdx() {
+  return indexVec;
+}
+
+void CountProfile::resetIdx() {
+  indexVec = {};
 }
 
