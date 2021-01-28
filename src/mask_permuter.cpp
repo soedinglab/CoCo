@@ -38,7 +38,7 @@ void mask_permuter::set_rand(int start, int stop, int maskNum){
     }
     //number of unique gapped kmers to draw can't be larger than specified range
     if (maskNum>(stop-start+1)){
-        throw "Error: 'mask_permuter.cpp' number of unique masks to draw can't be larger than specified range\n";
+        throw "Error: 'mask_permuter.cpp' number of unique masks to draw can't be larger than specified or total range\n";
     }
     //random number is generated from hardware
     std::random_device rd;
