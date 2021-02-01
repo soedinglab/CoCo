@@ -66,6 +66,7 @@ public:
   int weight;
   unsigned long long int pmstart;
   unsigned long long int pmstop;
+  int mskid = -1; // init as -1 because mask id can be 0.
   int rand;
   int countMode;
   int verbose;
@@ -97,6 +98,7 @@ public:
   OPTION(OP_PMSTART)
   OPTION(OP_PMSTOP)
   OPTION(OP_RAND)
+  OPTION(OP_MSKID)
 
   static const int COUNT_MODE_SUM = 0;
   static const int COUNT_MODE_MAX = 1;

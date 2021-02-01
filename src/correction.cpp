@@ -95,7 +95,6 @@ int correction(int argc, const char **argv, const Command *tool)
   int maxPerm = mask.get_maxPerm();
 
   //set mask operation range (lexicographically)
-  //TODO: Move start and stop of range into mask_permuter
   int pmStart = opt.pmstart;
   int pmStop = opt.pmstop;
   if (pmStop == 0){
@@ -113,11 +112,23 @@ int correction(int argc, const char **argv, const Command *tool)
       Info(Info::ERROR) << "ERROR: --stepsize and --rand are mutually exclusive!\n";
       return EXIT_FAILURE;
   }
+  //check that rand or stepsize are not used when one mask id is specified in particular
+  if((opt.rand != 0 || opt.stepsize != 0) && opt.mskid != -1){
+      Info(Info::ERROR) << "ERROR: '--mskid' can not be used together with '--stepsize' or '--rand'!\n";
+      return EXIT_FAILURE;
+  }
 
-  //randomize mask_permuter if specified by user and set stepsize
+  //Set stepsize to one per default
   int stepsize;
+  if (opt.stepsize == 0){
+    stepsize = 1;
+  }
+  else {
+    stepsize = opt.stepsize;
+  }
+
+  //randomize mask_permuter if specified by user
   if (opt.rand != 0){
-      stepsize = 1;
       try {
           mask.set_rand(pmStart, pmStop, opt.rand);
       }
@@ -126,10 +137,6 @@ int correction(int argc, const char **argv, const Command *tool)
           return EXIT_FAILURE;
       }
   }
-  else {
-      stepsize = opt.stepsize;
-  }
-
 
   opt.dryRun = true; //TODO: change later
   Info(Info::WARNING) << "WARNING: Parameter " << opt.OP_DRY_RUN.display <<
@@ -142,6 +149,9 @@ int correction(int argc, const char **argv, const Command *tool)
   int perm_count;
   while(mask.get_next(msk, vmsk)) {
       perm_count = mask.get_permCount();
+      if (opt.mskid != -1 && perm_count != opt.mskid){
+        continue;
+      }
       if((perm_count >= pmStart && perm_count <= pmStop) &&
       (perm_count-pmStart) % stepsize == 0){
           //(perm_count == pmStart || perm_count-pmStart % stepsize == 0)) {

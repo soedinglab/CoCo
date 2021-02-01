@@ -55,6 +55,9 @@ Options::Options() :
   OP_RAND(OP_RAND_ID, "rand", "--rand",
           "Specify how many gapped kmers should be chosen at random.\nThis does not function together with, '--stepsize'!",
             typeid(int), (void *) &rand, 0),
+  OP_MSKID(OP_MSKID_ID, "mskid", "--mskid",
+           "If used only the mask specified by the supplied mask ID is used to scan the data. ID is the same number as used in 'mask-stat.txt' file. ('>MASK-[ID]:')",
+           typeid(int), (void *) &mskid, 0),
   // expert options
   OP_COUNT_MODE(OP_COUNT_MODE_ID, "count-mode", "--count-mode",
                 "way to store counts for concurrent kmers (expert option)\n 0: sum\n 1: maximize (default)",
@@ -110,6 +113,7 @@ Options::Options() :
   correctionWorkflow.push_back(&OP_PMSTART);
   correctionWorkflow.push_back(&OP_PMSTOP);
   correctionWorkflow.push_back(&OP_RAND);
+  correctionWorkflow.push_back(&OP_MSKID);
 
 
   }
@@ -195,6 +199,7 @@ void Options::parseOptions(int argc, const char *argv[],
     {"pmstart", required_argument, NULL, 0},
     {"pmstop", required_argument, NULL, 0},
     {"rand", required_argument, NULL, 0},
+    {"mskid", required_argument, NULL, 0},
     {NULL,        no_argument,       NULL, 0}
   };
 
