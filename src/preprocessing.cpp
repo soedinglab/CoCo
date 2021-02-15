@@ -22,11 +22,11 @@ LookupTableBase *buildLookuptable(string countFile, int countMode,
   string kmerSizeStr = dskGroup.getProperty("kmer_size");
   unsigned int kmerSize = atoi(kmerSizeStr.c_str());
 
-  if (kmerSize != kmerSpan) {
+  /*if (kmerSize != kmerSpan) {
     Info(Info::ERROR) << "ERROR: kmerSize " << kmerSize << " used in hdf5 file " << countFile.c_str() << " is not supported.\n"
                          "Please precompute kmer counts with k=41\n";
     return NULL;
-  }
+  }*/
 
   //retrieve the partition holding the couples [kmer,abundance]
 

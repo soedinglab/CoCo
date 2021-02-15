@@ -12,6 +12,7 @@ private:
 
   spacedKmerType _span_mask;
   unsigned char *_mask_array;
+  unsigned char *_inverse_mask_array;
 
 public:
   KmerTranslator();
@@ -21,6 +22,8 @@ public:
   packedKmerType kmer2packedKmer(const spacedKmerType kmer) const;
 
   packedKmerType kmer2minPackedKmer(const spacedKmerType kmer) const;
+
+  packedKmerType kmer2minPackedKmer(const packedKmerType kmer) const;
 
   unsigned short getSpan() const;
 

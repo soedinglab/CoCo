@@ -13,7 +13,7 @@ CountProfile::CountProfile(const KmerTranslator *translator,
   this->lookuptable = lookuptable;
   this->profile = NULL;
   this->profile_length = 0;
-  this->profile_length_alloc;
+  this->profile_length_alloc = 0;
 }
 
 CountProfile::~CountProfile() {
@@ -25,7 +25,7 @@ void CountProfile::fill(SequenceInfo *seqinfo, size_t length) {
   assert(this->translator != NULL);
 
   unsigned short kmerSpan = translator->getSpan();
-  unsigned short kmerWeight = translator->getWeight();
+  //unsigned short kmerWeight = translator->getWeight();
 
   assert(length >= kmerSpan);
   this->seqinfo = seqinfo;
@@ -51,7 +51,7 @@ void CountProfile::fill(SequenceInfo *seqinfo, size_t length) {
       nStore = nStore << 1 | 1;
     }
 
-    if (idx >= kmerSpan - 1) {
+    if ((int)idx >= kmerSpan - 1) {
       // check if k-mer contains 'N' (or any other invalid character)
       if  ((nStore & translator->_span_mask) != 0) {
         profile[idx - (kmerSpan - 1)].count = 0;
@@ -164,15 +164,15 @@ bool CountProfile::correction(uint32_t *maxProfile, unsigned int covEst,  bool d
 
     unsigned short kmerSpan = this->translator->getSpan();
     unsigned short kmerWeight = translator->getWeight();
-  unsigned int maxProfileLength = profile_length + kmerSpan - 1;
-    unsigned int corrValues[maxProfileLength];
+    unsigned int maxProfileLength = profile_length + kmerSpan - 1;
+    uint32_t corrValues[maxProfileLength];
     memset(corrValues, 0, sizeof(*corrValues) * maxProfileLength);
 
     // correct values with probability for observing the same sequencing error multiple times
     std::vector<unsigned int> corrWindow;
     double corrFactor = 0.001;
 
-    for(unsigned int idx = 0; idx < kmerSpan/2+1; idx++)
+    for(unsigned int idx = 0; idx < (unsigned int)kmerSpan/2+1; idx++)
         corrWindow.push_back(maxProfile[idx]);
     corrValues[0] = corrFactor * *(std::max_element(corrWindow.begin(), corrWindow.end())) + 1;
 
@@ -188,28 +188,104 @@ bool CountProfile::correction(uint32_t *maxProfile, unsigned int covEst,  bool d
 
     // 1. find sequencing errors
 
-    unsigned int candidates[maxProfileLength];
-    bool foundErrorPos = false;
-    memset(candidates, 0, sizeof(*candidates) * maxProfileLength);
+    unsigned int foundErrors=0;
+    unsigned int errorPositions[64];
+    uint64_t candidates[profile_length];
+    memset(candidates, 0, sizeof(*candidates) * profile_length);
+    memset(errorPositions, 0, sizeof(*errorPositions) * 64);
 
+    //TODO: use local coverage information
     for (size_t idx = 0; idx < maxProfileLength; idx++){
-        if (maxProfile[idx] <= 1 + corrValues[idx] && maxProfile[idx] <= 0.1 * covEst) {
-            candidates[idx] = 1;
-            if (dryRun && maxProfile[idx] <= 0.1 * covEst) {//TODO: change 10% later for correction
-                 foundErrorPos = true;
-                 Info(Info::DEBUG) << seqinfo->name.c_str() << "\t" << idx << "\n";
+        if(foundErrors == 63){
+          return true;
+        }
+        if (maxProfile[idx] <= 1 + corrValues[idx]) {
+          errorPositions[foundErrors] = idx;
+          for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+            int pos = idx - translator->_mask_array[jdx];
+            if (pos >= 0 && pos < (int)profile_length) {
+              candidates[pos] = candidates[pos] | ((uint64_t) 1 << (uint64_t) foundErrors);
             }
+          }
+          foundErrors++;
+
+          if (dryRun) {
+            // error positions
+            Info(Info::DEBUG) << "error " << seqinfo->name.c_str() << "\t" << idx << "\n";
+          }
         }
     }
 
-    //if (dryRun)
-    return foundErrorPos;
-    
+    if (dryRun)
+      return foundErrors > 0;
 
-    //  2. correct sequencing errors
-    // TODO: 1. majority voting? 2. local covEst 3. global covEst (= median)
+  //  2. correct sequencing errors
+  // TODO: 1. majority voting? 2. local covEst 3. global covEst (= median)
+  for (size_t idx = 0; idx < foundErrors; idx++){
 
-    //return false;
+    char current_res = seqinfo->seq[errorPositions[idx]];
+    unsigned int start = errorPositions[idx] > translator->span? errorPositions[idx]-translator->span+1 : 0;
+    unsigned int end = errorPositions[idx] < profile_length? errorPositions[idx] : profile_length-1;
+    unsigned int firstUniqueKmerStart = UINT_MAX, lastUniqueKmerStart=0;
+    for (size_t jdx=start; jdx <= end; jdx++) {
+      if ((candidates[jdx] > 0) && ((candidates[jdx] & (1 << idx)) == candidates[jdx])) {
+        firstUniqueKmerStart = std::min(firstUniqueKmerStart, (unsigned int)jdx);
+        lastUniqueKmerStart = std::max(lastUniqueKmerStart, (unsigned int)jdx);
+      }
+    }
+    // first-last-unique-kmer correction strategy
+    packedKmerType firstUniqueKmer = 0, lastUniqueKmer = 0;
+
+    // independent error
+    if (firstUniqueKmerStart <= lastUniqueKmerStart){
+      for(size_t jdx=0; jdx < translator->weight; jdx++) {
+        firstUniqueKmer = (firstUniqueKmer << 2) | res2int[(int) seqinfo->seq[firstUniqueKmerStart + translator->_mask_array[jdx]]];
+        lastUniqueKmer = (lastUniqueKmer << 2) | res2int[(int) seqinfo->seq[lastUniqueKmerStart + translator->_mask_array[jdx]]];
+      }
+    }
+    else{
+      continue; //TODO: change later, add strategy for non independent errors
+    }
+    char mutationTarget = current_res;
+    for (unsigned int resMutation=0; resMutation < alphabetSize;resMutation++) {
+      unsigned int improvement = 0;
+      if (resMutation == (unsigned int)res2int[(int)current_res])
+        continue;
+
+      firstUniqueKmer &= ~((packedKmerType)3 << (packedKmerType) (2 * (translator->getWeight() - translator->_inverse_mask_array[errorPositions[idx]-firstUniqueKmerStart]-1)));
+      firstUniqueKmer |= ((packedKmerType)resMutation << (packedKmerType) (2 * (translator->getWeight() - translator->_inverse_mask_array[errorPositions[idx]-firstUniqueKmerStart]-1)));
+
+      lastUniqueKmer &= ~((packedKmerType)3 << (packedKmerType) (2 * (translator->getWeight() - translator->_inverse_mask_array[errorPositions[idx]-lastUniqueKmerStart]-1)));
+      lastUniqueKmer |= ((packedKmerType)resMutation << (packedKmerType) (2 * (translator->getWeight() - translator->_inverse_mask_array[errorPositions[idx]-lastUniqueKmerStart]-1)));
+
+      uint32_t c1= lookuptable->getCount(translator->kmer2minPackedKmer(firstUniqueKmer));
+      if (c1 >  1 + corrValues[errorPositions[idx]])
+        improvement++;
+      uint32_t c2=lookuptable->getCount(translator->kmer2minPackedKmer(lastUniqueKmer));
+      if (c2 >  1 + corrValues[errorPositions[idx]])
+        improvement++;
+
+      if (improvement == 2){
+        if(mutationTarget == current_res) {
+          mutationTarget = int2res[resMutation];
+        }
+        else {
+          //ambigious mutation choice -> skip correction
+          //TODO: add trimming strategy for edge errors
+          mutationTarget = current_res;
+          break;
+        }
+      }
+    }
+
+    if(mutationTarget != current_res) {
+      Info(Info::DEBUG) << "correct " << seqinfo->name.c_str() << "\t" << errorPositions[idx]
+                        << "\t" << seqinfo->seq[errorPositions[idx]] << "\t" << mutationTarget <<  "\n";
+      seqinfo->seq[errorPositions[idx]] = mutationTarget;
+    }
+  }
+
+    return foundErrors > 0;
 }
 
 bool CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges) {
@@ -291,14 +367,14 @@ bool CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
 
         for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
           int pos = dropstart - translator->_mask_array[jdx];
-          if (pos >= 0 && pos < profile_length)
+          if (pos >= 0 && pos < (int)profile_length)
             candidates[pos] = 0;
         }
 
         if (dropend > dropstart + 1) {
           for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
             int pos = dropend - 1 - translator->_mask_array[jdx];
-            if (pos >= 0 && pos < profile_length)
+            if (pos >= 0 && pos < (int)profile_length)
               candidates[pos] = 0;
           }
         }
@@ -307,7 +383,7 @@ bool CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
         for (size_t d = dropstart; d < dropend; d++) {
           for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
             int pos = d - translator->_mask_array[jdx];
-            if (pos >= 0 && pos < profile_length)
+            if (pos >= 0 && pos < (int)profile_length)
               candidates[pos] = 0;
           }
         }
@@ -322,14 +398,14 @@ bool CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
     if (maskOnlyDropEdges) {
       for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
         int pos = dropstart - translator->_mask_array[jdx];
-        if (pos >= 0 && pos < profile_length)
+        if (pos >= 0 && pos < (int)profile_length)
           candidates[pos] = 0;
       }
 
       if (dropend > dropstart + 1) {
         for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
           int pos = dropend - 1 - translator->_mask_array[jdx];
-          if (pos >= 0 && pos < profile_length)
+          if (pos >= 0 && pos < (int)profile_length)
             candidates[pos] = 0;
         }
       }
@@ -338,7 +414,7 @@ bool CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigne
       for (size_t d = dropstart; d < maxProfileLen; d++) {
         for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
           int pos = d - translator->_mask_array[jdx];
-          if (pos >= 0 && pos < profile_length)
+          if (pos >= 0 && pos < (int)profile_length)
             candidates[pos] = 0;
         }
       }
@@ -371,7 +447,7 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
   std::vector<unsigned int> corrWindow;
   double corrFactor = 0.001;
 
-  for(unsigned int idx = 0; idx < kmerSpan/2+1; idx++)
+  for(unsigned int idx = 0; idx < (unsigned int)kmerSpan/2+1; idx++)
     corrWindow.push_back(this->profile[idx].count);
   corrValues[0] = corrFactor * *(std::max_element(corrWindow.begin(), corrWindow.end())) + 1;
 
@@ -449,7 +525,7 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
              ((d > 0 && maxProfile[d] < localPercDrop * maxProfile[d - 1]) || maxProfile[d] < localPercDrop * maxProfile[d + 1]))) {
             for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
               int pos = d - translator->_mask_array[jdx];
-              if (pos >= dropstart && pos < profile_length)
+              if (pos >= (int)dropstart && pos < (int)profile_length)
                 candidates[pos] = 0;
             }
           }
@@ -486,8 +562,8 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
           (d + 1 < maxProfileLength &&  maxProfile[d] < localPercDrop * maxProfile[d + 1])))) {
         for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
           int pos = d - translator->_mask_array[jdx];
-          if (pos >= dropstart)
-            if(pos < profile_length)
+          if (pos >= (int)dropstart)
+            if(pos < (int)profile_length)
               candidates[pos] = 0;
         }
       }

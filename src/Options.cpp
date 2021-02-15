@@ -98,7 +98,7 @@ void Options::setDefaults() {
 
   aligned = false;
   softFilter = false;
-  dryRun = true; //TODO: change later
+  dryRun = false;
 
   countMode = COUNT_MODE_MAX;
 
