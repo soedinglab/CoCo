@@ -151,7 +151,7 @@ int filter(int argc, const char **argv, const Command *tool)
     double maxDensity = 0, maxDenseCount = 0;
     for (size_t idx = 0; idx < summedCountsSorted.size() - windowSize; idx++) {
       double density =
-        (double) windowSize / ((double) (summedCountsSorted[idx + windowSize] - summedCountsSorted[idx]));
+        (double) windowSize / ((double) (summedCountsSorted[idx + windowSize] - summedCountsSorted[idx] + 1));
       if (density > maxDensity) {
         maxDensity = density;
         maxDenseCount = (summedCountsSorted[idx + windowSize] + summedCountsSorted[idx]) / 2;
