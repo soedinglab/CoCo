@@ -31,16 +31,21 @@ int correctionProcessor(CountProfile &countprofile, void *args)
   //Info(Info::DEBUG) << seqinfo->name << "\t" << covEst << "\n";
 
   /* maximize count profile */
-  uint32_t *maxProfile = countprofile.maximize();
 
+  bool iterate;
+  int status;
+  do {
 
-  bool changed = false;
-  //if(covEst > SIGNIFICANT_LEVEL_DIFF)//TODO
-  changed = countprofile.correction(maxProfile, 0, currArgs->dryRun);
-  delete[] maxProfile;
+    uint32_t *maxProfile = countprofile.maximize();
+    //if(covEst > SIGNIFICANT_LEVEL_DIFF)//TODO
+    status = countprofile.correction(maxProfile, 0, currArgs->dryRun);
+    delete[] maxProfile;
+    if(status == SOME_CORRECTED)
+      countprofile.update();
+  } while(status==SOME_CORRECTED);
 
   if (currArgs->dryRun) {
-    if (changed) {
+    if (status != ERROR_FREE) {
       fwrite(seqinfo->name.c_str(), sizeof(char), seqinfo->name.size(), currArgs->correctedReads);
       fwrite("\n", sizeof(char), 1, currArgs->correctedReads);
     }

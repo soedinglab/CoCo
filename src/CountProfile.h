@@ -21,6 +21,12 @@ struct __attribute__((__packed__)) CountProfileEntry {
   uint32_t count;
 };
 
+#define ERROR_FREE 0
+#define NONE_CORRECTED 1
+#define SOME_CORRECTED 2
+#define ALL_CORRECTED 3
+#define TOO_MANY_ERRORS 4
+
 class CountProfile {
 private:
 
@@ -43,6 +49,7 @@ public:
 
   /* create and store count profiles */
   void fill(SequenceInfo *seq, size_t length);
+  void update();
 
   /* getter */
   const char *getSeqName() { return (seqinfo->name.c_str()); }
@@ -68,12 +75,13 @@ public:
 
   /*** advanced profile operations ***/
 
-  bool correction(uint32_t *maxProfile, unsigned int covEst,  bool dryRun);
+  int correction(uint32_t *maxProfile, unsigned int covEst,  bool dryRun);
 
   bool checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst, double localPercDrop, \
                                                  double globalPercDrop, bool maskOnlyDropEdges=true);
   //outdated
   bool checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges=true);
+
 
 
 };
