@@ -2,11 +2,10 @@
 #ifndef COMMAND
 #define COMMAND
 
-
 #include <vector>
 
 enum coco_commands {
-  PROFILE = 1, FILTER = 2, ABUNDANCE_ESTIMATOR = 8, CORRECTOR = 16, CONSENSUS =32
+  CORRECTOR = 1, CONSENSUS = 2, FILTER = 4, ABUNDANCE_ESTIMATOR = 8, PROFILE = 16, COUNTS2FLAT = 32
 };
 struct cocoOption;
 

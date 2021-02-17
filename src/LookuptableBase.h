@@ -10,6 +10,7 @@ class LookupTableBase {
 public:
   virtual ~LookupTableBase() {};
   virtual unsigned int getCount(const packedKmerType kmer) const = 0;
+
 };
 
 #endif //LOOKUPTABLEBASE_H

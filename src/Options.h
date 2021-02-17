@@ -73,6 +73,7 @@ public:
   std::vector<cocoOption*> abundanceEstimatorWorkflow;
   std::vector<cocoOption*> correctionWorkflow;
   std::vector<cocoOption*> consensusWorkflow;
+  std::vector<cocoOption*> counts2flatWorkflow;
 
   OPTION(OP_SEQ_FILE)
   OPTION(OP_COUNT_FILE)

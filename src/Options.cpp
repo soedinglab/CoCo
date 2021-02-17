@@ -19,7 +19,7 @@ Options::Options() :
                typeid(std::string), (void *) &seqFile, PROFILE | FILTER | ABUNDANCE_ESTIMATOR | CORRECTOR | CONSENSUS),
   OP_COUNT_FILE(OP_COUNT_FILE_ID, "counts", "--counts",
                "pre computed kmer count file in hdf5 format (dsk output format), Note: only supports 41-mers yet",
-               typeid(std::string), (void *) &countFile, 0),
+               typeid(std::string), (void *) &countFile, COUNTS2FLAT),
   OP_OUTPREFIX(OP_OUTPREFIX_ID, "outprefix", "--outprefix",
                "prefix to use for resultfile(s)",
                typeid(std::string), (void *) &outprefix, 0),
@@ -89,6 +89,9 @@ Options::Options() :
   correctionWorkflow.push_back(&OP_DRY_RUN);
   correctionWorkflow.push_back(&OP_COUNT_MODE);
   correctionWorkflow.push_back(&OP_VERBOSE);
+
+  //counts2flat
+  counts2flatWorkflow.push_back(&OP_COUNT_FILE);
 
   }
 

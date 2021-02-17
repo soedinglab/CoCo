@@ -29,6 +29,10 @@ int abundanceEstimatationProcessor(CountProfile &countprofile, void *abundancear
 
 
 int abundanceEstimator(int argc, const char **argv, const Command *tool) {
+
+  Info(Info::ERROR) << " Not implemented yet\n";
+  return EXIT_SUCCESS;
+
   int exit_code = 0;
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);

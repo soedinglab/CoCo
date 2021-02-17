@@ -132,3 +132,17 @@ unsigned int Lookuptable::getCount(const packedKmerType kmer) const {
 
   return (pos != endPos) ? offsetTable[pos].count : 0;
 }
+
+void Lookuptable::iterateOverAll(FILE *fp) const{
+  size_t readpos = 0;
+  for (size_t idx = 0; idx < indexGridTableSize; idx++) {
+    char *prefix = packedKmer2String(idx, LOGINDEXSIZE/2);
+    for (; readpos < indexGridTable[idx]; readpos++) {
+
+      char *suffix = packedKmer2String(offsetTable[readpos].indexOffset, LOGOFFSETSIZE/2);
+      fprintf(fp, "%s%s\t%d\n", prefix, suffix, offsetTable[readpos].count);
+      free(suffix);
+    }
+    free(prefix);
+  }
+}

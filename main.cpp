@@ -37,30 +37,38 @@ const char *tool_introduction = "CoCo is an open-source software suite for "\
 
 const char *main_author = "Annika Seidel (annika.seidel@mpibpc.mpg.de)";
 
-extern int profile(int argc, const char **argv, const struct Command *tool);
+extern int correction(int argc, const char **argv, const struct Command *tool);
+
+extern int consensus(int argc, const char **argv, const struct Command *tool);
 
 extern int filter(int argc, const char **argv, const struct Command *tool);
 
 extern int abundanceEstimator(int argc, const char **argv, const struct Command *tool);
 
-extern int correction(int argc, const char **argv, const struct Command *tool);
+extern int profile(int argc, const char **argv, const struct Command *tool);
 
-extern int consensus(int argc, const char **argv, const struct Command *tool);
+extern int counts2flat(int argc, const char **argv, const struct Command *tool);
 
 Options &opt = Options::getInstance();
 std::vector<struct Command> commands =
   {
-    {"filter", filter, &opt.filterWorkflow, "denoise read file",
+    {"correction", correction, &opt.correctionWorkflow, "correct sequencing errors",
+      "identify reads with sequencing errors (and correct them <- not yet) ",
+      "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
+      " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+      CORRECTOR
+    },
+  /*{"consensus", consensus, &opt.consensusWorkflow, "generate consensus reads ",
+     "flip SNPs to the major allele to generate the consensus nucleotide sequence",
+     "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
+     "--seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+     CONSENSUS
+    }*/
+    {"filter", filter, &opt.filterWorkflow, "filter chimeric reads",
       "identify reads containing spurious nucleotide order as chimeras, indels, ... ",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
       " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       FILTER
-    },
-    {"profile", profile, &opt.profileWorkflow, "print spaced k-mer count profiles (devtool)",
-      "dev tool to write for every sequence the spaced k-mer count profile in a tab separated plain text file",
-      "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
-      PROFILE
     },
     {"abundance", abundanceEstimator, &opt.abundanceEstimatorWorkflow, "estimate abundance values",
       "Give for every read an estimated value for the abundance",
@@ -68,19 +76,21 @@ std::vector<struct Command> commands =
       " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       ABUNDANCE_ESTIMATOR
     },
-    {"correction", correction, &opt.correctionWorkflow, "correct sequencing errors",
-     "identify reads with sequencing errors (and correct them <- not yet) ",
-     "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-     " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
-     CORRECTOR
-    },
 
-    /*{"consensus", consensus, &opt.consensusWorkflow, "calculate consensus reads ",
-      "calculate for every read the consensus nucleotide sequence",
+    /* developer tools */
+
+    {"profile", profile, &opt.profileWorkflow, "print spaced k-mer count profiles (devtool)",
+      "dev tool to write for every sequence the spaced k-mer count profile in a tab separated plain text file",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      "--seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
-      CONSENSUS
-    }*/
+      " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+      PROFILE
+    },
+    {"counts2flat", counts2flat, &opt.counts2flatWorkflow, "print spaced k-mer lookup table (devtool)",
+     "transform continous kmers to spaced kmers and print spaced k-mers and counts as stored in lookuptable",
+     "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
+     " --counts <count.h5>] [--outprefix <string>] [options]",
+      COUNTS2FLAT
+    }
   };
 
 struct Command *getCommand(const char *name) {

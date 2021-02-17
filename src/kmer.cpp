@@ -78,3 +78,15 @@ packedKmerType minIndex(packedKmerType kmer, unsigned short kmerSize) {
 
   return kmer < revCompKmer ? kmer : revCompKmer;
 }
+
+char* packedKmer2String(packedKmerType kmer, unsigned short kmerSize){
+  char* kmerString = (char*) malloc(kmerSize*sizeof(*kmerString)+1);
+
+  packedKmerType mask = 3;
+  for (size_t idx=0; idx < kmerSize; idx++){
+    kmerString[kmerSize-1-idx]= int2res[kmer & mask];
+    kmer=kmer >> (packedKmerType) 2;
+  }
+  kmerString[kmerSize]='\0';
+  return kmerString;
+}

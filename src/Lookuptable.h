@@ -62,6 +62,8 @@ public:
   void finalSetupTables(size_t countThreshold = 1);
 
   unsigned int getCount(const packedKmerType kmer) const;
+
+  void iterateOverAll(FILE* fp) const;
 };
 
 #endif // LOOKUPTABLE_H
