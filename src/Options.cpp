@@ -18,31 +18,37 @@ Options::Options() :
                "sequence file (reads or contigs in fasta/fastq format)",
                typeid(std::string), (void *) &seqFile, PROFILE | FILTER | ABUNDANCE_ESTIMATOR | CORRECTOR | CONSENSUS),
   OP_COUNT_FILE(OP_COUNT_FILE_ID, "counts", "--counts",
-               "pre computed kmer count file in hdf5 format (dsk output format), Note: only supports 41-mers yet",
+               "pre computed kmer count file in hdf5 format (dsk output), Note: only supports 41-mers yet",
                typeid(std::string), (void *) &countFile, COUNTS2FLAT),
   OP_OUTPREFIX(OP_OUTPREFIX_ID, "outprefix", "--outprefix",
                "prefix to use for resultfile(s)",
                typeid(std::string), (void *) &outprefix, 0),
-  OP_DRY_RUN(OP_DRY_RUN_ID, "dry-run", "--dry-run",
-             "perform a trial run that doesn't make any changes", typeid(bool), (void *) &dryRun, 0),
+  OP_THRESHOLD(OP_THRESHOLD_ID, "threshold", "--threshold",
+               "untrusted count threshold (default: 1)",
+               typeid(unsigned int), (void *) &threshold, 0),
+  OP_TOLERANCE(OP_TOLERANCE_ID, "tolerance", "--tolerance",
+               "relative neighborhood count added to threshold value (default: 0.01)",
+               typeid(double), (void *) &tolerance, 0),
   OP_DROP_LEVEL1(OP_DROP_LEVEL1_ID, "drop-level1", "--drop-level1",
                "local drop criterion (range 0-0.33)",
-               typeid(float), (void *) &dropLevel1, 0),
+               typeid(double), (void *) &dropLevel1, 0),
   OP_DROP_LEVEL2(OP_DROP_LEVEL2_ID, "drop-level2", "--drop-level2",
                "global drop criterion (range 0-0.33)",
-               typeid(float), (void *) &dropLevel2, 0),
+               typeid(double), (void *) &dropLevel2, 0),
   OP_SOFT_FILTER(OP_SOFT_FILTER_ID, "soft", "--soft",
                "less strict filtering mode due to more strict masking strategy ",
                typeid(bool), (void *) &softFilter, 0),
   OP_ALIGNED(OP_ALIGNED_ID, "aligned", "--aligned",
                "optimize abundance estimation for reads that span the same region (amplicon sequence data)",
                typeid(bool), (void *) &aligned, 0),
+  OP_DRY_RUN(OP_DRY_RUN_ID, "dry-run", "--dry-run",
+             "perform a trial run that doesn't make any changes", typeid(bool), (void *) &dryRun, 0),
   OP_THREADS(OP_THREADS_ID, "threads", "--threads", "number of threads, not supported yet (default: 1)", typeid(int), (void *) &threads, 0),
   OP_VERBOSE(OP_VERBOSE_ID, "verbose", "--verbose", "verbosity level, 0: quiet 1: Errors, 2: +Warnings, 3: +Info, 4: +Debug, "\
                             "default: 3", typeid(int), (void *) &verbose, 0),
   // expert options
   OP_COUNT_MODE(OP_COUNT_MODE_ID, "count-mode", "--count-mode",
-                "way to store counts for concurrent kmers (expert option)\n 0: sum\n 1: maximize (default)",
+                "way to store counts for concurrent spaced kmers (expert option)\n 0: sum\n 1: maximize (default)",
                 typeid(int), (void *) &countMode, 0)
 
   {
@@ -54,13 +60,17 @@ Options::Options() :
 
   setDefaults();
 
-  //profile
-  profileWorkflow.push_back(&OP_SEQ_FILE);
-  profileWorkflow.push_back(&OP_COUNT_FILE);
-  profileWorkflow.push_back(&OP_OUTPREFIX);
-  profileWorkflow.push_back(&OP_COUNT_MODE);
-  profileWorkflow.push_back(&OP_THREADS);
-  profileWorkflow.push_back(&OP_VERBOSE);
+  //TODO: threads
+
+  //corrector
+  correctionWorkflow.push_back(&OP_SEQ_FILE);
+  correctionWorkflow.push_back(&OP_COUNT_FILE);
+  correctionWorkflow.push_back(&OP_COUNT_MODE);
+  correctionWorkflow.push_back(&OP_OUTPREFIX);
+  correctionWorkflow.push_back(&OP_THRESHOLD);
+  correctionWorkflow.push_back(&OP_TOLERANCE);
+  correctionWorkflow.push_back(&OP_DRY_RUN);
+  correctionWorkflow.push_back(&OP_VERBOSE);
 
   // filter
   filterWorkflow.push_back(&OP_SEQ_FILE);
@@ -71,7 +81,6 @@ Options::Options() :
   filterWorkflow.push_back(&OP_ALIGNED);
   filterWorkflow.push_back(&OP_SOFT_FILTER);
   filterWorkflow.push_back(&OP_COUNT_MODE);
-  filterWorkflow.push_back(&OP_THREADS);
   filterWorkflow.push_back(&OP_VERBOSE);
 
   //abundanceEstimator
@@ -79,37 +88,41 @@ Options::Options() :
   abundanceEstimatorWorkflow.push_back(&OP_COUNT_FILE);
   abundanceEstimatorWorkflow.push_back(&OP_OUTPREFIX);
   abundanceEstimatorWorkflow.push_back(&OP_COUNT_MODE);
-  abundanceEstimatorWorkflow.push_back(&OP_THREADS);
   abundanceEstimatorWorkflow.push_back(&OP_VERBOSE);
 
-  //corrector
-  correctionWorkflow.push_back(&OP_SEQ_FILE);
-  correctionWorkflow.push_back(&OP_COUNT_FILE);
-  correctionWorkflow.push_back(&OP_OUTPREFIX);
-  correctionWorkflow.push_back(&OP_DRY_RUN);
-  correctionWorkflow.push_back(&OP_COUNT_MODE);
-  correctionWorkflow.push_back(&OP_VERBOSE);
+  //profile
+  profileWorkflow.push_back(&OP_SEQ_FILE);
+  profileWorkflow.push_back(&OP_COUNT_FILE);
+  profileWorkflow.push_back(&OP_OUTPREFIX);
+  profileWorkflow.push_back(&OP_COUNT_MODE);
+  profileWorkflow.push_back(&OP_VERBOSE);
 
   //counts2flat
   counts2flatWorkflow.push_back(&OP_COUNT_FILE);
+  counts2flatWorkflow.push_back(&OP_COUNT_MODE);
+  counts2flatWorkflow.push_back(&OP_OUTPREFIX);
 
   }
 
 void Options::setDefaults() {
+  threshold = 1;
+  tolerance = 0.01;
+
   dropLevel1 = 0.33;
   dropLevel2 = 0.33;
 
   aligned = false;
   softFilter = false;
+
+  countMode = COUNT_MODE_MAX; //TODO
+
   dryRun = false;
-
-  countMode = COUNT_MODE_MAX;
-
   threads = 1; //TODO
   verbose = Info::INFO;
 }
 
 void printToolUsage(const Command &command, const int FLAG) {
+
   std::stringstream usage;
   usage << "coco " << command.cmd << "\n";
   usage << command.descriptLong << "\n\n";
@@ -162,6 +175,8 @@ void Options::parseOptions(int argc, const char *argv[],
     {"seqfile",   required_argument, NULL, 0},
     {"counts",    required_argument, NULL, 0},
     {"outprefix",    required_argument, NULL, 0},
+    {"threshold", required_argument, NULL, 0},
+    {"tolerance", required_argument, NULL, 0},
     {"dry-run",    required_argument, NULL, 0},
     {"drop-level1",    required_argument, NULL, 0},
     {"drop-level2",    required_argument, NULL, 0},
@@ -172,6 +187,11 @@ void Options::parseOptions(int argc, const char *argv[],
     {"verbose",   required_argument, NULL, 0},
     {NULL,        no_argument,       NULL, 0}
   };
+
+  if (argc < 2) {
+    printToolUsage(command, SIMPLE);
+    EXIT(EXIT_FAILURE);
+  }
 
   while ((opt = getopt_long(argc, (char **) argv, "h", longOpts, &longIndex)) != -1) {
     switch (opt) {
@@ -220,8 +240,14 @@ void Options::parseOptions(int argc, const char *argv[],
               *((float *) options[idx]->value) = std::stof(optarg);
               options[idx]->isSet = true;
 
-            } else {
-              Info(Info::ERROR) << "ERROR: Wrong option type in parseOptions. " \
+            } else if (typeid(double) == options[idx]->type) {
+
+              *((double *) options[idx]->value) = std::stod(optarg);
+              options[idx]->isSet = true;
+
+            }
+            else {
+              Info(Info::ERROR) << "ERROR: Wrong option type in parseOptions used for " << options[idx]->display << "\n" \
                                    "Please send an error report to the developers.\n";
               EXIT(EXIT_FAILURE);
             }

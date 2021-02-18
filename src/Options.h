@@ -57,12 +57,14 @@ public:
   std::string seqFile;
   std::string countFile;
   std::string outprefix;
-  float dropLevel1;
-  float dropLevel2;
+  double dropLevel1;
+  double dropLevel2;
+  double tolerance;
   //unsigned int kmerWeight;
+  unsigned int threshold;
   unsigned int threads;
-  int countMode;
   int verbose;
+  int countMode;
   bool aligned;
   bool softFilter;
   bool dryRun;
@@ -78,14 +80,16 @@ public:
   OPTION(OP_SEQ_FILE)
   OPTION(OP_COUNT_FILE)
   OPTION(OP_OUTPREFIX)
-  OPTION(OP_DRY_RUN)
+  OPTION(OP_THRESHOLD)
+  OPTION(OP_TOLERANCE)
   OPTION(OP_DROP_LEVEL1)
   OPTION(OP_DROP_LEVEL2)
-  OPTION(OP_ALIGNED)
   OPTION(OP_SOFT_FILTER)
-  OPTION(OP_COUNT_MODE)
+  OPTION(OP_ALIGNED)
+  OPTION(OP_DRY_RUN)
   OPTION(OP_THREADS)
   OPTION(OP_VERBOSE)
+  OPTION(OP_COUNT_MODE)
 
   static const int COUNT_MODE_SUM = 0;
   static const int COUNT_MODE_MAX = 1;

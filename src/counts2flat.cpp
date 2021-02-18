@@ -43,7 +43,7 @@ int counts2flat(int argc, const char **argv, const Command *tool) {
   else
     outprefix = getFilename(countFile);
 
-  FILE* fp = openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "w");
+  FILE* fp = openFileOrDie(outprefix + ".coco_" + tool->cmd + ".tsv", "w");
   lookuptable->iterateOverAll(fp);
 
   fclose(fp);

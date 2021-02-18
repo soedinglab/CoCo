@@ -168,42 +168,37 @@ unsigned int CountProfile::calcMedian(const std::vector<uint32_t> &positionsOfIn
   return(calcXquantile(0.5, positionsOfInterest));
 }
 
-int CountProfile::correction(uint32_t *maxProfile, unsigned int covEst,  bool dryRun) {
+int CountProfile::correction(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool dryRun) {
 
   unsigned short kmerSpan = this->translator->getSpan();
   unsigned short kmerWeight = translator->getWeight();
   unsigned int maxProfileLength = profile_length + kmerSpan - 1;
-  uint32_t corrValues[maxProfileLength];
-  memset(corrValues, 0, sizeof(*corrValues) * maxProfileLength);
+  uint32_t neighborhoodTolerance[maxProfileLength];
+  memset(neighborhoodTolerance, 0, sizeof(*neighborhoodTolerance) * maxProfileLength);
 
-  // correct values with probability for observing the same sequencing error multiple times
-  std::vector<unsigned int> corrWindow;
-  double corrFactor = 0.001;
+  // calculate neighborhood tolerance values with probability for observing the same sequencing error multiple times
+  std::vector<unsigned int> neighborhood;
 
   for (unsigned int idx = 0; idx < (unsigned int) kmerSpan / 2 + 1; idx++)
-    corrWindow.push_back(maxProfile[idx]);
-  corrValues[0] = corrFactor * *(std::max_element(corrWindow.begin(), corrWindow.end())) + 1;
+    neighborhood.push_back(maxProfile[idx]);
+  neighborhoodTolerance[0] = tolerance * *(std::max_element(neighborhood.begin(), neighborhood.end())) + 1;
 
   for (unsigned int idx = 1; idx < maxProfileLength; idx++) {
     if (idx + kmerSpan / 2 < maxProfileLength)
-      corrWindow.push_back(maxProfile[idx + kmerSpan / 2]);
+      neighborhood.push_back(maxProfile[idx + kmerSpan / 2]);
     if (idx > kmerSpan / 2)
-      corrWindow.erase(corrWindow.begin());
-    unsigned int max = *(std::max_element(corrWindow.begin(), corrWindow.end()));
-    corrValues[idx] = (unsigned int) (corrFactor * max + 1);
+      neighborhood.erase(neighborhood.begin());
+    unsigned int max = *(std::max_element(neighborhood.begin(), neighborhood.end()));
+    neighborhoodTolerance[idx] = (unsigned int) (tolerance * max + 1);
 
   }
 
-  bool changed;
-
-  changed = false;
 
   // 1. find sequencing errors
-
   unsigned int foundErrors = 0;
   unsigned int errorPositions[64];
-  uint64_t candidates[profile_length];
-  memset(candidates, 0, sizeof(*candidates) * profile_length);
+  uint64_t affectedPostions[profile_length];
+  memset(affectedPostions, 0, sizeof(*affectedPostions) * profile_length);
   memset(errorPositions, 0, sizeof(*errorPositions) * 64);
 
   //TODO: use local coverage information
@@ -211,18 +206,18 @@ int CountProfile::correction(uint32_t *maxProfile, unsigned int covEst,  bool dr
     if (foundErrors == 63) {
       return TOO_MANY_ERRORS;
     }
-    if (maxProfile[idx] <= 1 + corrValues[idx]) {
+    if (maxProfile[idx] <= threshold + neighborhoodTolerance[idx]) {
       errorPositions[foundErrors] = idx;
       for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
         int pos = idx - translator->_mask_array[jdx];
         if (pos >= 0 && pos < (int) profile_length) {
-          candidates[pos] = candidates[pos] | ((uint64_t) 1 << (uint64_t) foundErrors);
+          affectedPostions[pos] = affectedPostions[pos] | ((uint64_t) 1 << (uint64_t) foundErrors);
         }
       }
       foundErrors++;
 
       if (dryRun) {
-        // error positions
+        // error candidate positions
         Info(Info::DEBUG) << "error\t" << seqinfo->name.c_str() << "\t" << idx << "\n";
       }
     }
@@ -231,9 +226,8 @@ int CountProfile::correction(uint32_t *maxProfile, unsigned int covEst,  bool dr
   if (dryRun)
     return NONE_CORRECTED;
 
-  size_t correctedErrors = 0;
-
   //  2. correct sequencing errors
+  size_t correctedErrors = 0;
   // TODO: 1. majority voting? 2. local covEst 3. global covEst (= median)
   for (size_t idx = 0; idx < foundErrors; idx++) {
 
@@ -242,7 +236,7 @@ int CountProfile::correction(uint32_t *maxProfile, unsigned int covEst,  bool dr
     unsigned int end = errorPositions[idx] < profile_length ? errorPositions[idx] : profile_length - 1;
     unsigned int firstUniqueKmerStart = UINT_MAX, lastUniqueKmerStart = 0;
     for (size_t jdx = start; jdx <= end; jdx++) {
-      if ((candidates[jdx] > 0) && ((candidates[jdx] & (1 << idx)) == candidates[jdx])) {
+      if ((affectedPostions[jdx] > 0) && ((affectedPostions[jdx] & (1 << idx)) == affectedPostions[jdx])) {
         firstUniqueKmerStart = std::min(firstUniqueKmerStart, (unsigned int) jdx);
         lastUniqueKmerStart = std::max(lastUniqueKmerStart, (unsigned int) jdx);
       }
@@ -286,10 +280,10 @@ int CountProfile::correction(uint32_t *maxProfile, unsigned int covEst,  bool dr
                                                                                   lastUniqueKmerStart] - 1)));
 
       uint32_t c1 = lookuptable->getCount(translator->kmer2minPackedKmer(firstUniqueKmer));
-      if (c1 > 1 + corrValues[errorPositions[idx]])
+      if (c1 > threshold + neighborhoodTolerance[errorPositions[idx]])
         improvement++;
       uint32_t c2 = lookuptable->getCount(translator->kmer2minPackedKmer(lastUniqueKmer));
-      if (c2 > 1 + corrValues[errorPositions[idx]])
+      if (c2 > threshold + neighborhoodTolerance[idx])
         improvement++;
 
       if (improvement == 2) {
@@ -309,9 +303,7 @@ int CountProfile::correction(uint32_t *maxProfile, unsigned int covEst,  bool dr
                         << "\t" << seqinfo->seq[errorPositions[idx]] << "\t" << mutationTarget << "\n";
       seqinfo->seq[errorPositions[idx]] = mutationTarget;
       //TODO: update count table?
-      changed = true;
       correctedErrors++;
-
     }
   }
 

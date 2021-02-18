@@ -28,7 +28,6 @@
   const char *version = "UNKNOWN";
 #endif
 
-
 const char *tool_binary = "coco";
 const char *tool_name = "CoCo";
 const char *tool_introduction = "CoCo is an open-source software suite for "\
@@ -53,7 +52,7 @@ Options &opt = Options::getInstance();
 std::vector<struct Command> commands =
   {
     {"correction", correction, &opt.correctionWorkflow, "correct sequencing errors",
-      "identify reads with sequencing errors (and correct them <- not yet) ",
+      "identify reads with sequencing errors and correct them",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
       " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       CORRECTOR

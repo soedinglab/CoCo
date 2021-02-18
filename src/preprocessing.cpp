@@ -22,11 +22,11 @@ LookupTableBase *buildLookuptable(string countFile, int countMode,
   string kmerSizeStr = dskGroup.getProperty("kmer_size");
   unsigned int kmerSize = atoi(kmerSizeStr.c_str());
 
-  /*if (kmerSize != kmerSpan) {
+  if (kmerSize != kmerSpan) {
     Info(Info::ERROR) << "ERROR: kmerSize " << kmerSize << " used in hdf5 file " << countFile.c_str() << " is not supported.\n"
-                         "Please precompute kmer counts with k=41\n";
+                         "Please pre-compute kmer counts with k=41\n";
     return NULL;
-  }*/
+  }
 
   //retrieve the partition holding the couples [kmer,abundance]
 
@@ -85,7 +85,8 @@ LookupTableBase *buildLookuptable(string countFile, int countMode,
 
 LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator) {
 
-  Info(Info::WARNING) << "WARNING: counting kmers only on seqfile argument. Make sure the reads are not (pre)clustered! \n";
+  Info(Info::WARNING) << "WARNING: counting kmers only on seqfile argument. "\
+                         "Make sure the reads are not (pre)clustered! \n";
 
   Info(Info::WARNING) << "WARNING: using internal hash table to count k-mers is not "\
                          "recommended for larger datasets: use --counts instead\n";

@@ -16,8 +16,10 @@
 
 typedef struct {
   bool dryRun;
+  unsigned int threshold;
+  double tolerance;
   FILE *correctedReadsFasta;
-  FILE *correctedReads;
+  FILE *errorCandidateReads;
 } CorrectorArgs;
 
 int correctionProcessor(CountProfile &countprofile, void *args)
@@ -30,24 +32,26 @@ int correctionProcessor(CountProfile &countprofile, void *args)
   //unsigned int covEst = countprofile.calcMedian();
   //Info(Info::DEBUG) << seqinfo->name << "\t" << covEst << "\n";
 
-  /* maximize count profile */
 
-  bool iterate;
   int status;
   do {
 
+    /* maximize count profile */
     uint32_t *maxProfile = countprofile.maximize();
     //if(covEst > SIGNIFICANT_LEVEL_DIFF)//TODO
-    status = countprofile.correction(maxProfile, 0, currArgs->dryRun);
+    status = countprofile.correction(maxProfile, 0, currArgs->threshold, currArgs->tolerance,  currArgs->dryRun);
+
     delete[] maxProfile;
+    //TODO: update also maxProfile instead of generating new one
+
     if(status == SOME_CORRECTED)
       countprofile.update();
-  } while(status==SOME_CORRECTED);
+  } while(!currArgs->dryRun && status == SOME_CORRECTED);
 
   if (currArgs->dryRun) {
     if (status != ERROR_FREE) {
-      fwrite(seqinfo->name.c_str(), sizeof(char), seqinfo->name.size(), currArgs->correctedReads);
-      fwrite("\n", sizeof(char), 1, currArgs->correctedReads);
+      fwrite(seqinfo->name.c_str(), sizeof(char), seqinfo->name.size(), currArgs->errorCandidateReads);
+      fwrite("\n", sizeof(char), 1, currArgs->errorCandidateReads);
     }
   } else {
     sequenceInfo2FileEntry(seqinfo, currArgs->correctedReadsFasta);
@@ -99,17 +103,17 @@ int correction(int argc, const char **argv, const Command *tool)
   CorrectorArgs args;
 
   if (opt.dryRun){
-      args = {true, NULL, openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "w")};
+      args = {true, opt.threshold, opt.tolerance, NULL, openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "w")};
       Info(Info::INFO) << "Perform only a dry run without correction\n";
   }
   else {
-      args = {false, openFileOrDie(outprefix + ".coco_" + tool->cmd + ext, "w"), NULL};
+      args = {false, opt.threshold, opt.tolerance,openFileOrDie(outprefix + ".coco_" + tool->cmd + ext, "w"), NULL};
   }
 
   int returnVal = processSeqFile(seqFile, lookuptable, translator, correctionProcessor, &args);
 
-  if(args.correctedReads)
-    fclose(args.correctedReads);
+  if(args.errorCandidateReads)
+    fclose(args.errorCandidateReads);
   if(args.correctedReadsFasta)
     fclose(args.correctedReadsFasta);
 

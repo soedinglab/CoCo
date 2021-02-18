@@ -21,8 +21,8 @@ typedef struct {
   FILE *filterReads;
   FILE *cleanedReads;
   FILE *wobblyReads;
-  float dropLevel1;
-  float dropLevel2;
+  double dropLevel1;
+  double dropLevel2;
   std::vector<uint32_t> shrinkedPlainPositions;
   bool maskOnlyDropEdges;
 } FilterArgs;

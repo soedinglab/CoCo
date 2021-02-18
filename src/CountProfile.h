@@ -49,6 +49,7 @@ public:
 
   /* create and store count profiles */
   void fill(SequenceInfo *seq, size_t length);
+
   void update();
 
   /* getter */
@@ -59,7 +60,9 @@ public:
   SequenceInfo *getSeqInfo() { return (seqinfo); }
 
   /* show tab-based table of positions and counts */
+
   void showProfile(FILE *fp = stdout) const;
+
   void showMaximzedProfile(FILE *fp = stdout) const;
 
   /*** basic profile operations ***/
@@ -75,7 +78,7 @@ public:
 
   /*** advanced profile operations ***/
 
-  int correction(uint32_t *maxProfile, unsigned int covEst,  bool dryRun);
+  int correction(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool dryRun);
 
   bool checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst, double localPercDrop, \
                                                  double globalPercDrop, bool maskOnlyDropEdges=true);
