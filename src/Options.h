@@ -60,9 +60,9 @@ public:
   double dropLevel1;
   double dropLevel2;
   double tolerance;
-  //unsigned int kmerWeight;
-  unsigned int threshold;
-  unsigned int threads;
+  //int kmerWeight;
+  int threshold;
+  int threads;
   int verbose;
   int countMode;
   bool aligned;

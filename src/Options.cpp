@@ -25,7 +25,7 @@ Options::Options() :
                typeid(std::string), (void *) &outprefix, 0),
   OP_THRESHOLD(OP_THRESHOLD_ID, "threshold", "--threshold",
                "untrusted count threshold (default: 1)",
-               typeid(unsigned int), (void *) &threshold, 0),
+               typeid(int), (void *) &threshold, 0),
   OP_TOLERANCE(OP_TOLERANCE_ID, "tolerance", "--tolerance",
                "relative neighborhood count added to threshold value (default: 0.01)",
                typeid(double), (void *) &tolerance, 0),
@@ -226,6 +226,11 @@ void Options::parseOptions(int argc, const char *argv[],
                 options[idx]->isSet = true;
               }
             } else if (typeid(int) == options[idx]->type) {
+              int val = atoi(optarg);
+              *((int *) options[idx]->value) = val;
+              options[idx]->isSet = true;
+
+            } else if (typeid(unsigned int) == options[idx]->type) {
               int val = atoi(optarg);
               *((int *) options[idx]->value) = val;
               options[idx]->isSet = true;

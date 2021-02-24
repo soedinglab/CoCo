@@ -33,7 +33,8 @@ int showProfile(CountProfile &countprofile, void *profileargs) {
     fwrite(seqinfo->comment.c_str(), sizeof(char), seqinfo->comment.size(), fp);
   }
   fwrite("\n", sizeof(char), 1, fp);
-  countprofile.showProfile(fp);
+  //countprofile.showProfile(fp);
+  countprofile.showMaximzedProfile(fp);
   return 0;
 }
 

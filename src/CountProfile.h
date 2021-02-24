@@ -78,7 +78,13 @@ public:
 
   /*** advanced profile operations ***/
 
-  int correction(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool dryRun);
+  int doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool dryRun);
+
+  int doIndelCorrection(uint32_t *maxProfile, unsigned int threshold, double tolerance);
+
+  bool tryInsertionCorrection(unsigned int insertionStart, unsigned int insertionLen, unsigned int threshold, uint32_t *neighborhoodTolerance);
+
+  int tryDeletionCorrection(unsigned int deletionPos, unsigned int threshold, uint32_t *neighborhoodTolerance);
 
   bool checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst, double localPercDrop, \
                                                  double globalPercDrop, bool maskOnlyDropEdges=true);

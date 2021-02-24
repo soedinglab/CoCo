@@ -32,21 +32,28 @@ int correctionProcessor(CountProfile &countprofile, void *args)
   //unsigned int covEst = countprofile.calcMedian();
   //Info(Info::DEBUG) << seqinfo->name << "\t" << covEst << "\n";
 
+/* maximize count profile */
+  uint32_t *maxProfile = countprofile.maximize();
 
   int status;
   do {
 
-    /* maximize count profile */
-    uint32_t *maxProfile = countprofile.maximize();
     //if(covEst > SIGNIFICANT_LEVEL_DIFF)//TODO
-    status = countprofile.correction(maxProfile, 0, currArgs->threshold, currArgs->tolerance,  currArgs->dryRun);
+    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance,  currArgs->dryRun);
 
-    delete[] maxProfile;
-    //TODO: update also maxProfile instead of generating new one
 
-    if(status == SOME_CORRECTED)
+    if(status == SOME_CORRECTED || status == ALL_CORRECTED) {
       countprofile.update();
+      delete[] maxProfile;
+      maxProfile = countprofile.maximize();
+      //TODO: update maxProfile instead of generating new one
+    }
   } while(!currArgs->dryRun && status == SOME_CORRECTED);
+
+  countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance);
+  //TODO: adjust profilelen?
+
+  //TODO: add trimming strategy for edge errors
 
   if (currArgs->dryRun) {
     if (status != ERROR_FREE) {
@@ -54,7 +61,7 @@ int correctionProcessor(CountProfile &countprofile, void *args)
       fwrite("\n", sizeof(char), 1, currArgs->errorCandidateReads);
     }
   } else {
-    sequenceInfo2FileEntry(seqinfo, currArgs->correctedReadsFasta);
+    sequenceInfo2FileEntry(seqinfo, currArgs->correctedReadsFasta, FASTA);
   }
   return 0;
 }
@@ -103,11 +110,11 @@ int correction(int argc, const char **argv, const Command *tool)
   CorrectorArgs args;
 
   if (opt.dryRun){
-      args = {true, opt.threshold, opt.tolerance, NULL, openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "w")};
+      args = {true, (unsigned int) opt.threshold, opt.tolerance, NULL, openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "w")};
       Info(Info::INFO) << "Perform only a dry run without correction\n";
   }
   else {
-      args = {false, opt.threshold, opt.tolerance,openFileOrDie(outprefix + ".coco_" + tool->cmd + ext, "w"), NULL};
+      args = {false, (unsigned int) opt.threshold, opt.tolerance,openFileOrDie(outprefix + ".coco_" + tool->cmd + ext, "w"), NULL};
   }
 
   int returnVal = processSeqFile(seqFile, lookuptable, translator, correctionProcessor, &args);
