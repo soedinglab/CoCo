@@ -184,11 +184,11 @@ bool CountProfile::tryInsertionCorrection(unsigned int insertionStart, unsigned 
      midKmer = kmer containing whole insertion while counterbalance the number of nucleotides before and after the insertion
   */
   unsigned int firstKmerStart = insertionStart >= kmerSpan? insertionStart-kmerSpan+1:0,
-    secondLastKmerStart = insertionStart < profile_length? insertionStart-1: profile_length-insertionLen,
-    midKmerStart = (unsigned int)std::min(std::max(1,(int) (insertionStart+insertionLen-kmerSpan/2+1)),(int) (profile_length-insertionLen)-1);
+    secondLastKmerStart = insertionStart < profile_length? insertionStart-1: profile_length-insertionLen - 1 ,
+    midKmerStart = (firstKmerStart+secondLastKmerStart)/2;
 
   // make sure we have at least one nucleotide before and after the insert range
-  if(firstKmerStart < insertionStart && secondLastKmerStart + kmerSpan > insertionStart+insertionLen) {
+  if(firstKmerStart < insertionStart && secondLastKmerStart + kmerSpan >= insertionStart+insertionLen) {
 
     packedKmerType firstKmer = 0, midKmer = 0, secondLastKmer = 0;
     // remove whole insertion from all three kmers
@@ -197,18 +197,21 @@ bool CountProfile::tryInsertionCorrection(unsigned int insertionStart, unsigned 
       unsigned int seqPosForFirstKmer = firstKmerStart + translator->_mask_array[jdx];
       if (seqPosForFirstKmer >= insertionStart)
         seqPosForFirstKmer += insertionLen;
+      assert(res2int[(int) seqinfo->seq[seqPosForFirstKmer]] != -1);
       firstKmer =
         (firstKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForFirstKmer]]);
 
       unsigned int seqPosForSecondLastKmer = secondLastKmerStart + translator->_mask_array[jdx];
       if (seqPosForSecondLastKmer >= insertionStart)
         seqPosForSecondLastKmer += insertionLen;
+      assert(res2int[(int) seqinfo->seq[seqPosForSecondLastKmer]] != -1);
       secondLastKmer =
         (secondLastKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForSecondLastKmer]]);
 
       unsigned int seqPosForMidKmer = midKmerStart + translator->_mask_array[jdx];
       if (seqPosForMidKmer >= insertionStart)
         seqPosForMidKmer += insertionLen;
+      assert(res2int[(int) seqinfo->seq[seqPosForMidKmer]] != -1);
       midKmer =
         (midKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForMidKmer]]);
     }
@@ -242,7 +245,7 @@ int CountProfile::tryDeletionCorrection(unsigned int deletionPos, unsigned int t
 
   unsigned short kmerSpan = this->translator->getSpan();
   unsigned int firstKmerStart = deletionPos >= kmerSpan? deletionPos-kmerSpan+1:0;
-  unsigned int lastKmerStart = deletionPos < profile_length? deletionPos:profile_length;
+  unsigned int lastKmerStart = deletionPos < profile_length? deletionPos-1:profile_length;
   // attention: profile_length-1 is normally the last valid k-mer, but we will try to insert a nucleotide tehrefore the
   // last valid k-mer starts at profile_length
 
@@ -351,44 +354,44 @@ int CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold
       if (dropLen <= kmerSpan) {
 
         bool insertion_approved = false, deletion_approved = false;
+        unsigned int deletionPos = UINT_MAX, insertionPos = UINT_MAX;
         int resToAdd = -1;
 
+        // set position to correct
         if (idx == profile_length) {// no rise was found, drops with 0 < dropLen <= kmerSpan to end
+          deletionPos = idx - dropLen + kmerSpan - 1;
+          insertionPos = idx - dropLen + kmerSpan - 1;
 
-          if (dropLen != kmerSpan) {
-            resToAdd = this->tryDeletionCorrection(idx - dropLen + kmerSpan, threshold, neighborhoodTolerance);
-            if (resToAdd >= 0)
-              deletion_approved = true;
-          }
-
-          insertion_approved = this->tryInsertionCorrection(idx - dropLen + kmerSpan, 1, threshold,
-                                                            neighborhoodTolerance);
-        } else if (idx == 1 || dropLen >= kmerSpan - 1) {
+        } else if (idx == dropLen || dropLen >= kmerSpan - 1) {
           //  * drops with 0 < dropLen <= kmerSpan from start
           //  * drops kmerSpan-1 <= dropLen <= kmerSpan within the read
+          deletionPos = idx ;
+          insertionPos = idx - 1;
 
-          insertion_approved = this->tryInsertionCorrection(idx - 1, 1, threshold, neighborhoodTolerance);
+        }
 
-          if (dropLen != kmerSpan) {
-            resToAdd = this->tryDeletionCorrection(idx, threshold, neighborhoodTolerance);
-            if (resToAdd >= 0)
-              deletion_approved = true;
-            else if (resToAdd == -2){
-              insertion_approved = false;
-              // reset insertion_approved because multiple possibilities for deletion correction were found
-            }
-            //else if (resToAdd == -1){deletion_approved = false;}
+        // try correction
+        if (insertionPos !=UINT_MAX && dropLen > 1)
+          insertion_approved = this->tryInsertionCorrection(insertionPos, 1, threshold,
+                                                            neighborhoodTolerance);
+        if (deletionPos != UINT_MAX && dropLen != kmerSpan) {
+          resToAdd = this->tryDeletionCorrection(deletionPos, threshold, neighborhoodTolerance);
+          if (resToAdd >= 0)
+            deletion_approved = true;
+          else if (resToAdd == -2){
+            insertion_approved = false;
+            // reset insertion_approved because multiple possibilities for deletion correction were found
           }
         }
 
         // assign correction
         if (insertion_approved && !deletion_approved) {
           // final elimination of insertion error
-          sequence.erase(sequence.begin() + offset + idx - 1);
+          sequence.erase(sequence.begin() + offset + insertionPos);
           offset -= 1;
         } else if (deletion_approved && !insertion_approved) {
           // final elimination of deletion error
-          sequence.insert(idx + offset, 1, int2res[resToAdd]);
+          sequence.insert(deletionPos + offset, 1, int2res[resToAdd]);
           offset += 1;
         }
         //else if (insertion_approved && deletion_approved){ => both approved => ambigious choice => no correction}
