@@ -197,21 +197,24 @@ bool CountProfile::tryInsertionCorrection(unsigned int insertionStart, unsigned 
       unsigned int seqPosForFirstKmer = firstKmerStart + translator->_mask_array[jdx];
       if (seqPosForFirstKmer >= insertionStart)
         seqPosForFirstKmer += insertionLen;
-      assert(res2int[(int) seqinfo->seq[seqPosForFirstKmer]] != -1);
+      if(res2int[(int) seqinfo->seq[seqPosForFirstKmer]] == -1)
+        return false;
       firstKmer =
         (firstKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForFirstKmer]]);
 
       unsigned int seqPosForSecondLastKmer = secondLastKmerStart + translator->_mask_array[jdx];
       if (seqPosForSecondLastKmer >= insertionStart)
         seqPosForSecondLastKmer += insertionLen;
-      assert(res2int[(int) seqinfo->seq[seqPosForSecondLastKmer]] != -1);
+      if(res2int[(int) seqinfo->seq[seqPosForSecondLastKmer]] == -1)
+        return false;
       secondLastKmer =
         (secondLastKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForSecondLastKmer]]);
 
       unsigned int seqPosForMidKmer = midKmerStart + translator->_mask_array[jdx];
       if (seqPosForMidKmer >= insertionStart)
         seqPosForMidKmer += insertionLen;
-      assert(res2int[(int) seqinfo->seq[seqPosForMidKmer]] != -1);
+      if(res2int[(int) seqinfo->seq[seqPosForMidKmer]] == -1)
+        return false;
       midKmer =
         (midKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForMidKmer]]);
     }
@@ -255,21 +258,30 @@ int CountProfile::tryDeletionCorrection(unsigned int deletionPos, unsigned int t
 
     //TODO: function to build gapped kmer
     unsigned int seqPosForFirstKmer = firstKmerStart + translator->_mask_array[jdx];
-    if(seqPosForFirstKmer < deletionPos)
-      firstKmer =  (firstKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForFirstKmer]]);
-    else if (seqPosForFirstKmer == deletionPos)
+    if(seqPosForFirstKmer < deletionPos) {
+      if(res2int[(int) seqinfo->seq[seqPosForFirstKmer]] == -1)
+        return -1;
+      firstKmer = (firstKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForFirstKmer]]);
+    }else if (seqPosForFirstKmer == deletionPos)
       firstKmer =  (firstKmer << 2);
-    else
-      firstKmer =  (firstKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForFirstKmer-1]]);
+    else {
+      if(res2int[(int) seqinfo->seq[seqPosForFirstKmer-1]] == -1)
+        return -1;
+      firstKmer = (firstKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForFirstKmer - 1]]);
+    }
 
     unsigned int seqPosForLastKmer = lastKmerStart + translator->_mask_array[jdx];
-    if(seqPosForLastKmer < deletionPos)
-      lastKmer =  (lastKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForLastKmer]]);
-    else if (seqPosForLastKmer == deletionPos)
+    if(seqPosForLastKmer < deletionPos) {
+      if (res2int[(int) seqinfo->seq[seqPosForLastKmer]] == -1)
+        return -1;
+      lastKmer = (lastKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForLastKmer]]);
+    }else if (seqPosForLastKmer == deletionPos)
       lastKmer =  (lastKmer << 2);
-    else
-      lastKmer =  (lastKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForLastKmer-1]]);
-
+    else {
+      if (res2int[(int) seqinfo->seq[seqPosForLastKmer-1]] == -1)
+        return -1;
+      lastKmer = (lastKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForLastKmer - 1]]);
+    }
   }
 
   int mutationTarget = -1;
