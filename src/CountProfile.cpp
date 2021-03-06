@@ -338,17 +338,18 @@ int CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold
   // calculate neighborhood tolerance values with probability for observing the same sequencing error multiple times
   std::vector<unsigned int> neighborhood;
 
-  for (unsigned int idx = 0; idx < (unsigned int) kmerSpan / 2 + 1; idx++)
+  for (unsigned int idx = 0; idx <= (unsigned int) kmerSpan; idx++)
     neighborhood.push_back(maxProfile[idx]);
-  neighborhoodTolerance[0] = tolerance * *(std::max_element(neighborhood.begin(), neighborhood.end())) + 1;
 
-  for (unsigned int idx = 1; idx < maxProfileLength; idx++) {
-    if (idx + kmerSpan / 2 < maxProfileLength)
+  for (unsigned int idx = 0; idx < maxProfileLength; idx++) {
+    if (idx > kmerSpan / 2 && idx + kmerSpan / 2 < maxProfileLength) {
       neighborhood.push_back(maxProfile[idx + kmerSpan / 2]);
-    if (idx > kmerSpan / 2)
       neighborhood.erase(neighborhood.begin());
+    }
+
     unsigned int max = *(std::max_element(neighborhood.begin(), neighborhood.end()));
-    neighborhoodTolerance[idx] = (unsigned int) (tolerance * max + 1);
+    // fast ceiling of tolerance*max
+    neighborhoodTolerance[idx] = (unsigned int) INT_MAX - (unsigned int)((double)INT_MAX - (tolerance * max));
   }
 
   //TODO: outsource neighborhood calculation to avoid code duplication and code repetition
@@ -440,18 +441,18 @@ int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int co
   // calculate neighborhood tolerance values with probability for observing the same sequencing error multiple times
   std::vector<unsigned int> neighborhood;
 
-  for (unsigned int idx = 0; idx < (unsigned int) kmerSpan / 2 + 1; idx++)
+  for (unsigned int idx = 0; idx <= (unsigned int) kmerSpan; idx++)
     neighborhood.push_back(maxProfile[idx]);
-  neighborhoodTolerance[0] = tolerance * *(std::max_element(neighborhood.begin(), neighborhood.end())) + 1;
 
-  for (unsigned int idx = 1; idx < maxProfileLength; idx++) {
-    if (idx + kmerSpan / 2 < maxProfileLength)
+  for (unsigned int idx = 0; idx < maxProfileLength; idx++) {
+    if (idx > kmerSpan / 2 && idx + kmerSpan / 2 < maxProfileLength) {
       neighborhood.push_back(maxProfile[idx + kmerSpan / 2]);
-    if (idx > kmerSpan / 2)
       neighborhood.erase(neighborhood.begin());
-    unsigned int max = *(std::max_element(neighborhood.begin(), neighborhood.end()));
-    neighborhoodTolerance[idx] = (unsigned int) (tolerance * max + 1);
+    }
 
+    unsigned int max = *(std::max_element(neighborhood.begin(), neighborhood.end()));
+    // fast ceiling of tolerance*max
+    neighborhoodTolerance[idx] = (unsigned int) INT_MAX - (unsigned int)((double)INT_MAX - (tolerance * max));
   }
 
   // 1. find sequencing errors
@@ -502,6 +503,7 @@ int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int co
         lastUniqueKmerStart = std::max(lastUniqueKmerStart, (unsigned int) jdx);
       }
     }
+
     // first-last-unique-kmer correction strategy
     packedKmerType firstUniqueKmer = 0, lastUniqueKmer = 0;
 
@@ -516,6 +518,7 @@ int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int co
     } else {
       continue; //TODO: add strategy for non independent errors
     }
+
     char mutationTarget = current_res;
     for (unsigned int resMutation = 0; resMutation < alphabetSize; resMutation++) {
       unsigned int improvement = 0;
