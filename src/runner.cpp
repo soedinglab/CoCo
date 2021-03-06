@@ -20,6 +20,8 @@ int processSeqFile(string seqFilename,
                    const KmerTranslator *translator,
                    int (*processCountProfile)(CountProfile &, void *),
                    void *processArgs,
+                   int skip,
+                   FILE *skipReadFile,
                    bool silent,
                    size_t chunkStart,
                    size_t chunkEnd)
@@ -42,15 +44,18 @@ int processSeqFile(string seqFilename,
     const size_t len = seq->seq.l;
     const char *seqName = seq->name.s;
 
-    unsigned int kmerSpan = translator->getSpan();
-    if (len < kmerSpan) {
-      Info(Info::WARNING) << "WARNING: sequence " << seqName << " is too short, it'll be skipped\n";
-      continue;
-    }
-
     /* fill profile */
     SequenceInfo *seqinfo = new SequenceInfo{seq->name.s, seq->comment.l!=0 ? string(seq->comment.s) : string(""), seq->seq.s,
                                              seq->qual.s!=NULL ? string(seq->qual.s) : string(""), seq->qual.s!=NULL ? '@':'>'};
+
+    unsigned int kmerSpan = translator->getSpan();
+    if (len < skip + kmerSpan) {
+      if (skipReadFile)
+        sequenceInfo2FileEntry(seqinfo, skipReadFile);
+      else
+        Info(Info::WARNING) << "WARNING: sequence " << seqName << " is too short, it'll be skipped\n";
+      continue;
+    }
 
     countprofile.fill(seqinfo, len);
     /* use function pointer for what to do with profile */

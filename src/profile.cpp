@@ -74,7 +74,7 @@ int profile(int argc, const char **argv, const Command *tool) {
     outprefix = getFilename(seqFile);
 
   ProfileArgs profileargs = {openFileOrDie(outprefix + ".profiles", "w")};
-  processSeqFile(seqFile, lookuptable, translator, showProfile, &profileargs);
+  processSeqFile(seqFile, lookuptable, translator, showProfile, &profileargs, opt.skip, NULL);
   fclose(profileargs.profileFile);
 
   return EXIT_SUCCESS;

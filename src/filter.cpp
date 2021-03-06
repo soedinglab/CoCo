@@ -195,8 +195,10 @@ int filter(int argc, const char **argv, const Command *tool)
                            openFileOrDie(outprefix + ".coco_" + tool->cmd + ".wobbly" + ext, "w"),
                            opt.dropLevel1, opt.dropLevel2, shrinkedPlainPositions, maskOnlyDropEdges};
 
-  int returnVal = processSeqFile(seqFile, lookuptable, translator, filterProcessor, &filterargs);
+  FILE *skipReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + "_skipped" + ext, "w");
+  int returnVal = processSeqFile(seqFile, lookuptable, translator, filterProcessor, &filterargs, opt.skip, skipReads );
 
+  fclose(skipReads);
   fclose(filterargs.filterReads);
   fclose(filterargs.wobblyReads);
   fclose(filterargs.cleanedReads);

@@ -67,11 +67,12 @@ int abundanceEstimator(int argc, const char **argv, const Command *tool) {
   AbundanceEstimatorArgs abundanceargs = {openFileOrDie("abundance", "w")};
 
   if (opt.threads == 1) {
-    exit_code = processSeqFile(seqFile, lookuptable, translator, abundanceEstimatationProcessor, &abundanceargs);
+    exit_code = processSeqFile(seqFile, lookuptable, translator, abundanceEstimatationProcessor, &abundanceargs, opt.skip, NULL);
     if (exit_code != 0) {
       Info(Info::ERROR) << "ERROR processing sequence file " << seqFile << "\n";
     }
   }
+
 
 
   fclose(abundanceargs.abundanceFile);

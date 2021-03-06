@@ -25,36 +25,36 @@ typedef struct {
 int correctionProcessor(CountProfile &countprofile, void *args)
 {
 
+
   CorrectorArgs *currArgs = (CorrectorArgs *) args;
   SequenceInfo *seqinfo = countprofile.getSeqInfo();
 
   /* estimate coverage value */
-  //unsigned int covEst = countprofile.calcMedian();
+  //unsigned int covEst = countprofile.calcXquantile(0.67);
   //Info(Info::DEBUG) << seqinfo->name << "\t" << covEst << "\n";
 
-/* maximize count profile */
-  uint32_t *maxProfile = countprofile.maximize();
+  int status = ERROR_FREE;
+  //if(covEst > currArgs->threshold + (unsigned int) (currArgs->tolerance * covEst + 1)) {
 
-  int status;
-  do {
+    /* maximize count profile */
+    uint32_t *maxProfile = countprofile.maximize();
 
-    //if(covEst > SIGNIFICANT_LEVEL_DIFF)//TODO
-    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance,  currArgs->dryRun);
+    do {
+      status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance,  currArgs->dryRun);
 
+      if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
+        countprofile.update();
+        delete[] maxProfile;
+        maxProfile = countprofile.maximize();
+        //TODO: update maxProfile instead of generating new one
+      }
+    } while (!currArgs->dryRun && status == SOME_CORRECTED);
 
-    if(status == SOME_CORRECTED || status == ALL_CORRECTED) {
-      countprofile.update();
-      delete[] maxProfile;
-      maxProfile = countprofile.maximize();
-      //TODO: update maxProfile instead of generating new one
-    }
-  } while(!currArgs->dryRun && status == SOME_CORRECTED);
+    countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance);
+    //TODO: adjust profilelen?
 
-  countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance);
-  //TODO: adjust profilelen?
-
-  //TODO: add trimming strategy for edge errors
-
+    //TODO: add trimming strategy for edge errors?
+ // }
   if (currArgs->dryRun) {
     if (status != ERROR_FREE) {
       fwrite(seqinfo->name.c_str(), sizeof(char), seqinfo->name.size(), currArgs->errorCandidateReads);
@@ -105,8 +105,7 @@ int correction(int argc, const char **argv, const Command *tool)
   else
     outprefix = getFilename(seqFile);
 
-  string ext = getFileExtension(seqFile);
-
+  string ext = ".fa"; //getFileExtension(seqFile);
   CorrectorArgs args;
 
   if (opt.dryRun){
@@ -117,8 +116,12 @@ int correction(int argc, const char **argv, const Command *tool)
       args = {false, (unsigned int) opt.threshold, opt.tolerance,openFileOrDie(outprefix + ".coco_" + tool->cmd + ext, "w"), NULL};
   }
 
-  int returnVal = processSeqFile(seqFile, lookuptable, translator, correctionProcessor, &args);
+  FILE *skipReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + "_skipped" + ext, "w");
+  int returnVal = processSeqFile(seqFile, lookuptable, translator, correctionProcessor, &args, opt.skip, skipReads );
 
+
+  if (skipReads)
+    fclose(skipReads);
   if(args.errorCandidateReads)
     fclose(args.errorCandidateReads);
   if(args.correctedReadsFasta)
