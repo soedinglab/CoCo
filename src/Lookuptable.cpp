@@ -9,8 +9,8 @@
 #include "Options.h"
 #include "util.h"
 
-
-Lookuptable::Lookuptable(const size_t nbItems, int countMode) {
+template<unsigned int LOGINDEXSIZE, unsigned int LOGOFFSETSIZE>
+Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::Lookuptable(const size_t nbItems, int countMode) {
   // TODO: assert(LOGINDEXSIZE+LOGOFFSETSIZE == 2*ksize);
 
   indexGridTable = (size_t *) calloc(indexGridTableSize, sizeof(size_t));
@@ -24,26 +24,30 @@ Lookuptable::Lookuptable(const size_t nbItems, int countMode) {
   _offsetmask = ipow(2, LOGOFFSETSIZE) - 1;
 }
 
-Lookuptable::~Lookuptable() {
+template<unsigned int LOGINDEXSIZE, unsigned int LOGOFFSETSIZE>
+Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::~Lookuptable() {
   free(this->indexGridTable);
   free(this->offsetTable);
 }
 
-inline size_t Lookuptable::getGridPosition(packedKmerType kmer) const {
+template<unsigned int LOGINDEXSIZE, unsigned int LOGOFFSETSIZE>
+inline size_t Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::getGridPosition(packedKmerType kmer) const {
   return (kmer & _indexmask) >> LOGOFFSETSIZE;
 }
 
-inline size_t Lookuptable::getOffset(packedKmerType kmer) const {
+template<unsigned int LOGINDEXSIZE, unsigned int LOGOFFSETSIZE>
+inline size_t Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::getOffset(packedKmerType kmer) const {
   return (kmer & _offsetmask);
 }
 
-void Lookuptable::assignKmertoGrid(packedKmerType kmer) {
+template<unsigned int LOGINDEXSIZE, unsigned int LOGOFFSETSIZE>
+void Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::assignKmertoGrid(packedKmerType kmer) {
   size_t gridPosition = getGridPosition(kmer);
   indexGridTable[gridPosition]++;
 }
 
-
-void Lookuptable::setupIndexGridTable() {
+template<unsigned int LOGINDEXSIZE, unsigned int LOGOFFSETSIZE>
+void Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::setupIndexGridTable() {
   size_t prevElementLength = indexGridTable[0];
   indexGridTable[0] = 0;
   for (size_t i = 0; i < indexGridTableSize - 1; i++) {
@@ -53,7 +57,8 @@ void Lookuptable::setupIndexGridTable() {
   }
 }
 
-size_t Lookuptable::addElement(packedKmerType kmer, unsigned int count) {
+template<unsigned int LOGINDEXSIZE, unsigned int LOGOFFSETSIZE>
+size_t Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::addElement(packedKmerType kmer, unsigned int count) {
   size_t prevWritingPosition = 0;
   const size_t gridPosition = getGridPosition(kmer);
   const size_t writingPosition = indexGridTable[gridPosition];
@@ -86,7 +91,8 @@ size_t Lookuptable::addElement(packedKmerType kmer, unsigned int count) {
   return writingPosition;
 }
 
-void Lookuptable::finalSetupTables(size_t countThreshold) {
+template<unsigned int LOGINDEXSIZE, unsigned int LOGOFFSETSIZE>
+void Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::finalSetupTables(size_t countThreshold) {
 
   size_t prev = 0,
     readpos = 0,
@@ -112,14 +118,16 @@ void Lookuptable::finalSetupTables(size_t countThreshold) {
   offsetTable = (IndexEntry *) realloc(offsetTable, maxNumberItems * sizeof(IndexEntry));
 }
 
-inline std::pair<size_t, size_t> Lookuptable::getIndexGridRange(packedKmerType kmer) const {
+template<unsigned int LOGINDEXSIZE, unsigned int LOGOFFSETSIZE>
+inline std::pair<size_t, size_t> Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::getIndexGridRange(packedKmerType kmer) const {
   size_t gridPosition = getGridPosition(kmer);
   size_t indexGridSize = indexGridTable[gridPosition + 1] -
                          indexGridTable[gridPosition];
   return std::make_pair(indexGridTable[gridPosition], indexGridSize);
 }
 
-unsigned int Lookuptable::getCount(const packedKmerType kmer) const {
+template<unsigned int LOGINDEXSIZE, unsigned int LOGOFFSETSIZE>
+unsigned int Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::getCount(const packedKmerType kmer) const {
 
   const std::pair<size_t, size_t> grid = getIndexGridRange(kmer);
   const size_t kmerOffset = getOffset(kmer);
@@ -133,7 +141,8 @@ unsigned int Lookuptable::getCount(const packedKmerType kmer) const {
   return (pos != endPos) ? offsetTable[pos].count : 0;
 }
 
-void Lookuptable::iterateOverAll(FILE *fp) const{
+template<unsigned int LOGINDEXSIZE, unsigned int LOGOFFSETSIZE>
+void Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::iterateOverAll(FILE *fp) const{
   size_t readpos = 0;
   for (size_t idx = 0; idx < indexGridTableSize-1; idx++) {
     char *prefix = packedKmer2String(idx, LOGINDEXSIZE/2);
@@ -146,3 +155,25 @@ void Lookuptable::iterateOverAll(FILE *fp) const{
     free(prefix);
   }
 }
+
+template class Lookuptable<22,2>;
+template class Lookuptable<24,2>;
+template class Lookuptable<26,2>;
+template class Lookuptable<28,2>;
+template class Lookuptable<30,2>;
+template class Lookuptable<30,4>;
+template class Lookuptable<30,6>;
+template class Lookuptable<30,8>;
+template class Lookuptable<30,10>;
+template class Lookuptable<30,12>;
+template class Lookuptable<30,14>;
+template class Lookuptable<30,16>;
+template class Lookuptable<30,18>;
+template class Lookuptable<30,20>;
+template class Lookuptable<30,22>;
+template class Lookuptable<30,24>;
+template class Lookuptable<30,26>;
+template class Lookuptable<30,28>;
+template class Lookuptable<30,30>;
+template class Lookuptable<30,32>;
+template class Lookuptable<30,34>;

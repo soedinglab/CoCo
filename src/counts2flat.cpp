@@ -23,12 +23,14 @@ int counts2flat(int argc, const char **argv, const Command *tool) {
   //TODO:check parameter and if files exists
 
   initialize();
-  KmerTranslator *translator = new KmerTranslator();
+  KmerTranslator *translator = new KmerTranslator(opt.spacedKmerPattern);
   string seqFile = opt.seqFile;
 
   // use precomputed counts and fill lookuptable
   string countFile = opt.countFile;
-  Lookuptable *lookuptable = (Lookuptable*) buildLookuptable(countFile, opt.countMode, *translator, 0);
+
+
+  LookupTableBase* lookuptable =  buildLookuptable(countFile, opt.countMode, *translator, 0);
   //TODO: change mincount if correction work properly
 
   if (lookuptable == NULL) {

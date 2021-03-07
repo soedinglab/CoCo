@@ -58,6 +58,7 @@ public:
   std::string countFile;
   std::string outprefix;
 
+  std::string spacedKmerPattern;
   //int kmerWeight;
 
   int countMode;
@@ -87,6 +88,7 @@ public:
   OPTION(OP_SEQ_FILE)
   OPTION(OP_COUNT_FILE)
   OPTION(OP_OUTPREFIX)
+  OPTION(OP_SPACED_KMER_PATTERN)
   OPTION(OP_SKIP)
   OPTION(OP_THRESHOLD)
   OPTION(OP_TOLERANCE)

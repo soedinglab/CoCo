@@ -38,9 +38,9 @@ int correctionProcessor(CountProfile &countprofile, void *args)
 
     /* maximize count profile */
     uint32_t *maxProfile = countprofile.maximize();
-
+ //sub - indel
     do {
-      status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance,  currArgs->dryRun);
+      status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, currArgs->dryRun);
 
       if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
         countprofile.update();
@@ -52,7 +52,32 @@ int correctionProcessor(CountProfile &countprofile, void *args)
 
     countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance);
     //TODO: adjust profilelen?
+/*
+// sub2 - indel -sub
+  do {
+    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, currArgs->dryRun);
 
+    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
+      countprofile.update();
+      delete[] maxProfile;
+      maxProfile = countprofile.maximize();
+      //TODO: update maxProfile instead of generating new one
+    }
+  } while (!currArgs->dryRun && status == SOME_CORRECTED);
+
+  countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance);
+  countprofile.update();
+  do {
+    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, currArgs->dryRun);
+
+    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
+      countprofile.update();
+      delete[] maxProfile;
+      maxProfile = countprofile.maximize();
+      //TODO: update maxProfile instead of generating new one
+    }
+  } while (!currArgs->dryRun && status == SOME_CORRECTED);
+*/
     //TODO: add trimming strategy for edge errors?
  // }
   if (currArgs->dryRun) {
@@ -75,8 +100,9 @@ int correction(int argc, const char **argv, const Command *tool)
   //TODO: print parameters
   //TODO:check parameter and if files exists
 
+
   initialize();
-  KmerTranslator *translator = new KmerTranslator();
+  KmerTranslator *translator = new KmerTranslator(opt.spacedKmerPattern);
   string seqFile = opt.seqFile;
 
 

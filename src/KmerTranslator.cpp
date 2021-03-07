@@ -1,26 +1,57 @@
 // Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
 
 #include "KmerTranslator.h"
+#include "Info.h"
+#include "util.h"
 
-KmerTranslator::KmerTranslator() {
-  span = 41;
-  weight = 27;
+KmerTranslator::KmerTranslator(std::string spacedKmerPattern) {
 
-  _span_mask = 2199023255551; //2^41-1
-  //11010111011011011001110011011011011101011
-  _mask_array = new unsigned char[weight]{0, 1, 3, 5, 6, 7, 9, 10, 12, 13, 15, 16, 19, 20, 21, 24, 25, 27, 28, 30, 31,
-                                          33, 34, 35, 37, 39, 40};
+  span = spacedKmerPattern.length();
+  if (span > 64) {
+    Info(Info::INFO) << "Error: Only kmerSpan <= 64 is supported\n";
+    EXIT(EXIT_FAILURE);
+  }
+  weight = 0;
+  for (unsigned int idx = 0; idx < span; idx++) {
+    if (spacedKmerPattern[idx] == '1') {
+      weight++;
+    } else if (spacedKmerPattern[idx] == '0')
+      continue;
+    else {
+      Info(Info::INFO) << "Error: Found invalid character in spacedKmerPattern\n";
+      EXIT(EXIT_FAILURE);
+    }
+    if (spacedKmerPattern[idx] != spacedKmerPattern[span - idx - 1]) {
+      Info(Info::INFO) << "Error: spacedKmerPattern must be symmetric\n";
+      EXIT(EXIT_FAILURE);
+    }
+  }
+
+  if (spacedKmerPattern[0] != '1' || spacedKmerPattern[span - 1] != '1') {
+    Info(Info::INFO) << "Error: at least first and last position in spacedKmerPattern must 1\n";
+    EXIT(EXIT_FAILURE);
+  }
+
+  if (weight < 12 || weight > 32) {
+    Info(Info::INFO) << "Error: Only 12 <= weight <= 32 is supported\n";
+    EXIT(EXIT_FAILURE);
+  }
+
+  _mask_array = new unsigned char[weight];
   _inverse_mask_array = new unsigned char[span];
-  unsigned short jdx = 0;
-  for(unsigned short idx = 0; idx < span; idx++){
-    if (_mask_array[jdx] ==idx) {
+  unsigned int jdx = 0;
+  for (unsigned int idx = 0; idx < span; idx++) {
+    if (spacedKmerPattern[idx] == '1') {
+      _mask_array[jdx] = idx;
       _inverse_mask_array[idx] = jdx;
       jdx++;
-    }
-    else{
+    } else {
       _inverse_mask_array[idx] = UCHAR_MAX;
     }
   }
+
+  _spaced_mask = std::stoll(spacedKmerPattern, nullptr, 2);
+
 }
 
 KmerTranslator::~KmerTranslator() {
@@ -59,4 +90,16 @@ packedKmerType KmerTranslator::kmer2minPackedKmer(const spacedKmerType kmer) con
 
 packedKmerType KmerTranslator::kmer2minPackedKmer(const packedKmerType kmer) const {
   return (minIndex(kmer, weight));
+}
+
+void KmerTranslator::getBestSplit(unsigned int &logIndexSize, unsigned int &logOffsetSize ) const {
+
+  if (2*weight > 30) {
+    logIndexSize = 30;
+    logOffsetSize = 2 * weight - logIndexSize;
+  } else {
+    logIndexSize = 2 * weight-2;
+    logOffsetSize = 2;
+  }
+
 }

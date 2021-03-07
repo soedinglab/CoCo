@@ -10,12 +10,12 @@ private:
   unsigned short span;   /* kmer size */
   unsigned short weight; /* number of informative positions */
 
-  spacedKmerType _span_mask;
+  spacedKmerType _spaced_mask;
   unsigned char *_mask_array;
   unsigned char *_inverse_mask_array;
 
 public:
-  KmerTranslator();
+  KmerTranslator(std::string spacedKmerPattern);
 
   ~KmerTranslator();
 
@@ -28,6 +28,8 @@ public:
   unsigned short getSpan() const;
 
   unsigned short getWeight() const;
+
+  void getBestSplit(unsigned int &logIndexSize, unsigned int &logOffsetSize) const;
 
   friend class CountProfile;
   

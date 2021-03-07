@@ -36,6 +36,9 @@ public:
     ++kh_val(this->hashTable, itr);
   }
 
+  void iterateOverAll(FILE* fp) const {
+    EXIT(EXIT_FAILURE);
+  }
 };
 
 #endif //HASHTABLE_H

@@ -112,7 +112,7 @@ int filter(int argc, const char **argv, const Command *tool)
   }
 
   initialize();
-  KmerTranslator *translator = new KmerTranslator();
+  KmerTranslator *translator = new KmerTranslator(opt.spacedKmerPattern);
   string seqFile = opt.seqFile;
 
 

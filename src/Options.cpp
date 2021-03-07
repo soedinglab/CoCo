@@ -23,6 +23,10 @@ Options::Options() :
   OP_OUTPREFIX(OP_OUTPREFIX_ID, "outprefix", "--outprefix",
                "prefix to use for resultfile(s)",
                typeid(std::string), (void *) &outprefix, 0),
+  OP_SPACED_KMER_PATTERN(OP_SPACED_KMER_PATTERN_ID,"spaced-pattern",
+               "--spaced-pattern", "User-specified spaced k-mer pattern (span must be <=64, 12 <= weight <=32 and symmetric),\n "\
+               "default: 11010111011011011001110011011011011101011",
+               typeid(std::string), (void*) &spacedKmerPattern, 0),
   OP_SKIP(OP_SKIP_ID,"skip", "--skip", "skip sequences with less than this many k-mers",
                typeid(int), (void*) &skip, 0),
   OP_THRESHOLD(OP_THRESHOLD_ID, "threshold", "--threshold",
@@ -69,6 +73,7 @@ Options::Options() :
   correctionWorkflow.push_back(&OP_COUNT_FILE);
   correctionWorkflow.push_back(&OP_COUNT_MODE);
   correctionWorkflow.push_back(&OP_OUTPREFIX);
+  correctionWorkflow.push_back(&OP_SPACED_KMER_PATTERN);
   correctionWorkflow.push_back(&OP_SKIP);
   correctionWorkflow.push_back(&OP_THRESHOLD);
   correctionWorkflow.push_back(&OP_TOLERANCE);
@@ -79,6 +84,7 @@ Options::Options() :
   filterWorkflow.push_back(&OP_SEQ_FILE);
   filterWorkflow.push_back(&OP_COUNT_FILE);
   filterWorkflow.push_back(&OP_OUTPREFIX);
+  filterWorkflow.push_back(&OP_SPACED_KMER_PATTERN);
   filterWorkflow.push_back(&OP_SKIP);
   filterWorkflow.push_back(&OP_DROP_LEVEL1);
   filterWorkflow.push_back(&OP_DROP_LEVEL2);
@@ -91,6 +97,7 @@ Options::Options() :
   abundanceEstimatorWorkflow.push_back(&OP_SEQ_FILE);
   abundanceEstimatorWorkflow.push_back(&OP_COUNT_FILE);
   abundanceEstimatorWorkflow.push_back(&OP_OUTPREFIX);
+  abundanceEstimatorWorkflow.push_back(&OP_SPACED_KMER_PATTERN);
   abundanceEstimatorWorkflow.push_back(&OP_SKIP);
   abundanceEstimatorWorkflow.push_back(&OP_COUNT_MODE);
   abundanceEstimatorWorkflow.push_back(&OP_VERBOSE);
@@ -99,6 +106,7 @@ Options::Options() :
   profileWorkflow.push_back(&OP_SEQ_FILE);
   profileWorkflow.push_back(&OP_COUNT_FILE);
   profileWorkflow.push_back(&OP_OUTPREFIX);
+  profileWorkflow.push_back(&OP_SPACED_KMER_PATTERN);
   profileWorkflow.push_back(&OP_SKIP);
   profileWorkflow.push_back(&OP_COUNT_MODE);
   profileWorkflow.push_back(&OP_VERBOSE);
@@ -107,11 +115,13 @@ Options::Options() :
   counts2flatWorkflow.push_back(&OP_COUNT_FILE);
   counts2flatWorkflow.push_back(&OP_COUNT_MODE);
   counts2flatWorkflow.push_back(&OP_OUTPREFIX);
+  counts2flatWorkflow.push_back(&OP_SPACED_KMER_PATTERN);
 
   }
 
 void Options::setDefaults() {
 
+  spacedKmerPattern="11010111011011011001110011011011011101011";
   skip = 10;
 
   threshold = 1;
@@ -184,6 +194,7 @@ void Options::parseOptions(int argc, const char *argv[],
     {"seqfile",   required_argument, NULL, 0},
     {"counts",    required_argument, NULL, 0},
     {"outprefix",    required_argument, NULL, 0},
+    {"spaced-pattern",    required_argument, NULL, 0},
     {"skip",    required_argument, NULL, 0},
     {"threshold", required_argument, NULL, 0},
     {"tolerance", required_argument, NULL, 0},

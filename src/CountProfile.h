@@ -78,7 +78,7 @@ public:
 
   /*** advanced profile operations ***/
 
-  int doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool dryRun);
+  int doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool needMultipleKmers, bool dryRun);
 
   int doIndelCorrection(uint32_t *maxProfile, unsigned int threshold, double tolerance);
 

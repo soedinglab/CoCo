@@ -10,10 +10,10 @@
 KSEQ_INIT(int, read)
 
 
-LookupTableBase *buildLookuptable(string countFile, int countMode,
-                                  const KmerTranslator &translator,
-                                  uint32_t minCount) {
-  unsigned int kmerSpan = translator.getSpan();
+template<unsigned int LOGINDEX, unsigned int LOGOFFSET>
+LookupTableBase *buildLookuptableIter(string countFile, int countMode,
+                                      const KmerTranslator &translator,
+                                      uint32_t minCount){
 
   /* get dsk kmer-count storage */
   Storage *storage = StorageFactory(STORAGE_HDF5).load(countFile);
@@ -22,9 +22,11 @@ LookupTableBase *buildLookuptable(string countFile, int countMode,
   string kmerSizeStr = dskGroup.getProperty("kmer_size");
   unsigned int kmerSize = atoi(kmerSizeStr.c_str());
 
+  unsigned int kmerSpan = translator.getSpan();
+
   if (kmerSize != kmerSpan) {
     Info(Info::ERROR) << "ERROR: kmerSize " << kmerSize << " used in hdf5 file " << countFile.c_str() << " is not supported.\n"
-                         "Please pre-compute kmer counts with k=41\n";
+                                                                                                         "Please pre-compute kmer counts with k=41\n";
     return NULL;
   }
 
@@ -33,10 +35,7 @@ LookupTableBase *buildLookuptable(string countFile, int countMode,
   Partition<Count> &solidKmers = dskGroup.getPartition<Count>("solid");
   assert(translator.getSpan() == kmerSize);
 
-  Info(Info::INFO) << "create lookuptable...\n";
-
-  // create lookuptable
-  Lookuptable *lookuptable = new Lookuptable(solidKmers.getNbItems(), countMode);
+  Lookuptable<LOGINDEX,LOGOFFSET> *lookuptable = new Lookuptable<LOGINDEX, LOGOFFSET>(solidKmers.getNbItems(), countMode);
   // fill lookuptable
   {
     Iterator<Count> *it = solidKmers.iterator();
@@ -83,6 +82,66 @@ LookupTableBase *buildLookuptable(string countFile, int countMode,
   return lookuptable;
 }
 
+LookupTableBase *buildLookuptable(string countFile, int countMode,
+                                  const KmerTranslator &translator,
+                                  uint32_t minCount) {
+
+
+
+
+  Info(Info::INFO) << "create lookuptable...\n";
+  unsigned int logIndexSize, logOffsetSize;
+  translator.getBestSplit(logIndexSize, logOffsetSize );
+  // create lookuptable
+  if(logIndexSize==22 && logOffsetSize==2)
+    return buildLookuptableIter<22,2>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==24 && logOffsetSize==2)
+    return buildLookuptableIter<24,2>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==26 && logOffsetSize==2)
+    return buildLookuptableIter<26,2>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==28 && logOffsetSize==2)
+    return buildLookuptableIter<28,2>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==2)
+    return buildLookuptableIter<30,2>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==4)
+    return buildLookuptableIter<30,4>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==6)
+    return buildLookuptableIter<30,6>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==8)
+    return buildLookuptableIter<30,8>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==10)
+    return buildLookuptableIter<30,10>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==12)
+    return buildLookuptableIter<30,12>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==14)
+    return buildLookuptableIter<30,14>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==16)
+    return buildLookuptableIter<30,16>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==18)
+    return buildLookuptableIter<30,18>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==20)
+    return buildLookuptableIter<30,20>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==22)
+    return buildLookuptableIter<30,22>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==24)
+    return buildLookuptableIter<30,24>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==26)
+    return buildLookuptableIter<30,26>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==28)
+    return buildLookuptableIter<30,28>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==30)
+    return buildLookuptableIter<30,30>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==32)
+    return buildLookuptableIter<30,32>(countFile, countMode,translator, minCount);
+  else if(logIndexSize==30 && logOffsetSize==34)
+    return buildLookuptableIter<30,34>(countFile, countMode,translator, minCount);
+  else {
+    Info(Info::ERROR) << "ERROR: this weight is not implemented, only values 12-32 are supported\n";
+    EXIT(EXIT_FAILURE);
+  }
+
+}
+
 LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator) {
 
   Info(Info::WARNING) << "WARNING: counting kmers only on seqfile argument. "\
@@ -98,14 +157,13 @@ LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator
   FILE *kmerCountFile = openFileOrDie(seqFile, "r");
   int fd = fileno(kmerCountFile);
   kseq_t *seq = kseq_init(fd);
-  spacedKmerType spacedKmer, mask = ((((spacedKmerType) 1) << (spacedKmerType) (kmerSpan * 2)) - 1);
+  spacedKmerType spacedKmer = 0, mask = ((((spacedKmerType) 1) << (spacedKmerType) (kmerSpan * 2)) - 1);
   packedKmerType x;
 
-  Info(Info::INFO) << "count k-mers...\n";
+  Info(Info::INFO) << "count spaced k-mers...\n";
   while (kseq_read(seq) >= 0) {
     const size_t len = seq->seq.l;
     const char *seqNuc = seq->seq.s;
-    const char *seqName = seq->name.s;
     SeqType seqStr;
     seqStr.reserve(len);
 
@@ -113,7 +171,7 @@ LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator
       continue;
 
     /* sequence to 2bit representation */
-    int l;
+    unsigned int l;
     for (unsigned int pos = l = 0; pos < len; pos++) {
       int c = res2int[(int) seqNuc[pos]];
       if (c != -1) {
@@ -139,7 +197,7 @@ LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator
 
 
 //DEBUG
-bool isValid(const Lookuptable &lookuptable,
+bool isValid(const LookupTableBase &lookuptable,
              Partition<Count> &solidKmers,
              Kmer<>::ModelCanonical &model,
              const KmerTranslator &translator,

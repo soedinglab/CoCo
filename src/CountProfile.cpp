@@ -25,7 +25,7 @@ CountProfile::~CountProfile() {
 void CountProfile::update(){
 
   unsigned short kmerSpan = translator->getSpan();
-
+  profile_length = seqinfo->seq.length()- kmerSpan + 1;
   // check size of array and create new one in case of too small size
   if (profile_length > profile_length_alloc) {
 
@@ -47,7 +47,7 @@ void CountProfile::update(){
 
     if ((int)idx >= kmerSpan - 1) {
       // check if k-mer contains 'N' (or any other invalid character)
-      if  ((nStore & translator->_span_mask) != 0) {
+      if  ((nStore & translator->_spaced_mask) != 0) {
         profile[idx - (kmerSpan - 1)].count = 0;
         profile[idx - (kmerSpan - 1)].valid = 0;
         continue;
@@ -430,7 +430,7 @@ int CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold
 }
 
 
-int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool dryRun) {
+int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool needMultipleKmers, bool dryRun) {
 
   unsigned short kmerSpan = this->translator->getSpan();
   unsigned short kmerWeight = translator->getWeight();
@@ -504,6 +504,8 @@ int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int co
       }
     }
 
+    if(needMultipleKmers && firstUniqueKmerStart==lastUniqueKmerStart)
+      continue; // Skip this error if needMultipleKmers is set, but we only have one kmer
     // first-last-unique-kmer correction strategy
     packedKmerType firstUniqueKmer = 0, lastUniqueKmer = 0;
 
