@@ -88,7 +88,7 @@ public:
 
   int tryDeletionCorrection(unsigned int deletionPos, unsigned int threshold, uint32_t *neighborhoodTolerance);
 
-  int doTrimming(uint32_t *maxProfile, unsigned int threshold, double tolerance, unsigned int *trimmedCounter);
+  int doTrimming(uint32_t *maxProfile, unsigned int threshold, double tolerance, unsigned int maxTrimLen, unsigned int *trimmedCounter);
 
   bool checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst, double localPercDrop, \
                                                  double globalPercDrop, bool maskOnlyDropEdges=true);

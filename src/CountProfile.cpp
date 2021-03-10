@@ -402,9 +402,8 @@ int CountProfile::tryDeletionCorrection(unsigned int deletionPos, unsigned int t
   return mutationTarget;
 }
 
-int CountProfile::doTrimming(uint32_t *maxProfile, unsigned int threshold, double tolerance, unsigned int *trimmedCounter){
+int CountProfile::doTrimming(uint32_t *maxProfile, unsigned int threshold, double tolerance, unsigned int maxTrimLen, unsigned int *trimmedCounter){
   unsigned short kmerSpan = this->translator->getSpan();
-  unsigned short kmerWeight = translator->getWeight();
   unsigned int maxProfileLength = profile_length + kmerSpan - 1;
   uint32_t neighborhoodTolerance[maxProfileLength];
   memset(neighborhoodTolerance, 0, sizeof(*neighborhoodTolerance) * maxProfileLength);
@@ -428,9 +427,7 @@ int CountProfile::doTrimming(uint32_t *maxProfile, unsigned int threshold, doubl
 
   //TODO: outsource neighborhood calculation to avoid code duplication and code repetition
 
-  bool changed = false;
   unsigned int dropLen = 0;
-  int offset = 0;
   string sequence = seqinfo->seq;
   for (size_t idx = 0; idx <= this->profile_length; idx++) {
     if (idx < profile_length && this->profile[idx].count <= threshold + neighborhoodTolerance[idx]) {
@@ -440,15 +437,14 @@ int CountProfile::doTrimming(uint32_t *maxProfile, unsigned int threshold, doubl
       // only check single indel errors
       if (dropLen <= kmerSpan) {
 
-         if ((idx == 1 || idx == this->profile_length) && dropLen == 1) {
+         if ((idx <= maxTrimLen || idx == this->profile_length) && dropLen <= maxTrimLen) {
 
           if (idx == this->profile_length)
-            sequence.pop_back();
+            sequence.erase(sequence.end()-dropLen, sequence.end());
           else
-            sequence.erase(sequence.begin());
+            sequence.erase(sequence.begin(), sequence.begin()+dropLen);
 
-          (*trimmedCounter) += 1;
-          offset -= 1;
+          (*trimmedCounter) += dropLen;
         }
 
       }

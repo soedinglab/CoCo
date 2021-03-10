@@ -28,6 +28,7 @@ typedef struct {
   bool dryRun;
   unsigned int threshold;
   double tolerance;
+  int maxTrimLen;
   CorrectionStatistic *statistic;
   FILE *correctedReadsFasta;
   FILE *errorCandidateReads;
@@ -66,7 +67,7 @@ int correctionProcessor(CountProfile &countprofile, void *args)
     countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance,false, &(statistic->substitution_independent),  &(statistic->insertion),  &(statistic->deletion));
     //TODO: adjust profilelen?
   countprofile.update();
-  countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, &(statistic->trimmed));
+  countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, currArgs->maxTrimLen, &(statistic->trimmed));
 
 // sub2 - indel -sub
   /*do {
@@ -119,7 +120,7 @@ int correctionProcessor(CountProfile &countprofile, void *args)
     }
   } while (!currArgs->dryRun && status == SOME_CORRECTED);
 
-  countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance);
+  countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerancecurrArgs->maxTrimLen, &(statistic->trimmed));
 
     //TODO: add trimming strategy for edge errors?
     */
@@ -149,7 +150,7 @@ int correctionProcessor(CountProfile &countprofile, void *args)
     }
   } while (!currArgs->dryRun && status == SOME_CORRECTED);
 
-  countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, &(statistic->trimmed));*/
+  countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, currArgs->maxTrimLen, &(statistic->trimmed));*/
 /*
   // sub2 - indel +sub wo trimming -sub
   do {
@@ -233,11 +234,11 @@ int correction(int argc, const char **argv, const Command *tool)
   CorrectionStatistic statistic{0,0,0,0,0,0};
 
   if (opt.dryRun){
-      args = {true, (unsigned int) opt.threshold, opt.tolerance, &statistic, NULL, openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "w")};
+      args = {true, (unsigned int) opt.threshold, opt.tolerance, opt.maxTrimLen, &statistic, NULL, openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "w")};
       Info(Info::INFO) << "Perform only a dry run without correction\n";
   }
   else {
-      args = {false, (unsigned int) opt.threshold, opt.tolerance, &statistic, openFileOrDie(outprefix + ".coco_" + tool->cmd + ext, "w"), NULL};
+      args = {false, (unsigned int) opt.threshold, opt.tolerance, opt.maxTrimLen, &statistic, openFileOrDie(outprefix + ".coco_" + tool->cmd + ext, "w"), NULL};
   }
 
   FILE *skipReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + "_skipped" + ext, "w");
