@@ -26,6 +26,7 @@ void CountProfile::update(){
 
   unsigned short kmerSpan = translator->getSpan();
   profile_length = seqinfo->seq.length()- kmerSpan + 1;
+
   // check size of array and create new one in case of too small size
   if (profile_length > profile_length_alloc) {
 
@@ -457,7 +458,7 @@ int CountProfile::doTrimming(uint32_t *maxProfile, unsigned int threshold, doubl
   return 0; //TODO
 }
 
-int CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold, double tolerance, bool trySubstitution,
+bool CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold, double tolerance, bool trySubstitution,
                                     unsigned int *correctedSubstitutions, unsigned int *correctedInsertions, unsigned int *correctedDeletions){
   unsigned short kmerSpan = this->translator->getSpan();
   unsigned short kmerWeight = translator->getWeight();
@@ -521,6 +522,7 @@ int CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold
           resToSub = this->trySubstitutionCorrection(substitutionPos, threshold, neighborhoodTolerance);
           if (resToSub >= 0) {
             sequence[substitutionPos + offset] = int2res[resToSub];
+            changed=true;
             (*correctedSubstitutions) +=1;
             continue;
           }
@@ -543,11 +545,13 @@ int CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold
         if (insertion_approved && !deletion_approved) {
           // final elimination of insertion error
           sequence.erase(sequence.begin() + offset + insertionPos);
+          changed=true;
           offset -= 1;
           (*correctedInsertions) +=1;
         } else if (deletion_approved && !insertion_approved) {
           // final elimination of deletion error
           sequence.insert(deletionPos + offset, 1, int2res[resToAdd]);
+          changed=true;
           offset += 1;
           (*correctedDeletions) +=1;
         }
@@ -570,7 +574,7 @@ int CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold
   }
   seqinfo->seq = sequence;
 
-  return 0; //TODO
+  return changed; //TODO
 }
 
 

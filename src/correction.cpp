@@ -52,6 +52,7 @@ int correctionProcessor(CountProfile &countprofile, void *args)
 
     /* maximize count profile */
     uint32_t *maxProfile = countprofile.maximize();
+    /*
  //sub - indel
     do {
       status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, &(statistic->substitution_multikmer), currArgs->dryRun);
@@ -67,11 +68,13 @@ int correctionProcessor(CountProfile &countprofile, void *args)
     countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance,false, &(statistic->substitution_independent),  &(statistic->insertion),  &(statistic->deletion));
     //TODO: adjust profilelen?
   countprofile.update();
-  countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, currArgs->maxTrimLen, &(statistic->trimmed));
-
-// sub2 - indel -sub
-  /*do {
-    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, currArgs->dryRun);
+  if(currArgs->maxTrimLen > 0)
+    countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, currArgs->maxTrimLen, &(statistic->trimmed));
+*/
+    /*
+// sub2 - indel -sub - trim
+  do {
+    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, &(statistic->substitution_multikmer),currArgs->dryRun);
 
     if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
       countprofile.update();
@@ -81,23 +84,13 @@ int correctionProcessor(CountProfile &countprofile, void *args)
     }
   } while (!currArgs->dryRun && status == SOME_CORRECTED);
 
-  countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance);
-  countprofile.update();
+  if(countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance, false, &(statistic->substitution_independent),  &(statistic->insertion),  &(statistic->deletion))) {
+    countprofile.update();
+    delete[] maxProfile;
+    maxProfile = countprofile.maximize();
+  }
   do {
-    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, currArgs->dryRun);
-
-    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
-      countprofile.update();
-      delete[] maxProfile;
-      maxProfile = countprofile.maximize();
-      //TODO: update maxProfile instead of generating new one
-    }
-  } while (!currArgs->dryRun && status == SOME_CORRECTED);*/
-
-  /*
-  // sub2 - indel wo trimming -sub - trimming
-  do {
-    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, currArgs->dryRun);
+    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, &(statistic->substitution_singlekmer),currArgs->dryRun);
 
     if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
       countprofile.update();
@@ -106,25 +99,10 @@ int correctionProcessor(CountProfile &countprofile, void *args)
       //TODO: update maxProfile instead of generating new one
     }
   } while (!currArgs->dryRun && status == SOME_CORRECTED);
+  if(currArgs->maxTrimLen > 0)
+    countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, currArgs->maxTrimLen, &(statistic->trimmed));
+*/
 
-  countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance, false);
-  countprofile.update();
-  do {
-    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, currArgs->dryRun);
-
-    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
-      countprofile.update();
-      delete[] maxProfile;
-      maxProfile = countprofile.maximize();
-      //TODO: update maxProfile instead of generating new one
-    }
-  } while (!currArgs->dryRun && status == SOME_CORRECTED);
-
-  countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerancecurrArgs->maxTrimLen, &(statistic->trimmed));
-
-    //TODO: add trimming strategy for edge errors?
-    */
-/*
   // sub2 - indel +sub wo trimming -sub - trimming
   do {
     status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, &(statistic->substitution_multikmer), currArgs->dryRun);
@@ -137,8 +115,11 @@ int correctionProcessor(CountProfile &countprofile, void *args)
     }
   } while (!currArgs->dryRun && status == SOME_CORRECTED);
 
-  countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance, true,  &(statistic->substitution_independent),  &(statistic->insertion),  &(statistic->deletion));
-  countprofile.update();
+  if(countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance, true, &(statistic->substitution_independent),  &(statistic->insertion),  &(statistic->deletion))) {
+    countprofile.update();
+    delete[] maxProfile;
+    maxProfile = countprofile.maximize();
+  }
   do {
     status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, &(statistic->substitution_singlekmer), currArgs->dryRun);
 
@@ -150,33 +131,9 @@ int correctionProcessor(CountProfile &countprofile, void *args)
     }
   } while (!currArgs->dryRun && status == SOME_CORRECTED);
 
-  countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, currArgs->maxTrimLen, &(statistic->trimmed));*/
-/*
-  // sub2 - indel +sub wo trimming -sub
-  do {
-    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, &(statistic->substitution_multikmer), currArgs->dryRun);
+  if(currArgs->maxTrimLen > 0)
+    countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, currArgs->maxTrimLen, &(statistic->trimmed));
 
-    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
-      countprofile.update();
-      delete[] maxProfile;
-      maxProfile = countprofile.maximize();
-      //TODO: update maxProfile instead of generating new one
-    }
-  } while (!currArgs->dryRun && status == SOME_CORRECTED);
-
-  countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance, true, &(statistic->substitution_independent),  &(statistic->insertion),  &(statistic->deletion));
-  countprofile.update();
-  do {
-    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, &(statistic->substitution_singlekmer), currArgs->dryRun);
-
-    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
-      countprofile.update();
-      delete[] maxProfile;
-      maxProfile = countprofile.maximize();
-      //TODO: update maxProfile instead of generating new one
-    }
-  } while (!currArgs->dryRun && status == SOME_CORRECTED);
-*/
   // }
   if (currArgs->dryRun) {
     if (status != ERROR_FREE) {
