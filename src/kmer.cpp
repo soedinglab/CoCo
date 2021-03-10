@@ -32,6 +32,7 @@ uint64_t revComplement_intr(uint64_t kmer, unsigned short k) {
 
   // shift right by 2 nucleotids
   kmer2 >>= 4;
+  kmer2 = _mm_and_si128(kmer2, _mm_set1_epi8(0x0F)); // necessary if k=32, because signed bit is used
 
   // use _mm_shuffle_epi8 to look up reverse complement
   kmer1 = _mm_shuffle_epi8(lookup1, kmer1);
@@ -58,11 +59,11 @@ packedKmerType revComplement(packedKmerType kmer, unsigned short kmerSize) {
 #ifdef __SSSE3__
   revCompKmer = revComplement_intr(kmer, kmerSize);
 #else
-  kmerType kmer_cp = kmer;
-  kmerType mask = (packedKmerType) 3;
+  packedKmerType kmer_cp = kmer;
+  packedKmerType mask = (packedKmerType) 3;
 
   for (int idx = 0; idx < kmerSize; idx++){
-    kmerType nuc = (kmer_cp & mask);
+    packedKmerType nuc = (kmer_cp & mask);
     revCompKmer <<= 2;
     revCompKmer += int2rev[nuc];
     kmer_cp >>= 2;
