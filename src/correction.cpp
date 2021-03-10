@@ -14,13 +14,25 @@
 #include "runner.h"
 #include "filehandling.h"
 
+
+typedef struct{
+  unsigned int substitution_multikmer;
+  unsigned int substitution_singlekmer;
+  unsigned int substitution_independent;
+  unsigned int insertion;
+  unsigned int deletion;
+  unsigned int trimmed;
+}CorrectionStatistic;
+
 typedef struct {
   bool dryRun;
   unsigned int threshold;
   double tolerance;
+  CorrectionStatistic *statistic;
   FILE *correctedReadsFasta;
   FILE *errorCandidateReads;
 } CorrectorArgs;
+
 
 int correctionProcessor(CountProfile &countprofile, void *args)
 {
@@ -34,13 +46,14 @@ int correctionProcessor(CountProfile &countprofile, void *args)
   //Info(Info::DEBUG) << seqinfo->name << "\t" << covEst << "\n";
 
   int status = ERROR_FREE;
+  CorrectionStatistic *statistic = currArgs->statistic;
   //if(covEst > currArgs->threshold + (unsigned int) (currArgs->tolerance * covEst + 1)) {
 
     /* maximize count profile */
     uint32_t *maxProfile = countprofile.maximize();
  //sub - indel
     do {
-      status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, currArgs->dryRun);
+      status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, &(statistic->substitution_multikmer), currArgs->dryRun);
 
       if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
         countprofile.update();
@@ -50,11 +63,13 @@ int correctionProcessor(CountProfile &countprofile, void *args)
       }
     } while (!currArgs->dryRun && status == SOME_CORRECTED);
 
-    countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance);
+    countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance,false, &(statistic->substitution_independent),  &(statistic->insertion),  &(statistic->deletion));
     //TODO: adjust profilelen?
-/*
+  countprofile.update();
+  countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, &(statistic->trimmed));
+
 // sub2 - indel -sub
-  do {
+  /*do {
     status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, currArgs->dryRun);
 
     if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
@@ -76,10 +91,92 @@ int correctionProcessor(CountProfile &countprofile, void *args)
       maxProfile = countprofile.maximize();
       //TODO: update maxProfile instead of generating new one
     }
+  } while (!currArgs->dryRun && status == SOME_CORRECTED);*/
+
+  /*
+  // sub2 - indel wo trimming -sub - trimming
+  do {
+    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, currArgs->dryRun);
+
+    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
+      countprofile.update();
+      delete[] maxProfile;
+      maxProfile = countprofile.maximize();
+      //TODO: update maxProfile instead of generating new one
+    }
+  } while (!currArgs->dryRun && status == SOME_CORRECTED);
+
+  countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance, false);
+  countprofile.update();
+  do {
+    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, currArgs->dryRun);
+
+    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
+      countprofile.update();
+      delete[] maxProfile;
+      maxProfile = countprofile.maximize();
+      //TODO: update maxProfile instead of generating new one
+    }
+  } while (!currArgs->dryRun && status == SOME_CORRECTED);
+
+  countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance);
+
+    //TODO: add trimming strategy for edge errors?
+    */
+/*
+  // sub2 - indel +sub wo trimming -sub - trimming
+  do {
+    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, &(statistic->substitution_multikmer), currArgs->dryRun);
+
+    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
+      countprofile.update();
+      delete[] maxProfile;
+      maxProfile = countprofile.maximize();
+      //TODO: update maxProfile instead of generating new one
+    }
+  } while (!currArgs->dryRun && status == SOME_CORRECTED);
+
+  countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance, true,  &(statistic->substitution_independent),  &(statistic->insertion),  &(statistic->deletion));
+  countprofile.update();
+  do {
+    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, &(statistic->substitution_singlekmer), currArgs->dryRun);
+
+    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
+      countprofile.update();
+      delete[] maxProfile;
+      maxProfile = countprofile.maximize();
+      //TODO: update maxProfile instead of generating new one
+    }
+  } while (!currArgs->dryRun && status == SOME_CORRECTED);
+
+  countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, &(statistic->trimmed));*/
+/*
+  // sub2 - indel +sub wo trimming -sub
+  do {
+    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, &(statistic->substitution_multikmer), currArgs->dryRun);
+
+    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
+      countprofile.update();
+      delete[] maxProfile;
+      maxProfile = countprofile.maximize();
+      //TODO: update maxProfile instead of generating new one
+    }
+  } while (!currArgs->dryRun && status == SOME_CORRECTED);
+
+  countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance, true, &(statistic->substitution_independent),  &(statistic->insertion),  &(statistic->deletion));
+  countprofile.update();
+  do {
+    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, &(statistic->substitution_singlekmer), currArgs->dryRun);
+
+    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
+      countprofile.update();
+      delete[] maxProfile;
+      maxProfile = countprofile.maximize();
+      //TODO: update maxProfile instead of generating new one
+    }
   } while (!currArgs->dryRun && status == SOME_CORRECTED);
 */
-    //TODO: add trimming strategy for edge errors?
- // }
+  // }
   if (currArgs->dryRun) {
     if (status != ERROR_FREE) {
       fwrite(seqinfo->name.c_str(), sizeof(char), seqinfo->name.size(), currArgs->errorCandidateReads);
@@ -133,17 +230,27 @@ int correction(int argc, const char **argv, const Command *tool)
 
   string ext = ".fa"; //getFileExtension(seqFile);
   CorrectorArgs args;
+  CorrectionStatistic statistic{0,0,0,0,0,0};
 
   if (opt.dryRun){
-      args = {true, (unsigned int) opt.threshold, opt.tolerance, NULL, openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "w")};
+      args = {true, (unsigned int) opt.threshold, opt.tolerance, &statistic, NULL, openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "w")};
       Info(Info::INFO) << "Perform only a dry run without correction\n";
   }
   else {
-      args = {false, (unsigned int) opt.threshold, opt.tolerance,openFileOrDie(outprefix + ".coco_" + tool->cmd + ext, "w"), NULL};
+      args = {false, (unsigned int) opt.threshold, opt.tolerance, &statistic, openFileOrDie(outprefix + ".coco_" + tool->cmd + ext, "w"), NULL};
   }
 
   FILE *skipReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + "_skipped" + ext, "w");
   int returnVal = processSeqFile(seqFile, lookuptable, translator, correctionProcessor, &args, opt.skip, skipReads );
+
+  // print statistic
+  std::cout << "corrections from multiKmer step (substitutions only): " << statistic.substitution_multikmer << std::endl;
+  std::cout << "corrections from indel step (total): " << statistic.substitution_independent+statistic.insertion+statistic.deletion << std::endl;
+  std::cout << "corrections from indel step (substitutions): " << statistic.substitution_independent << std::endl;
+  std::cout << "corrections from indel step (insertions): " << statistic.insertion << std::endl;
+  std::cout << "corrections from indel step (deletions): " << statistic.deletion << std::endl;
+  std::cout << "corrections from singleKmer step (substitutions only): " << statistic.substitution_singlekmer << std::endl;
+  std::cout << "trimmed nucleotides: " << statistic.trimmed << std::endl;
 
 
   if (skipReads)

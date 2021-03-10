@@ -171,6 +171,80 @@ unsigned int CountProfile::calcMedian(const std::vector<uint32_t> &positionsOfIn
   return(calcXquantile(0.5, positionsOfInterest));
 }
 
+int CountProfile::trySubstitutionCorrection(unsigned int substitutionStart, unsigned int threshold,
+                                            uint32_t *neighborhoodTolerance){
+
+  char current_res = seqinfo->seq[substitutionStart];
+  unsigned int start = substitutionStart >= translator->span ? substitutionStart - translator->span + 1 : 0;
+  unsigned int end = substitutionStart < profile_length ? substitutionStart : profile_length - 1;
+  unsigned int firstUniqueKmerStart = UINT_MAX, lastUniqueKmerStart = 0;
+  for (size_t jdx = start; jdx <= end; jdx++) {
+    if (translator->_inverse_mask_array[substitutionStart-jdx] != UCHAR_MAX) {
+      //Kmer starting at jdx has a coding position at substitutionPos
+      firstUniqueKmerStart = std::min(firstUniqueKmerStart, (unsigned int) jdx);
+      lastUniqueKmerStart = std::max(lastUniqueKmerStart, (unsigned int) jdx);
+    }
+  }
+
+  packedKmerType firstUniqueKmer = 0, lastUniqueKmer = 0;
+  if (firstUniqueKmerStart <= lastUniqueKmerStart) {
+    for (size_t jdx = 0; jdx < translator->weight; jdx++) {
+      firstUniqueKmer =
+        (firstUniqueKmer << 2) | (3 & res2int[(int) seqinfo->seq[firstUniqueKmerStart + translator->_mask_array[jdx]]]);
+      lastUniqueKmer =
+        (lastUniqueKmer << 2) | (3 & res2int[(int) seqinfo->seq[lastUniqueKmerStart + translator->_mask_array[jdx]]]);
+    }
+  } else {
+    return -1;
+  }
+
+  int mutationTarget = -1;
+  for (unsigned int resMutation = 0; resMutation < alphabetSize; resMutation++) {
+    unsigned int improvement = 0;
+    if (resMutation == (unsigned int) res2int[(int) current_res])
+      continue;
+
+    firstUniqueKmer &= ~((packedKmerType) 3 << (packedKmerType) (2 * (translator->getWeight() -
+                                                                      translator->_inverse_mask_array[
+                                                                        substitutionStart -
+                                                                        firstUniqueKmerStart] - 1)));
+    firstUniqueKmer |= ((packedKmerType) resMutation << (packedKmerType) (2 * (translator->getWeight() -
+                                                                               translator->_inverse_mask_array[
+                                                                                 substitutionStart -
+                                                                                 firstUniqueKmerStart] - 1)));
+
+    lastUniqueKmer &= ~((packedKmerType) 3 << (packedKmerType) (2 * (translator->getWeight() -
+                                                                     translator->_inverse_mask_array[
+                                                                       substitutionStart -
+                                                                       lastUniqueKmerStart] - 1)));
+    lastUniqueKmer |= ((packedKmerType) resMutation << (packedKmerType) (2 * (translator->getWeight() -
+                                                                              translator->_inverse_mask_array[
+                                                                                substitutionStart -
+                                                                                lastUniqueKmerStart] - 1)));
+
+    uint32_t c1 = lookuptable->getCount(translator->kmer2minPackedKmer(firstUniqueKmer));
+    if (c1 > threshold + neighborhoodTolerance[substitutionStart])
+      improvement++;
+    uint32_t c2 = lookuptable->getCount(translator->kmer2minPackedKmer(lastUniqueKmer));
+    if (c2 > threshold + neighborhoodTolerance[substitutionStart])
+      improvement++;
+
+    if (improvement == 2) {
+      if (mutationTarget == -1) {
+        mutationTarget = resMutation;
+      } else {
+        //ambigious mutation choice -> skip correction
+        mutationTarget = -2;
+        break;
+      }
+    }
+    // TODO: 1. majority voting? 2. local covEst 3. global covEst (= median)
+  }
+
+
+  return mutationTarget;
+}
+
 bool CountProfile::tryInsertionCorrection(unsigned int insertionStart, unsigned int insertionLen, unsigned int threshold,
                                                                                      uint32_t *neighborhoodTolerance){
 
@@ -328,7 +402,67 @@ int CountProfile::tryDeletionCorrection(unsigned int deletionPos, unsigned int t
   return mutationTarget;
 }
 
-int CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold, double tolerance){
+int CountProfile::doTrimming(uint32_t *maxProfile, unsigned int threshold, double tolerance, unsigned int *trimmedCounter){
+  unsigned short kmerSpan = this->translator->getSpan();
+  unsigned short kmerWeight = translator->getWeight();
+  unsigned int maxProfileLength = profile_length + kmerSpan - 1;
+  uint32_t neighborhoodTolerance[maxProfileLength];
+  memset(neighborhoodTolerance, 0, sizeof(*neighborhoodTolerance) * maxProfileLength);
+
+  // calculate neighborhood tolerance values with probability for observing the same sequencing error multiple times
+  std::vector<unsigned int> neighborhood;
+
+  for (unsigned int idx = 0; idx <= (unsigned int) kmerSpan; idx++)
+    neighborhood.push_back(maxProfile[idx]);
+
+  for (unsigned int idx = 0; idx < maxProfileLength; idx++) {
+    if (idx > kmerSpan / 2 && idx + kmerSpan / 2 < maxProfileLength) {
+      neighborhood.push_back(maxProfile[idx + kmerSpan / 2]);
+      neighborhood.erase(neighborhood.begin());
+    }
+
+    unsigned int max = *(std::max_element(neighborhood.begin(), neighborhood.end()));
+    // fast ceiling of tolerance*max
+    neighborhoodTolerance[idx] = (unsigned int) INT_MAX - (unsigned int)((double)INT_MAX - (tolerance * max));
+  }
+
+  //TODO: outsource neighborhood calculation to avoid code duplication and code repetition
+
+  bool changed = false;
+  unsigned int dropLen = 0;
+  int offset = 0;
+  string sequence = seqinfo->seq;
+  for (size_t idx = 0; idx <= this->profile_length; idx++) {
+    if (idx < profile_length && this->profile[idx].count <= threshold + neighborhoodTolerance[idx]) {
+      dropLen++;
+    } else if (dropLen > 0) {
+
+      // only check single indel errors
+      if (dropLen <= kmerSpan) {
+
+         if ((idx == 1 || idx == this->profile_length) && dropLen == 1) {
+
+          if (idx == this->profile_length)
+            sequence.pop_back();
+          else
+            sequence.erase(sequence.begin());
+
+          (*trimmedCounter) += 1;
+          offset -= 1;
+        }
+
+      }
+      dropLen = 0;
+    }
+    //else outside drop
+  }
+  seqinfo->seq = sequence;
+
+  return 0; //TODO
+}
+
+int CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold, double tolerance, bool trySubstitution,
+                                    unsigned int *correctedSubstitutions, unsigned int *correctedInsertions, unsigned int *correctedDeletions){
   unsigned short kmerSpan = this->translator->getSpan();
   unsigned short kmerWeight = translator->getWeight();
   unsigned int maxProfileLength = profile_length + kmerSpan - 1;
@@ -367,22 +501,34 @@ int CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold
       if (dropLen <= kmerSpan) {
 
         bool insertion_approved = false, deletion_approved = false;
-        unsigned int deletionPos = UINT_MAX, insertionPos = UINT_MAX;
+        int resToSub = -1;
+        unsigned int deletionPos = UINT_MAX, insertionPos = UINT_MAX, substitutionPos = UINT_MAX;
         int resToAdd = -1;
 
         // set position to correct
         if (idx == profile_length) {// no rise was found, drops with 0 < dropLen <= kmerSpan to end
           deletionPos = idx - dropLen + kmerSpan - 1;
           insertionPos = idx - dropLen + kmerSpan - 1;
+          substitutionPos = idx - dropLen + kmerSpan - 1;
 
         } else if (idx == dropLen || dropLen >= kmerSpan - 1) {
           //  * drops with 0 < dropLen <= kmerSpan from start
           //  * drops kmerSpan-1 <= dropLen <= kmerSpan within the read
           deletionPos = idx ;
           insertionPos = idx - 1;
+          if (idx==dropLen)
+            substitutionPos = idx-1;
 
         }
 
+        if(trySubstitution && substitutionPos!=UINT_MAX) {
+          resToSub = this->trySubstitutionCorrection(substitutionPos, threshold, neighborhoodTolerance);
+          if (resToSub >= 0) {
+            sequence[substitutionPos + offset] = int2res[resToSub];
+            (*correctedSubstitutions) +=1;
+            continue;
+          }
+        }
         // try correction
         if (insertionPos !=UINT_MAX && dropLen > 1)
           insertion_approved = this->tryInsertionCorrection(insertionPos, 1, threshold,
@@ -402,22 +548,24 @@ int CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold
           // final elimination of insertion error
           sequence.erase(sequence.begin() + offset + insertionPos);
           offset -= 1;
+          (*correctedInsertions) +=1;
         } else if (deletion_approved && !insertion_approved) {
           // final elimination of deletion error
           sequence.insert(deletionPos + offset, 1, int2res[resToAdd]);
           offset += 1;
+          (*correctedDeletions) +=1;
         }
         //else if (insertion_approved && deletion_approved){ => both approved => ambigious choice => no correction}
         //else{ no approved => no correction }
         //eliminate error in first/last nucleotide if no correction could be applied
-        else if ((idx == 1 || idx == this->profile_length) && dropLen == 1) {
+        /*else if ((idx == 1 || idx == this->profile_length) && dropLen == 1) {
 
           if (idx == this->profile_length)
             sequence.pop_back();
           else
             sequence.erase(sequence.begin());
           offset -= 1;
-        }
+        }*/
 
       }
       dropLen = 0;
@@ -430,7 +578,7 @@ int CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold
 }
 
 
-int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool needMultipleKmers, bool dryRun) {
+int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool needMultipleKmers, unsigned int *correctedSubstitutions, bool dryRun) {
 
   unsigned short kmerSpan = this->translator->getSpan();
   unsigned short kmerWeight = translator->getWeight();
@@ -573,6 +721,7 @@ int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int co
     }
   }
 
+  (*correctedSubstitutions) += correctedErrors;
 
   //Had errors
   if (correctedErrors == 0) {
