@@ -38,6 +38,9 @@ Options::Options() :
   OP_MAX_TRIM_LEN(OP_MAX_TRIM_LEN_ID, "max-trim-len", "--max-trim-len",
                "trim up to this many nucleotides from the beginning/end of reads if no correction was possible (default: 0)",
                typeid(int), (void *) &maxTrimLen, 0),
+  OP_UPDATE_LOOKUPTABLE(OP_UPDATE_LOOKUPTABLE_ID, "update-lookup", "--update-lookup",
+               "update counts in lookuptable after sequence is corrected (slow down, might help in low coverage regions)",
+                typeid(bool), (void *) &updateLookup, 0),
   OP_DROP_LEVEL1(OP_DROP_LEVEL1_ID, "drop-level1", "--drop-level1",
                "local drop criterion (range 0-0.33)",
                typeid(double), (void *) &dropLevel1, 0),
@@ -57,7 +60,7 @@ Options::Options() :
                             "default: 3", typeid(int), (void *) &verbose, 0),
   // expert options
   OP_COUNT_MODE(OP_COUNT_MODE_ID, "count-mode", "--count-mode",
-                "way to store counts for concurrent spaced kmers (expert option)\n 0: sum\n 1: maximize (default)",
+                "way to store counts for concurrent spaced kmers (expert option)\n 0: sum (default)\n 1: maximize",
                 typeid(int), (void *) &countMode, 0)
 
   {
@@ -81,6 +84,7 @@ Options::Options() :
   correctionWorkflow.push_back(&OP_THRESHOLD);
   correctionWorkflow.push_back(&OP_TOLERANCE);
   correctionWorkflow.push_back(&OP_MAX_TRIM_LEN);
+  correctionWorkflow.push_back(&OP_UPDATE_LOOKUPTABLE);
   correctionWorkflow.push_back(&OP_DRY_RUN);
   correctionWorkflow.push_back(&OP_VERBOSE);
 
@@ -131,6 +135,7 @@ void Options::setDefaults() {
   threshold = 1;
   tolerance = 0.01;
   maxTrimLen = 0;
+  updateLookup = false;
 
   dropLevel1 = 0.33;
   dropLevel2 = 0.33;
@@ -138,7 +143,7 @@ void Options::setDefaults() {
   aligned = false;
   softFilter = false;
 
-  countMode = COUNT_MODE_MAX; //TODO
+  countMode = COUNT_MODE_SUM;
 
   dryRun = false;
   threads = 1; //TODO

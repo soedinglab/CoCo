@@ -19,6 +19,7 @@
 struct __attribute__((__packed__)) CountProfileEntry {
   uint8_t valid;
   uint32_t count;
+  packedKmerType kmer;
 };
 
 #define ERROR_FREE 0
@@ -32,17 +33,20 @@ private:
 
   CountProfileEntry *profile;
   const KmerTranslator *translator;
-  const LookupTableBase *lookuptable;
+  LookupTableBase *lookuptable;
 
   SequenceInfo *seqinfo;
 
   uint32_t profile_length_alloc = 0,  /* corresponds to the allocated size of <profile> */
            profile_length = 0;        /* length of current profile, corresponds to the used size of <profile>*/
 
+
 public:
 
+  int ambigCorr;
+
   /* constructor */
-  CountProfile(const KmerTranslator *translator, const LookupTableBase *lookuptable);
+  CountProfile(const KmerTranslator *translator, LookupTableBase *lookuptable);
 
   /* destructor */
   ~CountProfile();
@@ -50,7 +54,7 @@ public:
   /* create and store count profiles */
   void fill(SequenceInfo *seq, size_t length);
 
-  void update();
+  void update(bool updateLookupTable=false);
 
   /* getter */
   const char *getSeqName() { return (seqinfo->name.c_str()); }
@@ -58,6 +62,10 @@ public:
   unsigned int getProfileLen() { return (profile_length); }
 
   SequenceInfo *getSeqInfo() { return (seqinfo); }
+
+  CountProfileEntry * getProfilecopy();
+
+  CountProfileEntry * getProfile();
 
   /* show tab-based table of positions and counts */
 
@@ -82,13 +90,13 @@ public:
 
   bool doIndelCorrection(uint32_t *maxProfile, unsigned int threshold, double tolerance, bool trySubstitution, unsigned int *correctedSubstitutions, unsigned int *correctedInsertions, unsigned int *correctedDeletions);
 
-  int trySubstitutionCorrection(unsigned int substitutionStart, unsigned int threshold, uint32_t *neighborhoodTolerance);
+  int trySubstitutionCorrection(unsigned int substitutionStart, unsigned int threshold, double tolerance, uint32_t *neighborhoodTolerance);
 
-  bool tryInsertionCorrection(unsigned int insertionStart, unsigned int insertionLen, unsigned int threshold, uint32_t *neighborhoodTolerance);
+  bool tryInsertionCorrection(unsigned int insertionStart, unsigned int insertionLen, unsigned int threshold, double tolerance, uint32_t *neighborhoodTolerance);
 
-  int tryDeletionCorrection(unsigned int deletionPos, unsigned int threshold, uint32_t *neighborhoodTolerance);
+  int tryDeletionCorrection(unsigned int deletionPos, unsigned int threshold, double tolerance, uint32_t *neighborhoodTolerance);
 
-  int doTrimming(uint32_t *maxProfile, unsigned int threshold, double tolerance, unsigned int maxTrimLen, unsigned int *trimmedCounter);
+  bool doTrimming(uint32_t *maxProfile, unsigned int threshold, double tolerance, unsigned int maxTrimLen, unsigned int *trimmedCounter);
 
   bool checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst, double localPercDrop, \
                                                  double globalPercDrop, bool maskOnlyDropEdges=true);

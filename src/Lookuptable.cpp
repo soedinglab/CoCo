@@ -58,6 +58,46 @@ void Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::setupIndexGridTable() {
 }
 
 template<unsigned int LOGINDEXSIZE, unsigned int LOGOFFSETSIZE>
+bool Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::increaseCount(packedKmerType kmer) {
+
+
+  const std::pair<size_t, size_t> grid = getIndexGridRange(kmer);
+  const size_t kmerOffset = getOffset(kmer);
+  size_t pos = grid.first;
+  size_t endPos = pos + grid.second;
+  //use != instead of < to save sort step
+  for (; pos < endPos && (offsetTable[pos].indexOffset != kmerOffset
+                          || offsetTable[pos].count == 0); pos++) {
+  }
+  if (pos != endPos){
+    offsetTable[pos].count += 1;
+    return true;
+  }
+
+  return false;
+}
+
+template<unsigned int LOGINDEXSIZE, unsigned int LOGOFFSETSIZE>
+bool Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::decreaseCount(packedKmerType kmer) {
+
+
+  const std::pair<size_t, size_t> grid = getIndexGridRange(kmer);
+  const size_t kmerOffset = getOffset(kmer);
+  size_t pos = grid.first;
+  size_t endPos = pos + grid.second;
+  //use != instead of < to save sort step
+  for (; pos < endPos && (offsetTable[pos].indexOffset != kmerOffset
+                          || offsetTable[pos].count == 0); pos++) {
+  }
+  if (pos != endPos && offsetTable[pos].count >0){
+    offsetTable[pos].count -= 1;
+    return true;
+  }
+
+  return false;
+}
+
+template<unsigned int LOGINDEXSIZE, unsigned int LOGOFFSETSIZE>
 size_t Lookuptable<LOGINDEXSIZE,LOGOFFSETSIZE>::addElement(packedKmerType kmer, unsigned int count) {
   size_t prevWritingPosition = 0;
   const size_t gridPosition = getGridPosition(kmer);

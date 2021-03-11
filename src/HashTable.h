@@ -28,12 +28,22 @@ public:
     return kh_val(this->hashTable, itr);
   }
 
-  void increaseCount(packedKmerType kmer) {
+  bool increaseCount(packedKmerType kmer) {
     khint_t itr;
     int absent;
     itr = kc_c1_put(this->hashTable, kmer, &absent);
     if (absent) kh_val(this->hashTable, itr) = 0;
     ++kh_val(this->hashTable, itr);
+    return true;
+  }
+
+  bool decreaseCount(packedKmerType kmer) {
+    khint_t itr;
+    int absent;
+    itr = kc_c1_put(this->hashTable, kmer, &absent);
+    if (absent) return false;
+    --kh_val(this->hashTable, itr);
+    return true;
   }
 
   void iterateOverAll(FILE* fp) const {

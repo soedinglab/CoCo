@@ -29,6 +29,7 @@ typedef struct {
   unsigned int threshold;
   double tolerance;
   int maxTrimLen;
+  bool updateLookup;
   CorrectionStatistic *statistic;
   FILE *correctedReadsFasta;
   FILE *errorCandidateReads;
@@ -38,7 +39,6 @@ typedef struct {
 int correctionProcessor(CountProfile &countprofile, void *args)
 {
 
-
   CorrectorArgs *currArgs = (CorrectorArgs *) args;
   SequenceInfo *seqinfo = countprofile.getSeqInfo();
 
@@ -46,93 +46,50 @@ int correctionProcessor(CountProfile &countprofile, void *args)
   //unsigned int covEst = countprofile.calcXquantile(0.67);
   //Info(Info::DEBUG) << seqinfo->name << "\t" << covEst << "\n";
 
+  bool updateLookup = currArgs->updateLookup;
   int status = ERROR_FREE;
   CorrectionStatistic *statistic = currArgs->statistic;
   //if(covEst > currArgs->threshold + (unsigned int) (currArgs->tolerance * covEst + 1)) {
 
-    /* maximize count profile */
-    uint32_t *maxProfile = countprofile.maximize();
-    /*
- //sub - indel
-    do {
-      status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, &(statistic->substitution_multikmer), currArgs->dryRun);
+  /* maximize count profile */
+  uint32_t *maxProfile = countprofile.maximize();
 
-      if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
-        countprofile.update();
-        delete[] maxProfile;
-        maxProfile = countprofile.maximize();
-        //TODO: update maxProfile instead of generating new one
-      }
-    } while (!currArgs->dryRun && status == SOME_CORRECTED);
-
-    countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance,false, &(statistic->substitution_independent),  &(statistic->insertion),  &(statistic->deletion));
-    //TODO: adjust profilelen?
-  countprofile.update();
-  if(currArgs->maxTrimLen > 0)
-    countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, currArgs->maxTrimLen, &(statistic->trimmed));
-*/
-    /*
-// sub2 - indel -sub - trim
-  do {
-    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, &(statistic->substitution_multikmer),currArgs->dryRun);
-
-    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
-      countprofile.update();
-      delete[] maxProfile;
-      maxProfile = countprofile.maximize();
-      //TODO: update maxProfile instead of generating new one
-    }
-  } while (!currArgs->dryRun && status == SOME_CORRECTED);
-
-  if(countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance, false, &(statistic->substitution_independent),  &(statistic->insertion),  &(statistic->deletion))) {
-    countprofile.update();
-    delete[] maxProfile;
-    maxProfile = countprofile.maximize();
-  }
-  do {
-    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, &(statistic->substitution_singlekmer),currArgs->dryRun);
-
-    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
-      countprofile.update();
-      delete[] maxProfile;
-      maxProfile = countprofile.maximize();
-      //TODO: update maxProfile instead of generating new one
-    }
-  } while (!currArgs->dryRun && status == SOME_CORRECTED);
-  if(currArgs->maxTrimLen > 0)
-    countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, currArgs->maxTrimLen, &(statistic->trimmed));
-*/
-
-  // sub2 - indel +sub wo trimming -sub - trimming
+  /* fisr round of substitution correction */
   do {
     status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, &(statistic->substitution_multikmer), currArgs->dryRun);
 
     if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
-      countprofile.update();
+      countprofile.update(updateLookup);
       delete[] maxProfile;
       maxProfile = countprofile.maximize();
-      //TODO: update maxProfile instead of generating new one
     }
   } while (!currArgs->dryRun && status == SOME_CORRECTED);
 
-  if(countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance, true, &(statistic->substitution_independent),  &(statistic->insertion),  &(statistic->deletion))) {
-    countprofile.update();
+  /* indel correction */
+  bool changed = countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance, true, &(statistic->substitution_independent),  &(statistic->insertion),  &(statistic->deletion));
+  if(changed) {
+    countprofile.update(updateLookup);
     delete[] maxProfile;
     maxProfile = countprofile.maximize();
   }
+
+  /* second round of substitution correction */
   do {
     status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, &(statistic->substitution_singlekmer), currArgs->dryRun);
 
     if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
-      countprofile.update();
+      countprofile.update(updateLookup);
       delete[] maxProfile;
       maxProfile = countprofile.maximize();
-      //TODO: update maxProfile instead of generating new one
     }
   } while (!currArgs->dryRun && status == SOME_CORRECTED);
 
-  if(currArgs->maxTrimLen > 0)
-    countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, currArgs->maxTrimLen, &(statistic->trimmed));
+  /* trimming */
+  if(currArgs->maxTrimLen > 0) {
+    if(countprofile.doTrimming(maxProfile, currArgs->threshold, currArgs->tolerance, currArgs->maxTrimLen,
+                            &(statistic->trimmed)))
+      countprofile.update(updateLookup);
+  }
 
   // }
   if (currArgs->dryRun) {
@@ -154,7 +111,6 @@ int correction(int argc, const char **argv, const Command *tool)
 
   //TODO: print parameters
   //TODO:check parameter and if files exists
-
 
   initialize();
   KmerTranslator *translator = new KmerTranslator(opt.spacedKmerPattern);
@@ -191,17 +147,18 @@ int correction(int argc, const char **argv, const Command *tool)
   CorrectionStatistic statistic{0,0,0,0,0,0};
 
   if (opt.dryRun){
-      args = {true, (unsigned int) opt.threshold, opt.tolerance, opt.maxTrimLen, &statistic, NULL, openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "w")};
+      args = {true, (unsigned int) opt.threshold, opt.tolerance, opt.maxTrimLen, opt.updateLookup, &statistic, NULL, openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "w")};
       Info(Info::INFO) << "Perform only a dry run without correction\n";
   }
   else {
-      args = {false, (unsigned int) opt.threshold, opt.tolerance, opt.maxTrimLen, &statistic, openFileOrDie(outprefix + ".coco_" + tool->cmd + ext, "w"), NULL};
+      args = {false, (unsigned int) opt.threshold, opt.tolerance, opt.maxTrimLen, opt.updateLookup, &statistic, openFileOrDie(outprefix + ".coco_" + tool->cmd + ext, "w"), NULL};
   }
 
   FILE *skipReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + "_skipped" + ext, "w");
   int returnVal = processSeqFile(seqFile, lookuptable, translator, correctionProcessor, &args, opt.skip, skipReads );
 
   // print statistic
+  std::cout << "##########" << std::endl;
   std::cout << "corrections from multiKmer step (substitutions only): " << statistic.substitution_multikmer << std::endl;
   std::cout << "corrections from indel step (total): " << statistic.substitution_independent+statistic.insertion+statistic.deletion << std::endl;
   std::cout << "corrections from indel step (substitutions): " << statistic.substitution_independent << std::endl;
@@ -209,7 +166,7 @@ int correction(int argc, const char **argv, const Command *tool)
   std::cout << "corrections from indel step (deletions): " << statistic.deletion << std::endl;
   std::cout << "corrections from singleKmer step (substitutions only): " << statistic.substitution_singlekmer << std::endl;
   std::cout << "trimmed nucleotides: " << statistic.trimmed << std::endl;
-
+  std::cout << "##########" << std::endl;
 
   if (skipReads)
     fclose(skipReads);

@@ -67,6 +67,7 @@ public:
   double tolerance;
   int threshold;
   int maxTrimLen;
+  bool updateLookup;
 
   double dropLevel1;
   double dropLevel2;
@@ -94,6 +95,7 @@ public:
   OPTION(OP_THRESHOLD)
   OPTION(OP_TOLERANCE)
   OPTION(OP_MAX_TRIM_LEN)
+  OPTION(OP_UPDATE_LOOKUPTABLE)
   OPTION(OP_DROP_LEVEL1)
   OPTION(OP_DROP_LEVEL2)
   OPTION(OP_SOFT_FILTER)

@@ -16,7 +16,7 @@
 KSEQ_INIT(int, read)
 
 int processSeqFile(string seqFilename,
-                   const LookupTableBase *lookuptable,
+                   LookupTableBase *lookuptable,
                    const KmerTranslator *translator,
                    int (*processCountProfile)(CountProfile &, void *),
                    void *processArgs,

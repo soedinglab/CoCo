@@ -65,6 +65,12 @@ public:
   unsigned int getCount(const packedKmerType kmer) const;
 
   void iterateOverAll(FILE* fp) const;
+
+  bool decreaseCount(packedKmerType kmer);
+
+  bool increaseCount(packedKmerType kmer);
+
+
 };
 
 #endif // LOOKUPTABLE_H
