@@ -25,12 +25,12 @@ Options::Options() :
                typeid(std::string), (void *) &outprefix, 0),
   OP_SPACED_KMER_PATTERN(OP_SPACED_KMER_PATTERN_ID,"spaced-pattern",
                "--spaced-pattern", "User-specified spaced k-mer pattern (span must be <=64, 12 <= weight <=32 and symmetric),\n "\
-               "default: 11010111011011011001110011011011011101011",
+               "default: 11110111111011011101010111011011111101111",
                typeid(std::string), (void*) &spacedKmerPattern, 0),
   OP_SKIP(OP_SKIP_ID,"skip", "--skip", "skip sequences with less than this many k-mers",
                typeid(int), (void*) &skip, 0),
   OP_THRESHOLD(OP_THRESHOLD_ID, "threshold", "--threshold",
-               "untrusted count threshold (default: 1)",
+               "untrusted count threshold (default: 3)",
                typeid(int), (void *) &threshold, 0),
   OP_TOLERANCE(OP_TOLERANCE_ID, "tolerance", "--tolerance",
                "relative neighborhood count added to threshold value (default: 0.01)",
@@ -129,10 +129,10 @@ Options::Options() :
 
 void Options::setDefaults() {
 
-  spacedKmerPattern="11010111011011011001110011011011011101011";
+  spacedKmerPattern="11110111111011011101010111011011111101111";
   skip = 10;
 
-  threshold = 1;
+  threshold = 3;
   tolerance = 0.01;
   maxTrimLen = 0;
   updateLookup = false;
