@@ -25,10 +25,10 @@ private:
   struct __attribute__((__packed__)) IndexEntry {
     unsigned long long indexOffset : LOGOFFSETSIZE;
     unsigned int count;
-
+/*
     static bool compareByKmer(IndexEntry first, IndexEntry second) {
       return (first.indexOffset < second.indexOffset);
-    }
+    }*/
   };
 
   IndexEntry *offsetTable;
@@ -69,7 +69,12 @@ public:
   bool decreaseCount(packedKmerType kmer);
 
   bool increaseCount(packedKmerType kmer);
-
+  void printSize(){
+    std::cout << sizeof(IndexEntry) << std::endl;
+    std::cout << "IndexTable: " << sizeof(*indexGridTable)*indexGridTableSize << std::endl;
+    std::cout << "OffsetTable: " << sizeof(*offsetTable)*maxNumberItems << std::endl;
+    //exit(1);
+  }
 
 };
 

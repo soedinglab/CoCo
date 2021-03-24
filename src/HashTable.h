@@ -49,6 +49,7 @@ public:
   void iterateOverAll(FILE* fp) const {
     EXIT(EXIT_FAILURE);
   }
+  void printSize(){};
 };
 
 #endif //HASHTABLE_H

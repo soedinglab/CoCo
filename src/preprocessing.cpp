@@ -66,7 +66,6 @@ LookupTableBase *buildLookuptableIter(string countFile, int countMode,
     }
 
     Info(Info::INFO) << "...final setup\n";
-
     // final setup - shift grid value to grid start positions back
     lookuptable->finalSetupTables(minCount);
 

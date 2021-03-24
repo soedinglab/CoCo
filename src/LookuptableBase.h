@@ -14,6 +14,7 @@ public:
   virtual bool decreaseCount(packedKmerType kmer) = 0;
 
   virtual bool increaseCount(packedKmerType kmer) = 0;
+  virtual  void printSize() =0;
 };
 
 #endif //LOOKUPTABLEBASE_H

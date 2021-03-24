@@ -35,6 +35,9 @@ Options::Options() :
   OP_TOLERANCE(OP_TOLERANCE_ID, "tolerance", "--tolerance",
                "relative neighborhood count added to threshold value (default: 0.01)",
                typeid(double), (void *) &tolerance, 0),
+  OP_MAX_CORR_NUM(OP_MAX_TRIM_LEN_ID, "max-corr-num", "--max-corr-num",
+               "maximal number of corrections per read, changes are discarded otherwise (default: 0=off)",
+               typeid(int), (void *) &maxCorrNum, 0),
   OP_MAX_TRIM_LEN(OP_MAX_TRIM_LEN_ID, "max-trim-len", "--max-trim-len",
                "trim up to this many nucleotides from the beginning/end of reads if no correction was possible (default: 0)",
                typeid(int), (void *) &maxTrimLen, 0),
@@ -83,6 +86,7 @@ Options::Options() :
   correctionWorkflow.push_back(&OP_SKIP);
   correctionWorkflow.push_back(&OP_THRESHOLD);
   correctionWorkflow.push_back(&OP_TOLERANCE);
+  correctionWorkflow.push_back(&OP_MAX_CORR_NUM);
   correctionWorkflow.push_back(&OP_MAX_TRIM_LEN);
   correctionWorkflow.push_back(&OP_UPDATE_LOOKUPTABLE);
   correctionWorkflow.push_back(&OP_DRY_RUN);
@@ -135,6 +139,7 @@ void Options::setDefaults() {
   threshold = 3;
   tolerance = 0.01;
   maxTrimLen = 0;
+  maxCorrNum = 0;
   updateLookup = false;
 
   dropLevel1 = 0.33;
@@ -208,6 +213,7 @@ void Options::parseOptions(int argc, const char *argv[],
     {"skip",    required_argument, NULL, 0},
     {"threshold", required_argument, NULL, 0},
     {"tolerance", required_argument, NULL, 0},
+    {"max-corr-num", required_argument, NULL, 0},
     {"max-trim-len", required_argument, NULL, 0},
     {"dry-run",    required_argument, NULL, 0},
     {"drop-level1",    required_argument, NULL, 0},

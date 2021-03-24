@@ -56,6 +56,7 @@ KmerTranslator::KmerTranslator(std::string spacedKmerPattern) {
 
 KmerTranslator::~KmerTranslator() {
   delete[] _mask_array;
+  delete[] _inverse_mask_array;
 }
 
 unsigned short KmerTranslator::getSpan() const {
