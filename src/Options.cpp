@@ -35,7 +35,7 @@ Options::Options() :
   OP_TOLERANCE(OP_TOLERANCE_ID, "tolerance", "--tolerance",
                "relative neighborhood count added to threshold value (default: 0.01)",
                typeid(double), (void *) &tolerance, 0),
-  OP_MAX_CORR_NUM(OP_MAX_TRIM_LEN_ID, "max-corr-num", "--max-corr-num",
+  OP_MAX_CORR_NUM(OP_MAX_CORR_NUM_ID, "max-corr-num", "--max-corr-num",
                "maximal number of corrections per read, changes are discarded otherwise (default: 0=off)",
                typeid(int), (void *) &maxCorrNum, 0),
   OP_MAX_TRIM_LEN(OP_MAX_TRIM_LEN_ID, "max-trim-len", "--max-trim-len",
