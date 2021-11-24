@@ -8,6 +8,31 @@
 
 #define WINDOW_SIZE 4
 
+static void calcNeighborhoodTolerance(uint32_t *neighborhoodTolerance, uint32_t *maxProfile, unsigned int maxProfileLength,
+                                      unsigned short kmerSpan, double tolerance)
+{
+  memset(neighborhoodTolerance, 0, sizeof(*neighborhoodTolerance) * maxProfileLength);
+
+  // calculate neighborhood tolerance values with probability for observing the same sequencing error multiple times
+  std::vector<unsigned int> neighborhood;
+
+  for (unsigned int idx = 0; idx <= (unsigned int) kmerSpan; idx++)
+    neighborhood.push_back(maxProfile[idx]);
+
+  for (unsigned int idx = 0; idx < maxProfileLength; idx++) {
+    if (idx > kmerSpan / 2 && idx + kmerSpan / 2 < maxProfileLength) {
+      neighborhood.push_back(maxProfile[idx + kmerSpan / 2]);
+      neighborhood.erase(neighborhood.begin());
+    }
+
+    unsigned int max = *(std::max_element(neighborhood.begin(), neighborhood.end()));
+    // fast ceiling of tolerance*max
+    neighborhoodTolerance[idx] = (unsigned int) INT_MAX - (unsigned int)((double)INT_MAX - (tolerance * max));
+
+  }
+};
+
+
 
 CountProfile::CountProfile(const KmerTranslator *translator,
                            LookupTableBase *lookuptable) {
@@ -23,15 +48,6 @@ CountProfile::~CountProfile() {
   delete[] this->profile;
 }
 
-
-static double ln_poisson(double mu, unsigned int k){
-  return k*log(mu)-lgamma(k+1)-mu;
-}
-/*
-static bool isDropFiona(unsigned int upperVal, unsigned int val, double errP, unsigned int k){
-  return (ln_poisson(upperVal*errP, val) - ln_poisson(upperVal, val) + log((1-pow(1-errP, k)))/pow(1-errP, k)) > 0;
-}
-*/
 CountProfileEntry * CountProfile::getProfilecopy() {
 
 
@@ -90,7 +106,6 @@ void CountProfile::update(bool updateLookuptable){
     }
   }
 
-
   //TODO: continue until maxprofillength to reset count and valid flag? not necessary
 
 }
@@ -110,6 +125,7 @@ void CountProfile::fill(SequenceInfo *seqinfo, size_t length) {
   this->update(false);
 }
 
+/*** show functions ***/
 
 void CountProfile::showProfile(FILE *fp) const {
   for (size_t idx = 0; idx < profile_length; idx++) {
@@ -127,6 +143,8 @@ void CountProfile::showMaximzedProfile(FILE *fp) const {
   }
   delete[] maxProfile;
 }
+
+/*** basic profile operations ***/
 
 uint32_t *CountProfile::maximize() const {
 
@@ -157,7 +175,6 @@ void CountProfile::addCountPerPosition(std::vector<uint64_t> &summedCountProfile
   for (size_t idx = 0; idx < profile_length; idx++)
     summedCountProfile[idx] += profile[idx].count;
 }
-
 
 unsigned int CountProfile::calcXquantile(double quantile, const std::vector<uint32_t> &positionsOfInterest) {
 
@@ -201,345 +218,109 @@ unsigned int CountProfile::calcMedian(const std::vector<uint32_t> &positionsOfIn
   return(calcXquantile(0.5, positionsOfInterest));
 }
 
+/*** advanced profile operations ***/
 
-int CountProfile::trySubstitutionCorrection(unsigned int substitutionStart, unsigned int threshold, double tolerance,
-                                            uint32_t *neighborhoodTolerance){
+int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool needMultipleKmers, unsigned int *correctedSubstitutions, bool dryRun) {
 
-  char current_res = seqinfo->seq[substitutionStart];
-  unsigned int start = substitutionStart >= translator->span ? substitutionStart - translator->span + 1 : 0;
-  unsigned int end = substitutionStart < profile_length ? substitutionStart : profile_length - 1;
-  unsigned int firstUniqueKmerStart = UINT_MAX, lastUniqueKmerStart = 0;
-  for (size_t jdx = start; jdx <= end; jdx++) {
-    if (translator->_inverse_mask_array[substitutionStart-jdx] != UCHAR_MAX) {
-      //Kmer starting at jdx has a coding position at substitutionPos
-      firstUniqueKmerStart = std::min(firstUniqueKmerStart, (unsigned int) jdx);
-      lastUniqueKmerStart = std::max(lastUniqueKmerStart, (unsigned int) jdx);
-    }
-  }
-
-  packedKmerType firstUniqueKmer = 0, lastUniqueKmer = 0;
-  if (firstUniqueKmerStart <= lastUniqueKmerStart) {
-    for (size_t jdx = 0; jdx < translator->weight; jdx++) {
-      firstUniqueKmer =
-        (firstUniqueKmer << 2) | (3 & res2int[(int) seqinfo->seq[firstUniqueKmerStart + translator->_mask_array[jdx]]]);
-      lastUniqueKmer =
-        (lastUniqueKmer << 2) | (3 & res2int[(int) seqinfo->seq[lastUniqueKmerStart + translator->_mask_array[jdx]]]);
-    }
-  } else {
-    return -1;
-  }
-
-  int mutationTarget = -1;
-  for (unsigned int resMutation = 0; resMutation < alphabetSize; resMutation++) {
-    unsigned int improvement = 0;
-    if (resMutation == (unsigned int) res2int[(int) current_res])
-      continue;
-
-    firstUniqueKmer &= ~((packedKmerType) 3 << (packedKmerType) (2 * (translator->getWeight() -
-                                                                      translator->_inverse_mask_array[
-                                                                        substitutionStart -
-                                                                        firstUniqueKmerStart] - 1)));
-    firstUniqueKmer |= ((packedKmerType) resMutation << (packedKmerType) (2 * (translator->getWeight() -
-                                                                               translator->_inverse_mask_array[
-                                                                                 substitutionStart -
-                                                                                 firstUniqueKmerStart] - 1)));
-
-    lastUniqueKmer &= ~((packedKmerType) 3 << (packedKmerType) (2 * (translator->getWeight() -
-                                                                     translator->_inverse_mask_array[
-                                                                       substitutionStart -
-                                                                       lastUniqueKmerStart] - 1)));
-    lastUniqueKmer |= ((packedKmerType) resMutation << (packedKmerType) (2 * (translator->getWeight() -
-                                                                              translator->_inverse_mask_array[
-                                                                                substitutionStart -
-                                                                                lastUniqueKmerStart] - 1)));
-
-    uint32_t c1 = lookuptable->getCount(translator->kmer2minPackedKmer(firstUniqueKmer));
-    if (c1 > threshold + neighborhoodTolerance[substitutionStart])
-    //if (isDropFiona(neighborhoodTolerance[substitutionStart], c1, tolerance, this->translator->getWeight()))
-      improvement++;
-    uint32_t c2 = lookuptable->getCount(translator->kmer2minPackedKmer(lastUniqueKmer));
-    if (c2 > threshold + neighborhoodTolerance[substitutionStart])
-    //if (isDropFiona(neighborhoodTolerance[substitutionStart], c2, tolerance, this->translator->getWeight()))
-      improvement++;
-
-    if (improvement == 2) {
-      if (mutationTarget == -1) {
-        mutationTarget = resMutation;
-      } else {
-        //ambigious mutation choice -> skip correction
-        mutationTarget = -2;
-        if (firstUniqueKmerStart != lastUniqueKmerStart)
-          this->ambigCorr+=1;
-        break;
-      }
-    }
-    // TODO: 1. majority voting? 2. local covEst 3. global covEst (= median)
-  }
-
-
-  return mutationTarget;
-}
-
-bool CountProfile::tryInsertionCorrection(unsigned int insertionStart, unsigned int insertionLen, unsigned int threshold, double tolerance,
-                                                                                     uint32_t *neighborhoodTolerance){
-
-  // try to fix insertion by deleting nucleotides from insertionStart to insertionStart+1
-
-  unsigned short kmerSpan = this->translator->getSpan();
-
-  /* choose k-mers for evaluation
-     firstKmer = leftmost kmer containing the whole insertion
-     secondLastKmer = second rightmost kmer containing the whole insertion
-     midKmer = kmer containing whole insertion while counterbalance the number of nucleotides before and after the insertion
-  */
-  unsigned int firstKmerStart = insertionStart >= kmerSpan? insertionStart-kmerSpan+1:0,
-    secondLastKmerStart = insertionStart < profile_length? insertionStart-1: profile_length-insertionLen - 1 ,
-    midKmerStart = (firstKmerStart+secondLastKmerStart)/2;
-
-  // make sure we have at least one nucleotide before and after the insert range
-  if(firstKmerStart < insertionStart && secondLastKmerStart + kmerSpan >= insertionStart+insertionLen) {
-
-    packedKmerType firstKmer = 0, midKmer = 0, secondLastKmer = 0;
-    // remove whole insertion from all three kmers
-    for (size_t jdx = 0; jdx < translator->weight; jdx++) {
-
-      unsigned int seqPosForFirstKmer = firstKmerStart + translator->_mask_array[jdx];
-      if (seqPosForFirstKmer >= insertionStart)
-        seqPosForFirstKmer += insertionLen;
-      if(res2int[(int) seqinfo->seq[seqPosForFirstKmer]] == -1)
-        return false;
-      firstKmer =
-        (firstKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForFirstKmer]]);
-
-      unsigned int seqPosForSecondLastKmer = secondLastKmerStart + translator->_mask_array[jdx];
-      if (seqPosForSecondLastKmer >= insertionStart)
-        seqPosForSecondLastKmer += insertionLen;
-      if(res2int[(int) seqinfo->seq[seqPosForSecondLastKmer]] == -1)
-        return false;
-      secondLastKmer =
-        (secondLastKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForSecondLastKmer]]);
-
-      unsigned int seqPosForMidKmer = midKmerStart + translator->_mask_array[jdx];
-      if (seqPosForMidKmer >= insertionStart)
-        seqPosForMidKmer += insertionLen;
-      if(res2int[(int) seqinfo->seq[seqPosForMidKmer]] == -1)
-        return false;
-      midKmer =
-        (midKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForMidKmer]]);
-    }
-
-    // check count change
-    unsigned int approved = 0;
-    uint32_t c1 = lookuptable->getCount(translator->kmer2minPackedKmer(firstKmer));
-    if (c1 > threshold + neighborhoodTolerance[firstKmerStart]) //TODO
-    //if (isDropFiona(neighborhoodTolerance[firstKmerStart], c1, tolerance, this->translator->getWeight())) //TODO
-      approved++;
-    uint32_t c2 = lookuptable->getCount(translator->kmer2minPackedKmer(midKmer));
-    if (c2 > threshold + neighborhoodTolerance[midKmerStart]) //TODO
-    //if (isDropFiona(neighborhoodTolerance[midKmerStart], c2, tolerance, this->translator->getWeight())) //TODO
-      approved++;
-    uint32_t c3 = lookuptable->getCount(translator->kmer2minPackedKmer(secondLastKmer));
-    if (c3 > threshold + neighborhoodTolerance[secondLastKmerStart]) //TODO
-    //if (isDropFiona(neighborhoodTolerance[secondLastKmerStart], c3, tolerance, this->translator->getWeight())) //TODO
-      approved++;
-
-    if (approved == 3)
-      return true;
-  }
-
-  return false;
-}
-
-int CountProfile::tryDeletionCorrection(unsigned int deletionPos, unsigned int threshold, double tolerance,
-                                uint32_t *neighborhoodTolerance){
-
-  // try to fix deletion by inserting a nucleotide at deletionPos
-
-  // deletionPos can neither be the first or last nucleotide of the sequence, because we can not see that
-  // so we always find a k-mer which starts before deletionPos and a kmer which contain positions behind deletionPos
-
-  unsigned short kmerSpan = this->translator->getSpan();
-  unsigned int firstKmerStart = deletionPos >= kmerSpan? deletionPos-kmerSpan+1:0;
-  unsigned int lastKmerStart = deletionPos < profile_length? deletionPos-1:profile_length;
-  // attention: profile_length-1 is normally the last valid k-mer, but we will try to insert a nucleotide tehrefore the
-  // last valid k-mer starts at profile_length
-
-  packedKmerType firstKmer = 0, lastKmer = 0;
-  //
-  for (size_t jdx = 0; jdx < translator->weight; jdx++) {
-
-    //TODO: function to build gapped kmer
-    unsigned int seqPosForFirstKmer = firstKmerStart + translator->_mask_array[jdx];
-    if(seqPosForFirstKmer < deletionPos) {
-      if(res2int[(int) seqinfo->seq[seqPosForFirstKmer]] == -1)
-        return -1;
-      firstKmer = (firstKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForFirstKmer]]);
-    }else if (seqPosForFirstKmer == deletionPos)
-      firstKmer =  (firstKmer << 2);
-    else {
-      if(res2int[(int) seqinfo->seq[seqPosForFirstKmer-1]] == -1)
-        return -1;
-      firstKmer = (firstKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForFirstKmer - 1]]);
-    }
-
-    unsigned int seqPosForLastKmer = lastKmerStart + translator->_mask_array[jdx];
-    if(seqPosForLastKmer < deletionPos) {
-      if (res2int[(int) seqinfo->seq[seqPosForLastKmer]] == -1)
-        return -1;
-      lastKmer = (lastKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForLastKmer]]);
-    }else if (seqPosForLastKmer == deletionPos)
-      lastKmer =  (lastKmer << 2);
-    else {
-      if (res2int[(int) seqinfo->seq[seqPosForLastKmer-1]] == -1)
-        return -1;
-      lastKmer = (lastKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForLastKmer - 1]]);
-    }
-  }
-
-  int mutationTarget = -1;
-  for (unsigned int resMutation = 0; resMutation < alphabetSize; resMutation++) {
-    unsigned int improvement = 0;
-
-    //TODO: function to replace nucleotide
-
-    firstKmer &= ~((packedKmerType) 3 << (packedKmerType) (2 * (translator->getWeight() -
-                                                                translator->_inverse_mask_array[deletionPos -
-                                                                                                firstKmerStart] - 1)));
-
-    firstKmer |= ((packedKmerType) resMutation << (packedKmerType) (2 * (translator->getWeight() -
-                                                                         translator->_inverse_mask_array[deletionPos -
-                                                                                                         firstKmerStart] -
-                                                                         1)));
-
-    lastKmer &= ~((packedKmerType) 3 << (packedKmerType) (2 * (translator->getWeight() -
-                                                               translator->_inverse_mask_array[deletionPos -
-                                                                                               lastKmerStart] - 1)));
-
-    lastKmer |= ((packedKmerType) resMutation << (packedKmerType) (2 * (translator->getWeight() -
-                                                                        translator->_inverse_mask_array[deletionPos -
-                                                                                                        lastKmerStart] -
-                                                                        1)));
-
-    uint32_t c1 = lookuptable->getCount(translator->kmer2minPackedKmer(firstKmer));
-    if (c1 > threshold + neighborhoodTolerance[deletionPos])
-    //if (isDropFiona(neighborhoodTolerance[deletionPos], c1, tolerance, this->translator->getWeight()))
-      improvement++;
-    uint32_t c2 = lookuptable->getCount(translator->kmer2minPackedKmer(lastKmer));
-    if (c2 > threshold + neighborhoodTolerance[deletionPos])
-    //if (isDropFiona(neighborhoodTolerance[deletionPos], c1, tolerance, this->translator->getWeight()))
-      improvement++;
-
-    if (improvement == 2) {
-      if (mutationTarget == -1)
-        mutationTarget = resMutation;
-      else {
-        //ambigious mutation choice -> skip correction
-        mutationTarget = -2;
-        break;
-      }
-    }
-  }
-  return mutationTarget;
-}
-
-bool CountProfile::doTrimming(uint32_t *maxProfile, unsigned int threshold, double tolerance, unsigned int maxTrimLen, unsigned int *trimmedCounter){
-
-  bool changed = false;
-  unsigned short kmerSpan = this->translator->getSpan();
-  unsigned int maxProfileLength = profile_length + kmerSpan - 1;
-  uint32_t neighborhoodTolerance[maxProfileLength];
-  memset(neighborhoodTolerance, 0, sizeof(*neighborhoodTolerance) * maxProfileLength);
-
-  // calculate neighborhood tolerance values with probability for observing the same sequencing error multiple times
-  std::vector<unsigned int> neighborhood;
-
-  for (unsigned int idx = 0; idx <= (unsigned int) kmerSpan; idx++)
-    neighborhood.push_back(maxProfile[idx]);
-
-  for (unsigned int idx = 0; idx < maxProfileLength; idx++) {
-    if (idx > kmerSpan / 2 && idx + kmerSpan / 2 < maxProfileLength) {
-      neighborhood.push_back(maxProfile[idx + kmerSpan / 2]);
-      neighborhood.erase(neighborhood.begin());
-    }
-
-    unsigned int max = *(std::max_element(neighborhood.begin(), neighborhood.end()));
-    // fast ceiling of tolerance*max
-    neighborhoodTolerance[idx] = (unsigned int) INT_MAX - (unsigned int)((double)INT_MAX - (tolerance * max));
-  }
-
-  //TODO: outsource neighborhood calculation to avoid code duplication and code repetition
-
-  unsigned int dropLen = 0;
-  string sequence = seqinfo->seq;
-  for (size_t idx = 0; idx <= this->profile_length; idx++) {
-    if (idx < profile_length && this->profile[idx].count <= threshold + neighborhoodTolerance[idx]) {
-    //if (idx < profile_length && isDropFiona(neighborhoodTolerance[idx], this->profile[idx].count, tolerance, this->translator->getWeight())) {
-      dropLen++;
-    } else if (dropLen > 0) {
-
-      // only check single indel errors
-      if (dropLen <= kmerSpan) {
-
-         if ((idx <= maxTrimLen || idx == this->profile_length) && dropLen <= maxTrimLen) {
-
-          if (idx == this->profile_length)
-            sequence.erase(sequence.end()-dropLen, sequence.end());
-          else
-            sequence.erase(sequence.begin(), sequence.begin()+dropLen);
-
-          changed = true;
-          (*trimmedCounter) += dropLen;
-        }
-
-      }
-      dropLen = 0;
-    }
-    //else outside drop
-  }
-  seqinfo->seq = sequence;
-
-  return changed;
-}
-
-bool CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold, double tolerance, bool trySubstitution,
-                                    unsigned int *correctedSubstitutions, unsigned int *correctedInsertions, unsigned int *correctedDeletions){
   unsigned short kmerSpan = this->translator->getSpan();
   unsigned short kmerWeight = translator->getWeight();
   unsigned int maxProfileLength = profile_length + kmerSpan - 1;
   uint32_t neighborhoodTolerance[maxProfileLength];
-  memset(neighborhoodTolerance, 0, sizeof(*neighborhoodTolerance) * maxProfileLength);
+  calcNeighborhoodTolerance(neighborhoodTolerance, maxProfile, maxProfileLength, kmerSpan, tolerance);
 
-  // calculate neighborhood tolerance values with probability for observing the same sequencing error multiple times
-  std::vector<unsigned int> neighborhood;
+  // 1. find sequencing errors
+  unsigned int foundErrors = 0;
+  unsigned int errorPositions[64];
+  uint64_t affectedPostions[profile_length];
+  memset(affectedPostions, 0, sizeof(*affectedPostions) * profile_length);
+  memset(errorPositions, 0, sizeof(*errorPositions) * 64);
 
-  for (unsigned int idx = 0; idx <= (unsigned int) kmerSpan; idx++)
-    neighborhood.push_back(maxProfile[idx]);
+  for (size_t idx = 0; idx < maxProfileLength; idx++) {
+    if (foundErrors == 63) {
+      return TOO_MANY_ERRORS;
+    }
+    if (maxProfile[idx] <= threshold + neighborhoodTolerance[idx]) {
+      errorPositions[foundErrors] = idx;
+      for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+        int pos = idx - translator->_mask_array[jdx];
+        if (pos >= 0 && pos < (int) profile_length) {
+          affectedPostions[pos] = affectedPostions[pos] | ((uint64_t) 1 << (uint64_t) foundErrors);
+        }
+      }
+      foundErrors++;
 
-  for (unsigned int idx = 0; idx < maxProfileLength; idx++) {
-    if (idx > kmerSpan / 2 && idx + kmerSpan / 2 < maxProfileLength) {
-      neighborhood.push_back(maxProfile[idx + kmerSpan / 2]);
-      neighborhood.erase(neighborhood.begin());
+      if (dryRun) {
+        // error candidate positions
+        Info(Info::DEBUG) << "error\t" << seqinfo->name.c_str() << "\t" << idx << "\n";
+      }
+    }
+  }
+  if (foundErrors == 0) {
+    return ERROR_FREE;
+  }
+  if (dryRun)
+    return NONE_CORRECTED;
+
+  //  2. correct sequencing errors
+  size_t correctedErrors = 0;
+  for (size_t idx = 0; idx < foundErrors; idx++) {
+
+    unsigned int start = errorPositions[idx] >= translator->span ? errorPositions[idx] - translator->span + 1 : 0;
+    unsigned int end = errorPositions[idx] < profile_length ? errorPositions[idx] : profile_length - 1;
+    unsigned int firstUniqueKmerStart = UINT_MAX, lastUniqueKmerStart = 0;
+    for (size_t jdx = start; jdx <= end; jdx++) {
+      if ((affectedPostions[jdx] > 0) && ((affectedPostions[jdx] & ((uint64_t)1 << idx)) == affectedPostions[jdx])) {
+        firstUniqueKmerStart = std::min(firstUniqueKmerStart, (unsigned int) jdx);
+        lastUniqueKmerStart = std::max(lastUniqueKmerStart, (unsigned int) jdx);
+      }
     }
 
-    unsigned int max = *(std::max_element(neighborhood.begin(), neighborhood.end()));
-    // fast ceiling of tolerance*max
-    neighborhoodTolerance[idx] = (unsigned int) INT_MAX - (unsigned int)((double)INT_MAX - (tolerance * max));
-    //neighborhoodTolerance[idx] = max;
+    if(needMultipleKmers && (firstUniqueKmerStart == lastUniqueKmerStart))
+      continue; // Skip this error if needMultipleKmers is set, but we only have one kmer
+
+    int mutationTarget = firstLastUniqueKmerCorrectionStrategy(errorPositions[idx], firstUniqueKmerStart,
+                                                               lastUniqueKmerStart, threshold, neighborhoodTolerance);
+    // do correction
+    if (mutationTarget >= 0) {
+      Info(Info::DEBUG) << "corrected\t" << seqinfo->name.c_str() << "\t" << errorPositions[idx]
+                        << "\t" << seqinfo->seq[errorPositions[idx]] << "\t" << int2res[mutationTarget] << "\n";
+      seqinfo->seq[errorPositions[idx]] = int2res[mutationTarget];
+      correctedErrors++;
+    }
   }
 
-  //TODO: outsource neighborhood calculation to avoid code duplication and code repetition
+  (*correctedSubstitutions) += correctedErrors;
+
+  //Had errors
+  if (correctedErrors == 0) {
+    return NONE_CORRECTED;
+  } else if (correctedErrors < foundErrors) {
+    return SOME_CORRECTED;
+  } else
+    return ALL_CORRECTED;
+
+}
+
+// do indel or edge substitution correction
+bool CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshold, double tolerance, bool trySubstitution,
+                                     unsigned int *correctedSubstitutions, unsigned int *correctedInsertions, unsigned int *correctedDeletions){
+  unsigned short kmerSpan = this->translator->getSpan();
+  unsigned short kmerWeight = translator->getWeight();
+  unsigned int maxProfileLength = profile_length + kmerSpan - 1;
+  uint32_t neighborhoodTolerance[maxProfileLength];
+  calcNeighborhoodTolerance(neighborhoodTolerance, maxProfile, maxProfileLength, kmerSpan, tolerance);
 
   bool changed = false;
   unsigned int dropLen = 0;
   int offset = 0;
   string sequence = seqinfo->seq;
+  // search for drops in count profile
   for (size_t idx = 0; idx <= this->profile_length; idx++) {
     if (idx < profile_length && this->profile[idx].count <= threshold + neighborhoodTolerance[idx]) {
-    //if (idx < profile_length && isDropFiona(neighborhoodTolerance[idx], this->profile[idx].count, tolerance, kmerWeight)) {
       dropLen++;
-    } else if (dropLen > 0) {
+    } else if (dropLen > 0) { // dropEnd
 
-      // only check single indel errors
+      // only check single indel or edge substitution errors
       if (dropLen <= kmerSpan) {
 
         bool insertion_approved = false, deletion_approved = false;
@@ -563,8 +344,9 @@ bool CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshol
 
         }
 
-        if(trySubstitution && substitutionPos!=UINT_MAX) {
-          resToSub = this->trySubstitutionCorrection(substitutionPos, threshold, tolerance, neighborhoodTolerance);
+        // edge case for substitution error
+        if(trySubstitution && (substitutionPos!=UINT_MAX)) {
+          resToSub = this->edgeSubstitutionCorrection(substitutionPos, threshold, tolerance, neighborhoodTolerance);
           if (resToSub >= 0) {
             sequence[substitutionPos + offset] = int2res[resToSub];
             changed=true;
@@ -572,12 +354,12 @@ bool CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshol
             continue;
           }
         }
-        // try correction
-        if (insertionPos !=UINT_MAX && dropLen > 1)
-          insertion_approved = this->tryInsertionCorrection(insertionPos, 1, threshold, tolerance,
-                                                            neighborhoodTolerance);
+        // try insertion correction
+        if (insertionPos != UINT_MAX && dropLen > 1)
+          insertion_approved = this->tryInsertionCorrection(insertionPos, 1, threshold, neighborhoodTolerance);
+        // try deletion correction
         if (deletionPos != UINT_MAX && dropLen != kmerSpan) {
-          resToAdd = this->tryDeletionCorrection(deletionPos, threshold, tolerance, neighborhoodTolerance);
+          resToAdd = this->tryDeletionCorrection(deletionPos, threshold, neighborhoodTolerance);
           if (resToAdd >= 0)
             deletion_approved = true;
           else if (resToAdd == -2){
@@ -586,7 +368,7 @@ bool CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshol
           }
         }
 
-        // assign correction
+        // assign indel correction
         if (insertion_approved && !deletion_approved) {
           // final elimination of insertion error
           sequence.erase(sequence.begin() + offset + insertionPos);
@@ -619,314 +401,265 @@ bool CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshol
   }
   seqinfo->seq = sequence;
 
-  return changed; //TODO
+  return changed;
 }
 
+bool CountProfile::doTrimming(uint32_t *maxProfile, unsigned int threshold, double tolerance, unsigned int maxTrimLen, unsigned int *trimmedCounter){
 
-int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool needMultipleKmers, unsigned int *correctedSubstitutions, bool dryRun) {
-
+  bool changed = false;
   unsigned short kmerSpan = this->translator->getSpan();
-  unsigned short kmerWeight = translator->getWeight();
   unsigned int maxProfileLength = profile_length + kmerSpan - 1;
   uint32_t neighborhoodTolerance[maxProfileLength];
-  memset(neighborhoodTolerance, 0, sizeof(*neighborhoodTolerance) * maxProfileLength);
+  calcNeighborhoodTolerance(neighborhoodTolerance, maxProfile, maxProfileLength, kmerSpan, tolerance);
 
-  // calculate neighborhood tolerance values with probability for observing the same sequencing error multiple times
-  std::vector<unsigned int> neighborhood;
+  unsigned int dropLen = 0;
+  string sequence = seqinfo->seq;
+  // look for non corrected drops at start or end of the profile
+  for (size_t idx = 0; idx <= this->profile_length; idx++) {
+    if (idx < profile_length && this->profile[idx].count <= threshold + neighborhoodTolerance[idx]) {
+      dropLen++;
+    } else if (dropLen > 0) {
+      if ((idx <= maxTrimLen || idx == this->profile_length) && dropLen <= maxTrimLen) {
+        if (idx == this->profile_length)
+          sequence.erase(sequence.end()-dropLen, sequence.end());
+        else
+          sequence.erase(sequence.begin(), sequence.begin()+dropLen);
 
-  for (unsigned int idx = 0; idx <= (unsigned int) kmerSpan; idx++)
-    neighborhood.push_back(maxProfile[idx]);
-
-  for (unsigned int idx = 0; idx < maxProfileLength; idx++) {
-    if (idx > kmerSpan / 2 && idx + kmerSpan / 2 < maxProfileLength) {
-      neighborhood.push_back(maxProfile[idx + kmerSpan / 2]);
-      neighborhood.erase(neighborhood.begin());
+        changed = true;
+        (*trimmedCounter) += dropLen;
+      }
+      dropLen = 0;
     }
+    //else outside drop
+  }
+  seqinfo->seq = sequence;
 
-    unsigned int max = *(std::max_element(neighborhood.begin(), neighborhood.end()));
-    // fast ceiling of tolerance*max
-    neighborhoodTolerance[idx] = (unsigned int) INT_MAX - (unsigned int)((double)INT_MAX - (tolerance * max));
-    //neighborhoodTolerance[idx] = max;
+  return changed;
+}
+
+int CountProfile::firstLastUniqueKmerCorrectionStrategy(unsigned int errorPos, unsigned int firstUniqueKmerStart,
+                                                        unsigned int lastUniqueKmerStart, unsigned int threshold,
+                                                        uint32_t *neighborhoodTolerance) {
+  int mutationTarget = -1;
+  char current_res = seqinfo->seq[errorPos];
+  packedKmerType firstUniqueKmer = 0, lastUniqueKmer = 0;
+  if (firstUniqueKmerStart <= lastUniqueKmerStart) {
+    for (size_t jdx = 0; jdx < translator->weight; jdx++) {
+      firstUniqueKmer =
+              (firstUniqueKmer << 2) | (3 & res2int[(int) seqinfo->seq[firstUniqueKmerStart + translator->_mask_array[jdx]]]);
+      lastUniqueKmer =
+              (lastUniqueKmer << 2) | (3 & res2int[(int) seqinfo->seq[lastUniqueKmerStart + translator->_mask_array[jdx]]]);
+    }
+  } else {
+    return -1;
   }
 
-  // 1. find sequencing errors
-  unsigned int foundErrors = 0;
-  unsigned int errorPositions[64];
-  uint64_t affectedPostions[profile_length];
-  memset(affectedPostions, 0, sizeof(*affectedPostions) * profile_length);
-  memset(errorPositions, 0, sizeof(*errorPositions) * 64);
+  for (unsigned int resMutation = 0; resMutation < alphabetSize; resMutation++) {
+    unsigned int improvement = 0;
+    if (resMutation == (unsigned int) res2int[(int) current_res])
+      continue;
 
-  for (size_t idx = 0; idx < maxProfileLength; idx++) {
-    if (foundErrors == 63) {
-      return TOO_MANY_ERRORS;
-    }
-    if (maxProfile[idx] <= threshold + neighborhoodTolerance[idx]) {
-    //if (isDropFiona(neighborhoodTolerance[idx], maxProfile[idx], tolerance, kmerWeight) ){
-      errorPositions[foundErrors] = idx;
-      for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-        int pos = idx - translator->_mask_array[jdx];
-        if (pos >= 0 && pos < (int) profile_length) {
-          affectedPostions[pos] = affectedPostions[pos] | ((uint64_t) 1 << (uint64_t) foundErrors);
-        }
-      }
-      foundErrors++;
+    firstUniqueKmer &= ~((packedKmerType) 3 << (packedKmerType) (2 * (translator->getWeight() -
+                                                                      translator->_inverse_mask_array[errorPos - firstUniqueKmerStart] - 1)));
+    firstUniqueKmer |= ((packedKmerType) resMutation << (packedKmerType) (2 * (translator->getWeight() -
+                                                                               translator->_inverse_mask_array[errorPos - firstUniqueKmerStart] - 1)));
 
-      if (dryRun) {
-        // error candidate positions
-        Info(Info::DEBUG) << "error\t" << seqinfo->name.c_str() << "\t" << idx << "\n";
+    lastUniqueKmer &= ~((packedKmerType) 3 << (packedKmerType) (2 * (translator->getWeight() -
+                                                                     translator->_inverse_mask_array[errorPos - lastUniqueKmerStart] - 1)));
+    lastUniqueKmer |= ((packedKmerType) resMutation << (packedKmerType) (2 * (translator->getWeight() -
+                                                                              translator->_inverse_mask_array[errorPos - lastUniqueKmerStart] - 1)));
+
+    uint32_t c1 = lookuptable->getCount(translator->kmer2minPackedKmer(firstUniqueKmer));
+    if (c1 > threshold + neighborhoodTolerance[errorPos])
+      improvement++;
+    uint32_t c2 = lookuptable->getCount(translator->kmer2minPackedKmer(lastUniqueKmer));
+    if (c2 > threshold + neighborhoodTolerance[errorPos])
+      improvement++;
+
+    if (improvement == 2) {
+      if (mutationTarget == -1) {
+        mutationTarget = resMutation;
+      } else {
+        //ambigious mutation choice -> skip correction
+        mutationTarget = -2;
+        if (firstUniqueKmerStart != lastUniqueKmerStart)
+          this->ambigCorr+=1;
+        break;
       }
     }
+    // TODO: 1. majority voting? 2. local covEst 3. global covEst (= median)
   }
-  if (foundErrors == 0) {
-    return ERROR_FREE;
-  }
-  if (dryRun)
-    return NONE_CORRECTED;
 
-  //  2. correct sequencing errors
-  size_t correctedErrors = 0;
+  return mutationTarget;
+}
 
-  for (size_t idx = 0; idx < foundErrors; idx++) {
+int CountProfile::edgeSubstitutionCorrection(unsigned int substitutionStart, unsigned int threshold, double tolerance,
+                                             uint32_t *neighborhoodTolerance){
 
-    char current_res = seqinfo->seq[errorPositions[idx]];
-    unsigned int start = errorPositions[idx] >= translator->span ? errorPositions[idx] - translator->span + 1 : 0;
-    unsigned int end = errorPositions[idx] < profile_length ? errorPositions[idx] : profile_length - 1;
-    unsigned int firstUniqueKmerStart = UINT_MAX, lastUniqueKmerStart = 0;
-    for (size_t jdx = start; jdx <= end; jdx++) {
-      if ((affectedPostions[jdx] > 0) && ((affectedPostions[jdx] & ((uint64_t)1 << idx)) == affectedPostions[jdx])) {
-        firstUniqueKmerStart = std::min(firstUniqueKmerStart, (unsigned int) jdx);
-        lastUniqueKmerStart = std::max(lastUniqueKmerStart, (unsigned int) jdx);
-      }
-    }
 
-    if(needMultipleKmers && firstUniqueKmerStart==lastUniqueKmerStart)
-      continue; // Skip this error if needMultipleKmers is set, but we only have one kmer
-    // first-last-unique-kmer correction strategy
-    packedKmerType firstUniqueKmer = 0, lastUniqueKmer = 0;
-
-    // independent error
-    if (firstUniqueKmerStart <= lastUniqueKmerStart) {
-      for (size_t jdx = 0; jdx < translator->weight; jdx++) {
-        firstUniqueKmer =
-          (firstUniqueKmer << 2) | (3 & res2int[(int) seqinfo->seq[firstUniqueKmerStart + translator->_mask_array[jdx]]]);
-        lastUniqueKmer =
-          (lastUniqueKmer << 2) | (3 & res2int[(int) seqinfo->seq[lastUniqueKmerStart + translator->_mask_array[jdx]]]);
-      }
-    } else {
-      continue; //TODO: add strategy for non independent errors
-    }
-
-    char mutationTarget = current_res;
-    for (unsigned int resMutation = 0; resMutation < alphabetSize; resMutation++) {
-      unsigned int improvement = 0;
-      if (resMutation == (unsigned int) res2int[(int) current_res])
-        continue;
-
-      firstUniqueKmer &= ~((packedKmerType) 3 << (packedKmerType) (2 * (translator->getWeight() -
-                                                                        translator->_inverse_mask_array[
-                                                                          errorPositions[idx] -
-                                                                          firstUniqueKmerStart] - 1)));
-      firstUniqueKmer |= ((packedKmerType) resMutation << (packedKmerType) (2 * (translator->getWeight() -
-                                                                                 translator->_inverse_mask_array[
-                                                                                   errorPositions[idx] -
-                                                                                   firstUniqueKmerStart] - 1)));
-
-      lastUniqueKmer &= ~((packedKmerType) 3 << (packedKmerType) (2 * (translator->getWeight() -
-                                                                       translator->_inverse_mask_array[
-                                                                         errorPositions[idx] -
-                                                                         lastUniqueKmerStart] - 1)));
-      lastUniqueKmer |= ((packedKmerType) resMutation << (packedKmerType) (2 * (translator->getWeight() -
-                                                                                translator->_inverse_mask_array[
-                                                                                  errorPositions[idx] -
-                                                                                  lastUniqueKmerStart] - 1)));
-
-      uint32_t c1 = lookuptable->getCount(translator->kmer2minPackedKmer(firstUniqueKmer));
-      if (c1 > threshold + neighborhoodTolerance[errorPositions[idx]])
-      //if (isDropFiona(neighborhoodTolerance[errorPositions[idx]], c1, tolerance, kmerWeight))
-        improvement++;
-      uint32_t c2 = lookuptable->getCount(translator->kmer2minPackedKmer(lastUniqueKmer));
-      //if (isDropFiona(neighborhoodTolerance[errorPositions[idx]], c2, tolerance, kmerWeight))
-      if (c2 > threshold + neighborhoodTolerance[errorPositions[idx]])
-        improvement++;
-
-      if (improvement == 2) {
-        if (mutationTarget == current_res) {
-          mutationTarget = int2res[resMutation];
-        } else {
-          //ambigious mutation choice -> skip correction
-          if (firstUniqueKmerStart != lastUniqueKmerStart)
-            this->ambigCorr+=1;
-          mutationTarget = current_res;
-          break;
-        }
-      }
-      // TODO: 1. majority voting? 2. local covEst 3. global covEst (= median)
-    }
-
-    if (mutationTarget != current_res) {
-      Info(Info::DEBUG) << "corrected\t" << seqinfo->name.c_str() << "\t" << errorPositions[idx]
-                        << "\t" << seqinfo->seq[errorPositions[idx]] << "\t" << mutationTarget << "\n";
-      seqinfo->seq[errorPositions[idx]] = mutationTarget;
-      //TODO: update count table?
-      correctedErrors++;
+  unsigned int start = substitutionStart >= translator->span ? substitutionStart - translator->span + 1 : 0;
+  unsigned int end = substitutionStart < profile_length ? substitutionStart : profile_length - 1;
+  unsigned int firstUniqueKmerStart = UINT_MAX, lastUniqueKmerStart = 0;
+  //
+  for (size_t jdx = start; jdx <= end; jdx++) {
+    if (translator->_inverse_mask_array[substitutionStart-jdx] != UCHAR_MAX) {
+      //kmer starting at jdx has a coding position at substitutionPos
+      firstUniqueKmerStart = std::min(firstUniqueKmerStart, (unsigned int) jdx);
+      lastUniqueKmerStart = std::max(lastUniqueKmerStart, (unsigned int) jdx);
     }
   }
 
-  (*correctedSubstitutions) += correctedErrors;
-
-  //Had errors
-  if (correctedErrors == 0) {
-    return NONE_CORRECTED;
-  } else if (correctedErrors < foundErrors) {
-    return SOME_CORRECTED;
-  } else
-    return ALL_CORRECTED;
+  int mutationTarget = firstLastUniqueKmerCorrectionStrategy(substitutionStart, firstUniqueKmerStart, lastUniqueKmerStart,
+                                                             threshold, neighborhoodTolerance);
+  return mutationTarget;
 
 }
 
-bool CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges) {
+bool CountProfile::tryInsertionCorrection(unsigned int insertionStart, unsigned int insertionLen, unsigned int threshold, uint32_t *neighborhoodTolerance){
 
-  uint8_t candidates[profile_length];
-  memset(candidates, 0, sizeof(*candidates) * profile_length);
+  // try to fix insertion by deleting nucleotides from insertionStart to insertionStart+1
 
-  double correctionFactor= 0.001;
-  unsigned int dropstart = 0;
-  unsigned int dropend = profile_length;
+  unsigned short kmerSpan = this->translator->getSpan();
 
-  // 1) find drops -> candidates
+  /* choose k-mers for evaluation
+     firstKmer = leftmost kmer containing the whole insertion
+     secondLastKmer = second rightmost kmer containing the whole insertion
+     midKmer = kmer containing whole insertion while counterbalance the number of nucleotides before and after the insertion
+  */
+  unsigned int firstKmerStart = insertionStart >= kmerSpan? insertionStart-kmerSpan+1:0,
+          secondLastKmerStart = insertionStart < profile_length? insertionStart-1: profile_length-insertionLen - 1 ,
+          midKmerStart = (firstKmerStart+secondLastKmerStart)/2;
 
-  for (size_t idx = 1; idx < profile_length; idx++) {
+  // make sure we have at least one nucleotide before and after the insert range
+  if(firstKmerStart < insertionStart && secondLastKmerStart + kmerSpan >= insertionStart+insertionLen) {
 
-    // dropstart
-    if (this->profile[idx].count / this->profile[idx - 1].count <= 0.5 &&
-        this->profile[idx].count <= dropLevelCriterion &&
-        this->profile[idx - 1].count > dropLevelCriterion) {
-      dropstart = idx;
+    packedKmerType firstKmer = 0, midKmer = 0, secondLastKmer = 0;
+    // remove whole insertion from all three kmers
+    for (size_t jdx = 0; jdx < translator->weight; jdx++) {
+
+      unsigned int seqPosForFirstKmer = firstKmerStart + translator->_mask_array[jdx];
+      if (seqPosForFirstKmer >= insertionStart)
+        seqPosForFirstKmer += insertionLen;
+      if(res2int[(int) seqinfo->seq[seqPosForFirstKmer]] == -1)
+        return false;
+      firstKmer =
+              (firstKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForFirstKmer]]);
+
+      unsigned int seqPosForSecondLastKmer = secondLastKmerStart + translator->_mask_array[jdx];
+      if (seqPosForSecondLastKmer >= insertionStart)
+        seqPosForSecondLastKmer += insertionLen;
+      if(res2int[(int) seqinfo->seq[seqPosForSecondLastKmer]] == -1)
+        return false;
+      secondLastKmer =
+              (secondLastKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForSecondLastKmer]]);
+
+      unsigned int seqPosForMidKmer = midKmerStart + translator->_mask_array[jdx];
+      if (seqPosForMidKmer >= insertionStart)
+        seqPosForMidKmer += insertionLen;
+      if(res2int[(int) seqinfo->seq[seqPosForMidKmer]] == -1)
+        return false;
+      midKmer =
+              (midKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForMidKmer]]);
     }
-      // dropend
-    else if (this->profile[idx - 1].count / this->profile[idx].count <= 0.5 &&
-             this->profile[idx - 1].count <= dropLevelCriterion &&
-             this->profile[idx].count > dropLevelCriterion) {
 
-      if (dropstart == profile_length)
-        continue;
-      /*if (dropstart == 0)
-        continue;*/
+    // check count change
+    unsigned int approved = 0;
+    uint32_t c1 = lookuptable->getCount(translator->kmer2minPackedKmer(firstKmer));
+    if (c1 > threshold + neighborhoodTolerance[firstKmerStart])
+      approved++;
+    uint32_t c2 = lookuptable->getCount(translator->kmer2minPackedKmer(midKmer));
+    if (c2 > threshold + neighborhoodTolerance[midKmerStart])
+      approved++;
+    uint32_t c3 = lookuptable->getCount(translator->kmer2minPackedKmer(secondLastKmer));
+    if (c3 > threshold + neighborhoodTolerance[secondLastKmerStart])
+      approved++;
 
-      dropend = idx;
-
-      for (size_t d = dropstart; d < dropend; d++) {
-        if (profile[d].count <= dropLevelCriterion)
-          candidates[d] = 1;
-      }
-
-      dropstart = profile_length;
-      dropend = profile_length;
-    }
-  }
-
-  if(dropstart>0 && dropstart < profile_length) {
-
-    for (size_t d = dropstart; d < profile_length; d++) {
-      if (profile[d].count <= dropLevelCriterion)
-        candidates[d] = 1;
-    }
-  }
-
-  unsigned short kmerSpan = translator->getSpan();
-  unsigned short kmerWeight = translator->getWeight();
-  size_t maxProfileLen = profile_length + kmerSpan - 1;
-  dropstart = 0;
-  dropend = maxProfileLen;
-
-  /* 2) check if drop remains on maximized profile -> normal drop (spurious position)
-        or if drop disappear on maximized profile -> transition drop (spurious order) */
-
-  for (size_t idx = 1; idx < maxProfileLen; idx++) {
-
-    // dropstart
-    if (maxProfile[idx] / maxProfile[idx-1] < 0.5 &&
-        maxProfile[idx] <= (dropLevelCriterion + (correctionFactor*maxProfile[idx-1]+1)) &&
-        maxProfile[idx-1] > (dropLevelCriterion + (correctionFactor*maxProfile[idx-1]+1))) {
-      dropstart = idx;
-    }
-      // dropend
-    else if (maxProfile[idx-1] / maxProfile[idx] < 0.5 &&
-             maxProfile[idx-1] <= (dropLevelCriterion + (correctionFactor*maxProfile[idx]+1)) &&
-             maxProfile[idx] > (dropLevelCriterion + (correctionFactor*maxProfile[idx]+1))) {
-
-      if (dropstart == maxProfileLen)
-        continue;
-
-      dropend = idx;
-      if (maskOnlyDropEdges) {
-
-        for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-          int pos = dropstart - translator->_mask_array[jdx];
-          if (pos >= 0 && pos < (int)profile_length)
-            candidates[pos] = 0;
-        }
-
-        if (dropend > dropstart + 1) {
-          for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-            int pos = dropend - 1 - translator->_mask_array[jdx];
-            if (pos >= 0 && pos < (int)profile_length)
-              candidates[pos] = 0;
-          }
-        }
-      }
-      else{
-        for (size_t d = dropstart; d < dropend; d++) {
-          for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-            int pos = d - translator->_mask_array[jdx];
-            if (pos >= 0 && pos < (int)profile_length)
-              candidates[pos] = 0;
-          }
-        }
-      }
-      dropstart=maxProfileLen;
-      dropend=maxProfileLen;
-    }
-  }
-
-  if(dropstart>0 && dropstart < maxProfileLen) {
-
-    if (maskOnlyDropEdges) {
-      for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-        int pos = dropstart - translator->_mask_array[jdx];
-        if (pos >= 0 && pos < (int)profile_length)
-          candidates[pos] = 0;
-      }
-
-      if (dropend > dropstart + 1) {
-        for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-          int pos = dropend - 1 - translator->_mask_array[jdx];
-          if (pos >= 0 && pos < (int)profile_length)
-            candidates[pos] = 0;
-        }
-      }
-    }
-    else {
-      for (size_t d = dropstart; d < maxProfileLen; d++) {
-        for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
-          int pos = d - translator->_mask_array[jdx];
-          if (pos >= 0 && pos < (int)profile_length)
-            candidates[pos] = 0;
-        }
-      }
-    }
-  }
-
-  for (size_t idx = 0; idx < this->profile_length; idx++) {
-    if (candidates[idx] != 0)
+    if (approved == 3)
       return true;
   }
 
   return false;
-
-  //TODO:N's
 }
 
+int CountProfile::tryDeletionCorrection(unsigned int deletionPos, unsigned int threshold, uint32_t *neighborhoodTolerance){
+
+  // try to fix deletion by inserting a nucleotide at deletionPos
+
+  // deletionPos can neither be the first or last nucleotide of the sequence, because we can not see that
+  // so we always find a k-mer which starts before deletionPos and a kmer which contain positions behind deletionPos
+
+  unsigned short kmerSpan = this->translator->getSpan();
+  unsigned int firstKmerStart = deletionPos >= kmerSpan? deletionPos-kmerSpan+1:0;
+  unsigned int lastKmerStart = deletionPos < profile_length? deletionPos-1:profile_length;
+  // attention: profile_length-1 is normally the last valid k-mer, but we will try to insert a nucleotide therefore the
+  // last valid k-mer starts at profile_length
+
+  packedKmerType firstKmer = 0, lastKmer = 0;
+  //
+  for (size_t jdx = 0; jdx < translator->weight; jdx++) {
+
+    unsigned int seqPosForFirstKmer = firstKmerStart + translator->_mask_array[jdx];
+    if(seqPosForFirstKmer < deletionPos) {
+      if(res2int[(int) seqinfo->seq[seqPosForFirstKmer]] == -1)
+        return -1;
+      firstKmer = (firstKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForFirstKmer]]);
+    }else if (seqPosForFirstKmer == deletionPos)
+      firstKmer =  (firstKmer << 2);
+    else {
+      if(res2int[(int) seqinfo->seq[seqPosForFirstKmer-1]] == -1)
+        return -1;
+      firstKmer = (firstKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForFirstKmer - 1]]);
+    }
+
+    unsigned int seqPosForLastKmer = lastKmerStart + translator->_mask_array[jdx];
+    if(seqPosForLastKmer < deletionPos) {
+      if (res2int[(int) seqinfo->seq[seqPosForLastKmer]] == -1)
+        return -1;
+      lastKmer = (lastKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForLastKmer]]);
+    }else if (seqPosForLastKmer == deletionPos)
+      lastKmer =  (lastKmer << 2);
+    else {
+      if (res2int[(int) seqinfo->seq[seqPosForLastKmer-1]] == -1)
+        return -1;
+      lastKmer = (lastKmer << 2) | (3 & res2int[(int) seqinfo->seq[seqPosForLastKmer - 1]]);
+    }
+  }
+
+  int mutationTarget = -1;
+  for (unsigned int resMutation = 0; resMutation < alphabetSize; resMutation++) {
+    unsigned int improvement = 0;
+
+    firstKmer &= ~((packedKmerType) 3 << (packedKmerType) (2 * (translator->getWeight() -
+                                                                translator->_inverse_mask_array[deletionPos - firstKmerStart] - 1)));
+
+    firstKmer |= ((packedKmerType) resMutation << (packedKmerType) (2 * (translator->getWeight() -
+                                                                         translator->_inverse_mask_array[deletionPos - firstKmerStart] - 1)));
+
+    lastKmer &= ~((packedKmerType) 3 << (packedKmerType) (2 * (translator->getWeight() -
+                                                               translator->_inverse_mask_array[deletionPos - lastKmerStart] - 1)));
+
+    lastKmer |= ((packedKmerType) resMutation << (packedKmerType) (2 * (translator->getWeight() -
+                                                                        translator->_inverse_mask_array[deletionPos - lastKmerStart] -  1)));
+
+    uint32_t c1 = lookuptable->getCount(translator->kmer2minPackedKmer(firstKmer));
+    if (c1 > threshold + neighborhoodTolerance[deletionPos])
+      improvement++;
+    uint32_t c2 = lookuptable->getCount(translator->kmer2minPackedKmer(lastKmer));
+    if (c2 > threshold + neighborhoodTolerance[deletionPos])
+      improvement++;
+
+    if (improvement == 2) {
+      if (mutationTarget == -1)
+        mutationTarget = resMutation;
+      else {
+        //ambigious mutation choice -> skip correction
+        mutationTarget = -2;
+        break;
+      }
+    }
+  }
+  return mutationTarget;
+}
 
 bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst,
                                                              double localPercDrop, double globalPercDrop,
@@ -1077,4 +810,146 @@ bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfil
   return false;
 }
 
+bool CountProfile::checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges) {
+
+  uint8_t candidates[profile_length];
+  memset(candidates, 0, sizeof(*candidates) * profile_length);
+
+  double correctionFactor= 0.001;
+  unsigned int dropstart = 0;
+  unsigned int dropend = profile_length;
+
+  // 1) find drops -> candidates
+
+  for (size_t idx = 1; idx < profile_length; idx++) {
+
+    // dropstart
+    if (this->profile[idx].count / this->profile[idx - 1].count <= 0.5 &&
+        this->profile[idx].count <= dropLevelCriterion &&
+        this->profile[idx - 1].count > dropLevelCriterion) {
+      dropstart = idx;
+    }
+      // dropend
+    else if (this->profile[idx - 1].count / this->profile[idx].count <= 0.5 &&
+             this->profile[idx - 1].count <= dropLevelCriterion &&
+             this->profile[idx].count > dropLevelCriterion) {
+
+      if (dropstart == profile_length)
+        continue;
+      /*if (dropstart == 0)
+        continue;*/
+
+      dropend = idx;
+
+      for (size_t d = dropstart; d < dropend; d++) {
+        if (profile[d].count <= dropLevelCriterion)
+          candidates[d] = 1;
+      }
+
+      dropstart = profile_length;
+      dropend = profile_length;
+    }
+  }
+
+  if(dropstart>0 && dropstart < profile_length) {
+
+    for (size_t d = dropstart; d < profile_length; d++) {
+      if (profile[d].count <= dropLevelCriterion)
+        candidates[d] = 1;
+    }
+  }
+
+  unsigned short kmerSpan = translator->getSpan();
+  unsigned short kmerWeight = translator->getWeight();
+  size_t maxProfileLen = profile_length + kmerSpan - 1;
+  dropstart = 0;
+  dropend = maxProfileLen;
+
+  /* 2) check if drop remains on maximized profile -> normal drop (spurious position)
+        or if drop disappear on maximized profile -> transition drop (spurious order) */
+
+  for (size_t idx = 1; idx < maxProfileLen; idx++) {
+
+    // dropstart
+    if (maxProfile[idx] / maxProfile[idx-1] < 0.5 &&
+        maxProfile[idx] <= (dropLevelCriterion + (correctionFactor*maxProfile[idx-1]+1)) &&
+        maxProfile[idx-1] > (dropLevelCriterion + (correctionFactor*maxProfile[idx-1]+1))) {
+      dropstart = idx;
+    }
+      // dropend
+    else if (maxProfile[idx-1] / maxProfile[idx] < 0.5 &&
+             maxProfile[idx-1] <= (dropLevelCriterion + (correctionFactor*maxProfile[idx]+1)) &&
+             maxProfile[idx] > (dropLevelCriterion + (correctionFactor*maxProfile[idx]+1))) {
+
+      if (dropstart == maxProfileLen)
+        continue;
+
+      dropend = idx;
+      if (maskOnlyDropEdges) {
+
+        for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+          int pos = dropstart - translator->_mask_array[jdx];
+          if (pos >= 0 && pos < (int)profile_length)
+            candidates[pos] = 0;
+        }
+
+        if (dropend > dropstart + 1) {
+          for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+            int pos = dropend - 1 - translator->_mask_array[jdx];
+            if (pos >= 0 && pos < (int)profile_length)
+              candidates[pos] = 0;
+          }
+        }
+      }
+      else{
+        for (size_t d = dropstart; d < dropend; d++) {
+          for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+            int pos = d - translator->_mask_array[jdx];
+            if (pos >= 0 && pos < (int)profile_length)
+              candidates[pos] = 0;
+          }
+        }
+      }
+      dropstart=maxProfileLen;
+      dropend=maxProfileLen;
+    }
+  }
+
+  if(dropstart>0 && dropstart < maxProfileLen) {
+
+    if (maskOnlyDropEdges) {
+      for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+        int pos = dropstart - translator->_mask_array[jdx];
+        if (pos >= 0 && pos < (int)profile_length)
+          candidates[pos] = 0;
+      }
+
+      if (dropend > dropstart + 1) {
+        for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+          int pos = dropend - 1 - translator->_mask_array[jdx];
+          if (pos >= 0 && pos < (int)profile_length)
+            candidates[pos] = 0;
+        }
+      }
+    }
+    else {
+      for (size_t d = dropstart; d < maxProfileLen; d++) {
+        for (size_t jdx = 0; jdx < kmerWeight; jdx++) {
+          int pos = d - translator->_mask_array[jdx];
+          if (pos >= 0 && pos < (int)profile_length)
+            candidates[pos] = 0;
+        }
+      }
+    }
+  }
+
+  for (size_t idx = 0; idx < this->profile_length; idx++) {
+    if (candidates[idx] != 0)
+      return true;
+  }
+
+  return false;
+
+  //TODO:N's
+}
 

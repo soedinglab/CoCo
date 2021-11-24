@@ -67,7 +67,7 @@ public:
 
   CountProfileEntry * getProfile();
 
-  /* show tab-based table of positions and counts */
+  /*** show functions ***/
 
   void showProfile(FILE *fp = stdout) const;
 
@@ -86,24 +86,32 @@ public:
 
   /*** advanced profile operations ***/
 
-  int doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool needMultipleKmers, unsigned int *correctedSubstitutions, bool dryRun);
+  /* correction operations */
 
-  bool doIndelCorrection(uint32_t *maxProfile, unsigned int threshold, double tolerance, bool trySubstitution, unsigned int *correctedSubstitutions, unsigned int *correctedInsertions, unsigned int *correctedDeletions);
+  int doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance,
+                               bool needMultipleKmers, unsigned int *correctedSubstitutions, bool dryRun);
 
-  int trySubstitutionCorrection(unsigned int substitutionStart, unsigned int threshold, double tolerance, uint32_t *neighborhoodTolerance);
-
-  bool tryInsertionCorrection(unsigned int insertionStart, unsigned int insertionLen, unsigned int threshold, double tolerance, uint32_t *neighborhoodTolerance);
-
-  int tryDeletionCorrection(unsigned int deletionPos, unsigned int threshold, double tolerance, uint32_t *neighborhoodTolerance);
+  bool doIndelCorrection(uint32_t *maxProfile, unsigned int threshold, double tolerance, bool trySubstitution,
+                         unsigned int *correctedSubstitutions, unsigned int *correctedInsertions, unsigned int *correctedDeletions);
 
   bool doTrimming(uint32_t *maxProfile, unsigned int threshold, double tolerance, unsigned int maxTrimLen, unsigned int *trimmedCounter);
+
+  int firstLastUniqueKmerCorrectionStrategy(unsigned int substitutionStart, unsigned int firstUniqueKmerStart,
+                                          unsigned int lastUniqueKmerStart, unsigned int threshold,
+                                          uint32_t *neighborhoodTolerance);
+
+  int edgeSubstitutionCorrection(unsigned int errorPos, unsigned int threshold, double tolerance, uint32_t *neighborhoodTolerance);
+
+  bool tryInsertionCorrection(unsigned int insertionStart, unsigned int insertionLen, unsigned int threshold, uint32_t *neighborhoodTolerance);
+
+  int tryDeletionCorrection(unsigned int deletionPos, unsigned int threshold, uint32_t *neighborhoodTolerance);
+
+  /* filter operations */
 
   bool checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst, double localPercDrop, \
                                                  double globalPercDrop, bool maskOnlyDropEdges=true);
   //outdated
   bool checkForSpuriousTransitionDrops(uint32_t *maxProfile, unsigned int dropLevelCriterion, bool maskOnlyDropEdges=true);
-
-
 
 };
 

@@ -56,7 +56,7 @@ int correctionProcessor(CountProfile &countprofile, void *args)
   /* maximize count profile */
   uint32_t *maxProfile = countprofile.maximize();
 
-  /* first round of substitution correction */
+  /* substitution correction using firstLastUniqueKmerCorrectionStrategy */
   do {
     status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, &(statistic.substitution_multikmer), currArgs->dryRun);
 
@@ -67,7 +67,7 @@ int correctionProcessor(CountProfile &countprofile, void *args)
     }
   } while (!currArgs->dryRun && status == SOME_CORRECTED);
 
-  /* indel correction */
+  /* indel correction and edge substitution correction */
   bool changed = countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance, true, &(statistic.substitution_independent),  &(statistic.insertion),  &(statistic.deletion));
   if(changed) {
     countprofile.update(updateLookup);
@@ -75,16 +75,19 @@ int correctionProcessor(CountProfile &countprofile, void *args)
     maxProfile = countprofile.maximize();
   }
 
-  /* second round of substitution correction */
-  do {
-    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false, &(statistic.substitution_singlekmer), currArgs->dryRun);
+  /* second round of substitution correction without forcing the use of multiple kmers*/
+  if (status != ERROR_FREE) {
+    do {
+      status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false,
+                                                     &(statistic.substitution_singlekmer), currArgs->dryRun);
 
-    if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
-      countprofile.update(updateLookup);
-      delete[] maxProfile;
-      maxProfile = countprofile.maximize();
-    }
-  } while (!currArgs->dryRun && status == SOME_CORRECTED);
+      if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
+        countprofile.update(updateLookup);
+        delete[] maxProfile;
+        maxProfile = countprofile.maximize();
+      }
+    } while (!currArgs->dryRun && status == SOME_CORRECTED);
+  }
 
   /* trimming */
   if(currArgs->maxTrimLen > 0) {
@@ -110,7 +113,6 @@ int correctionProcessor(CountProfile &countprofile, void *args)
     currArgs->statistic->trimmed += statistic.trimmed;
   }
 
-  // }
   if (currArgs->dryRun) {
     if (status != ERROR_FREE) {
       fwrite(seqinfo->name.c_str(), sizeof(char), seqinfo->name.size(), currArgs->errorCandidateReads);
