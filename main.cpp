@@ -56,7 +56,7 @@ std::vector<struct Command> commands =
     {"correction", correction, &opt.correctionWorkflow, "correct sequencing errors",
       "identify reads with sequencing errors and correct them",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      "--reads <fasta|q> [--counts <count.h5>] [options]",
+      " -1 <fasta|q> -2 <fasta|q> | --reads <fasta|q> [--counts <count.h5>] [options]",
       CORRECTOR
     },
   /*{"consensus", consensus, &opt.consensusWorkflow, "generate consensus reads ",
@@ -140,7 +140,7 @@ int main(int argc, const char *argv[]) {
     return (EXIT_FAILURE);
   }
 
-  Info(Info::INFO)  << tool_name << " Version: " << version << "\n";
+  Info(Info::INFO) <<"\n" << tool_name << " Version: " << version << "\n";
   Info(Info::INFO) << "Execute " << tool_name << " command: " << command->cmd << "\n\n";
   EXIT(command->callerFunction(argc - 2, argv + 2, command));
 }

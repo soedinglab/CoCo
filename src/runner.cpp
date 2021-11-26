@@ -28,7 +28,7 @@ int processReads(string readsname,
 {
 
   if (!silent)
-    Info(Info::INFO) << "process reads...\n";
+    Info(Info::INFO) << "process reads from file " << readsname << "...\n";
   FILE *reads = openFileOrDie(readsname, "r");
 
   //TODO: check what happens if one thread have problems with a file, kill whole process then

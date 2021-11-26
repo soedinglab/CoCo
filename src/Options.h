@@ -46,8 +46,9 @@ public:
     new Options;
   }
 
-  void parseOptions(int argc, const char *argv[],
-                    const Command &command);
+  void parseOptions(int argc, const char *argv[], const Command &command);
+
+  void printParameterSettings(const Command &command);
 
   /*size_t requiredParameterCount,
   bool printParameters = true,
@@ -55,6 +56,8 @@ public:
   int outputFlags = 0);*/
 
   std::string reads;
+  std::string forwardReads;
+  std::string reverseReads;
   std::string countFile;
   std::string outprefix;
 
@@ -89,6 +92,8 @@ public:
   std::vector<cocoOption*> counts2flatWorkflow;
 
   OPTION(OP_READS)
+  OPTION(OP_FORWARD_READS)
+  OPTION(OP_REVERSE_READS)
   OPTION(OP_COUNT_FILE)
   OPTION(OP_OUTPREFIX)
   OPTION(OP_SPACED_KMER_PATTERN)

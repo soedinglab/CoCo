@@ -132,6 +132,7 @@ int correction(int argc, const char **argv, const Command *tool)
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);
 
+  opt.printParameterSettings(*tool);
   //TODO: print parameters
   //TODO:check parameter and if files exists
 
@@ -178,8 +179,13 @@ int correction(int argc, const char **argv, const Command *tool)
   }
 
   FILE *skipReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + "_skipped" + ext, "w");
-  int returnVal = processReads(reads, lookuptable, translator, correctionProcessor, &args, opt.skip, skipReads);
-
+  int returnVal=0;
+  if (!opt.reads.empty())
+    returnVal = processReads(opt.reads, lookuptable, translator, correctionProcessor, &args, opt.skip, skipReads);
+  if(!opt.forwardReads.empty())
+    returnVal = processReads(opt.forwardReads, lookuptable, translator, correctionProcessor, &args, opt.skip, skipReads);
+  if(!opt.reverseReads.empty())
+    returnVal = processReads(opt.reverseReads, lookuptable, translator, correctionProcessor, &args, opt.skip, skipReads);
   // print statistic
   std::cout << "##########" << std::endl;
   std::cout << "corrections from multiKmer step (substitutions only): " << statistic.substitution_multikmer << std::endl;

@@ -143,12 +143,13 @@ LookupTableBase *buildLookuptable(string countFile, int countMode,
 
 LookupTableBase *buildHashTable(string reads, const KmerTranslator &translator) {
 
-  Info(Info::WARNING) << "WARNING: counting kmers only on reads argument. "\
+  /*Info(Info::WARNING) << "WARNING: counting kmers only on reads argument. "\
                          "Make sure the reads are not (pre)clustered! \n";
-
+  */
   Info(Info::WARNING) << "WARNING: using internal hash table to count k-mers is not "\
                          "recommended for larger datasets: use --counts instead\n";
 
+  // TODO: check performance, where is the limit
   
   unsigned int kmerSpan = translator.getSpan();
   HashTable *hashtable = new HashTable();

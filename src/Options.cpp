@@ -17,6 +17,12 @@ Options::Options() :
   OP_READS(OP_READS_ID, "--reads", "Unpaired Reads",
                "file with unpaired reads (fasta/fastq format)",
                typeid(std::string), (void *) &reads, 0),
+  OP_FORWARD_READS(OP_FORWARD_READS_ID, "-1", "Forward Reads",
+              "file with forward paired-end reads (fasta/fastq format)",
+              typeid(std::string), (void *) &forwardReads, 0),
+  OP_REVERSE_READS(OP_REVERSE_READS_ID, "-2", "Reverse Reads",
+              "file with reverse paired-end reads (fasta/fastq format)",
+              typeid(std::string), (void *) &reverseReads, 0),
   OP_COUNT_FILE(OP_COUNT_FILE_ID, "--counts", "Count File",
                "pre computed kmer count file in hdf5 format (dsk output), Note: only supports 41-mers yet",
                typeid(std::string), (void *) &countFile, COUNTS2FLAT),
@@ -34,10 +40,10 @@ Options::Options() :
   OP_TOLERANCE(OP_TOLERANCE_ID, "--tolerance", "Tolerance",
                "relative neighborhood count added to threshold value",
                typeid(double), (void *) &tolerance, 0),
-  OP_MAX_CORR_NUM(OP_MAX_CORR_NUM_ID, "--max-corr-num", "Maximal number of correction per read",
+  OP_MAX_CORR_NUM(OP_MAX_CORR_NUM_ID, "--max-corr-num", "Max number of correction per read",
                "maximal number of corrections performed per read, changes are discarded otherwise",
                typeid(int), (void *) &maxCorrNum, 0),
-  OP_MAX_TRIM_LEN(OP_MAX_TRIM_LEN_ID, "--max-trim-len", "Maximal number of trimmed nucleotides per side",
+  OP_MAX_TRIM_LEN(OP_MAX_TRIM_LEN_ID, "--max-trim-len", "Max number of trimmed nucleotides",
                "maximal number of nucleotides trimmed from the beginning or end of a read if correction was possible",
                typeid(int), (void *) &maxTrimLen, 0),
   OP_UPDATE_LOOKUPTABLE(OP_UPDATE_LOOKUPTABLE_ID, "--update-lookup", "Update lookup table",
@@ -63,7 +69,8 @@ Options::Options() :
              typeid(int), (void *) &verbose, 0),
   // expert options
   OP_COUNT_MODE(OP_COUNT_MODE_ID, "--count-mode", "Count mode",
-                "way to store counts for concurrent spaced kmers (expert option)\n 0: sum \n 1: maximize", typeid(int), (void *) &countMode, 0)
+                "way to store counts for concurrent spaced kmers (expert option)\n 0: sum \n 1: maximize",
+                typeid(int), (void *) &countMode, 0)
 
   {
   if (instance) {
@@ -77,6 +84,8 @@ Options::Options() :
   //TODO: threads
 
   //correction
+  correctionWorkflow.push_back(&OP_FORWARD_READS);
+  correctionWorkflow.push_back(&OP_REVERSE_READS);
   correctionWorkflow.push_back(&OP_READS);
   correctionWorkflow.push_back(&OP_COUNT_FILE);
   correctionWorkflow.push_back(&OP_COUNT_MODE);
@@ -133,6 +142,8 @@ Options::Options() :
 void Options::setDefaults() {
 
   reads = "";
+  forwardReads = "";
+  reverseReads = "";
 
   spacedKmerPattern="11110111111011011101010111011011111101111";
   skip = 10;
@@ -221,6 +232,48 @@ void printToolUsage(const Command &command, const int FLAG) {
     }
   }
   std::cerr << usage.str() << "\n";
+}
+
+void Options::printParameterSettings(const Command &command) {
+
+  std::stringstream settings;
+  const std::vector<cocoOption*> &options = *command.opt;
+
+  size_t maxParamWidth = 0;
+  for (size_t idx = 0; idx < options.size(); idx++) {
+    maxParamWidth = std::max(strlen(options[idx]->display),maxParamWidth);
+  }
+
+  size_t frontParamWidth = 2;
+  maxParamWidth+=6;
+  std::string paramString;
+  for (size_t idx = 0; idx < options.size(); idx++) {
+      paramString.clear();
+      paramString += std::string(frontParamWidth, ' ') + options[idx]->display +
+                     std::string(maxParamWidth < strlen(options[idx]->display)? 1 : maxParamWidth- strlen(options[idx]->display), ' ');
+
+      std::string valueString;
+      if (typeid(std::string) == options[idx]->type) {
+        valueString = *((std::string *) options[idx]->value);
+      } else if (typeid(int) == options[idx]->type) {
+        valueString = std::to_string(*(int *) options[idx]->value);
+      } else if (typeid(unsigned int) == options[idx]->type) {
+        valueString = std::to_string(*(int *) options[idx]->value);
+      } else if (typeid(bool) == options[idx]->type) {
+        valueString = std::to_string(*(bool *) options[idx]->value);
+      } else if (typeid(float) == options[idx]->type) {
+        valueString = std::to_string(*(float *) options[idx]->value);
+      } else if (typeid(double) == options[idx]->type) {
+        valueString = std::to_string(*(double *) options[idx]->value);
+      }
+      if (valueString.length() > 0) {
+        //paramString += valueString;
+        paramString += std::string(" [") + valueString + std::string("]");
+      }
+
+    settings << paramString << "\n";
+  }
+  std::cout << settings.str() << "\n";
 }
 
 void Options::parseOptions(int argc, const char *argv[], const Command &command) {
@@ -325,6 +378,12 @@ void Options::parseOptions(int argc, const char *argv[], const Command &command)
       printToolUsage(command, EXTENDED);
       EXIT(EXIT_FAILURE);
     }
+  }
+
+  if(!((this->OP_READS.isSet)|(this->OP_FORWARD_READS.isSet && this->OP_REVERSE_READS.isSet))){
+    Info(Info::ERROR) << "ERROR: Either " << this->OP_READS.name << " or " << this->OP_FORWARD_READS.name << " and "
+                      << this->OP_REVERSE_READS.name << " must be set\n";
+    EXIT(EXIT_FAILURE);
   }
 
   for (cocoOption *option: options) {
