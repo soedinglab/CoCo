@@ -54,7 +54,7 @@ public:
   int parseFlags = 0,
   int outputFlags = 0);*/
 
-  std::string seqFile;
+  std::string reads;
   std::string countFile;
   std::string outprefix;
 
@@ -88,7 +88,7 @@ public:
   std::vector<cocoOption*> consensusWorkflow;
   std::vector<cocoOption*> counts2flatWorkflow;
 
-  OPTION(OP_SEQ_FILE)
+  OPTION(OP_READS)
   OPTION(OP_COUNT_FILE)
   OPTION(OP_OUTPREFIX)
   OPTION(OP_SPACED_KMER_PATTERN)

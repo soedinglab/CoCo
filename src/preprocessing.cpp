@@ -141,9 +141,9 @@ LookupTableBase *buildLookuptable(string countFile, int countMode,
 
 }
 
-LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator) {
+LookupTableBase *buildHashTable(string reads, const KmerTranslator &translator) {
 
-  Info(Info::WARNING) << "WARNING: counting kmers only on seqfile argument. "\
+  Info(Info::WARNING) << "WARNING: counting kmers only on reads argument. "\
                          "Make sure the reads are not (pre)clustered! \n";
 
   Info(Info::WARNING) << "WARNING: using internal hash table to count k-mers is not "\
@@ -153,7 +153,7 @@ LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator
   unsigned int kmerSpan = translator.getSpan();
   HashTable *hashtable = new HashTable();
 
-  FILE *kmerCountFile = openFileOrDie(seqFile, "r");
+  FILE *kmerCountFile = openFileOrDie(reads, "r");
   int fd = fileno(kmerCountFile);
   kseq_t *seq = kseq_init(fd);
   spacedKmerType spacedKmer = 0, mask = ((((spacedKmerType) 1) << (spacedKmerType) (kmerSpan * 2)) - 1);

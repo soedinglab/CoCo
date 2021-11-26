@@ -47,7 +47,7 @@ int profile(int argc, const char **argv, const Command *tool) {
 
   initialize();
   KmerTranslator *translator = new KmerTranslator(opt.spacedKmerPattern);
-  string seqFile = opt.seqFile;
+  string reads = opt.reads;
 
   LookupTableBase *lookuptable;
 
@@ -58,7 +58,7 @@ int profile(int argc, const char **argv, const Command *tool) {
     lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0);
   } else { // count k-mers itself and fill hash-lookuptable
 
-    lookuptable = buildHashTable(seqFile, *translator);
+    lookuptable = buildHashTable(reads, *translator);
   }
 
   if (lookuptable == NULL) {
@@ -71,10 +71,10 @@ int profile(int argc, const char **argv, const Command *tool) {
   if (opt.OP_OUTPREFIX.isSet)
     outprefix = opt.outprefix;
   else
-    outprefix = getFilename(seqFile);
+    outprefix = getFilename(reads);
 
   ProfileArgs profileargs = {openFileOrDie(outprefix + ".profiles", "w")};
-  processSeqFile(seqFile, lookuptable, translator, showProfile, &profileargs, opt.skip, NULL);
+  processReads(reads, lookuptable, translator, showProfile, &profileargs, opt.skip, NULL);
   fclose(profileargs.profileFile);
 
   return EXIT_SUCCESS;

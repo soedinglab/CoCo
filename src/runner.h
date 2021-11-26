@@ -10,18 +10,18 @@
 #include "util.h"
 
 
-int processSeqFile(string seqFilename,
-                   LookupTableBase *lookuptable,
-                   const KmerTranslator *translator,
-                   int (*processCountProfile)(CountProfile &, void *),
-                   void *processArgs,
-                   int skip,
-                   FILE* skipReads = NULL,
-                   bool silent = false,
-                   size_t chunkStart = 0,
-                   size_t chunkEnd = std::numeric_limits<uint64_t>::max());
+int processReads(string readsname,
+                 LookupTableBase *lookuptable,
+                 const KmerTranslator *translator,
+                 int (*processCountProfile)(CountProfile &, void *),
+                 void *processArgs,
+                 int skip,
+                 FILE* skipReadFile = NULL,
+                 bool silent = false,
+                 size_t chunkStart = 0,
+                 size_t chunkEnd = std::numeric_limits<uint64_t>::max());
 
-/*int processSeqFileParallel(string seqFilename,
+/*int processreadsParallel(string readsname,
                            string resultFilename,
                            const LookupTableBase* lookuptable,
                            const KmerTranslator* translator,

@@ -113,7 +113,7 @@ int filter(int argc, const char **argv, const Command *tool)
 
   initialize();
   KmerTranslator *translator = new KmerTranslator(opt.spacedKmerPattern);
-  string seqFile = opt.seqFile;
+  string reads = opt.reads;
 
 
   LookupTableBase *lookuptable;
@@ -125,7 +125,7 @@ int filter(int argc, const char **argv, const Command *tool)
     lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0);
   } else { // count k-mers itself and fill hash-lookuptable
 
-    lookuptable = buildHashTable(seqFile, *translator);
+    lookuptable = buildHashTable(reads, *translator);
   }
 
   if (lookuptable == NULL) {
@@ -141,7 +141,7 @@ int filter(int argc, const char **argv, const Command *tool)
 
     ProfileStatistic stat = {0, 0, 0, std::vector<uint64_t>{}};
 
-    processSeqFile(seqFile, lookuptable, translator, sumCounts, &stat, true);
+    processReads(reads, lookuptable, translator, sumCounts, &stat, true);
 
     vector<uint64_t> summedCountsSorted = stat.summedCounts;
     summedCountsSorted.resize(stat.minProfileLen);
@@ -187,16 +187,16 @@ int filter(int argc, const char **argv, const Command *tool)
   if (opt.OP_OUTPREFIX.isSet)
     outprefix = opt.outprefix;
   else
-    outprefix = getFilename(seqFile);
+    outprefix = getFilename(reads);
 
-  string ext = getFileExtension(seqFile);
+  string ext = getFileExtension(reads);
   FilterArgs filterargs = {openFileOrDie(outprefix + ".coco_" + tool->cmd + ".spurious" + ext, "w"),
                            openFileOrDie(outprefix + ".coco_" + tool->cmd + ".cleaned" + ext, "w"),
                            openFileOrDie(outprefix + ".coco_" + tool->cmd + ".wobbly" + ext, "w"),
                            opt.dropLevel1, opt.dropLevel2, shrinkedPlainPositions, maskOnlyDropEdges};
 
   FILE *skipReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + "_skipped" + ext, "w");
-  int returnVal = processSeqFile(seqFile, lookuptable, translator, filterProcessor, &filterargs, opt.skip, skipReads );
+  int returnVal = processReads(reads, lookuptable, translator, filterProcessor, &filterargs, opt.skip, skipReads);
 
   fclose(skipReads);
   fclose(filterargs.filterReads);

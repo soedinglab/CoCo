@@ -15,29 +15,29 @@
 
 KSEQ_INIT(int, read)
 
-int processSeqFile(string seqFilename,
-                   LookupTableBase *lookuptable,
-                   const KmerTranslator *translator,
-                   int (*processCountProfile)(CountProfile &, void *),
-                   void *processArgs,
-                   int skip,
-                   FILE *skipReadFile,
-                   bool silent,
-                   size_t chunkStart,
-                   size_t chunkEnd)
+int processReads(string readsname,
+                 LookupTableBase *lookuptable,
+                 const KmerTranslator *translator,
+                 int (*processCountProfile)(CountProfile &, void *),
+                 void *processArgs,
+                 int skip,
+                 FILE *skipReadFile,
+                 bool silent,
+                 size_t chunkStart,
+                 size_t chunkEnd)
 {
 
   if (!silent)
-    Info(Info::INFO) << "process seqFile...\n";
-  FILE *seqFile = openFileOrDie(seqFilename, "r");
+    Info(Info::INFO) << "process reads...\n";
+  FILE *reads = openFileOrDie(readsname, "r");
 
   //TODO: check what happens if one thread have problems with a file, kill whole process then
-  int fd = fileno(seqFile);
+  int fd = fileno(reads);
   kseq_t *seq = kseq_init(fd);
 
   CountProfile countprofile(translator, lookuptable);
 
-  fseek(seqFile, chunkStart, SEEK_SET);
+  fseek(reads, chunkStart, SEEK_SET);
   /* iterate over every single fasta/fastq entry  */
   while (kseq_read(seq) >= 0) {
 
@@ -66,7 +66,7 @@ int processSeqFile(string seqFilename,
       break;
   }
   kseq_destroy(seq);
-  fclose(seqFile);
+  fclose(reads);
   if (!silent)
     Info(Info::INFO) << "...completed\n";
   return EXIT_SUCCESS;
@@ -104,7 +104,7 @@ int processSeqFile(string seqFilename,
 //}
 
 //
-//int processSeqFileParallel(string seqFilename,
+//int processreadsParallel(string readsname,
 //                           string resultFilename,
 //                           const LookupTableBase* lookuptable,
 //                           const KmerTranslator* translator,
@@ -115,8 +115,8 @@ int processSeqFile(string seqFilename,
 // /* string outdir = string("tmp/");
 //  _mkdir(outdir)*/
 //
-//  FILE *seqFile = openFileOrDie(seqFilename, "r");
-//  int fd = fileno(seqFile);
+//  FILE *reads = openFileOrDie(readsname, "r");
+//  int fd = fileno(reads);
 //  lseek(fd,0,SEEK_END);
 //  uint64_t filesize = lseek(fd,0,SEEK_CUR);
 //
@@ -128,7 +128,7 @@ int processSeqFile(string seqFilename,
 //
 //  /* calculate concrete chunkStart to make sure chunks are approximatly equal
 //   * in terms of bytes but don't break up fasta/fastq entries. Afterwards call
-//   * function processSeqFile for every thread on the specific chunk */
+//   * function processReads for every thread on the specific chunk */
 //  char buffer[SEQ_BUFSIZE];
 //  uint64_t chunkStart = 0, chunkNextStart=0;
 //  bool foundNextStart = true;
@@ -176,8 +176,8 @@ int processSeqFile(string seqFilename,
 //    std::cerr << "thread " << threadID << " working on [" << chunkStart << ","
 //              << chunkStart+chunksize << "]" << std::endl << std::flush;
 //
-//    threads[threadID] = new std::thread(processSeqFile,
-//                                   seqFilename,
+//    threads[threadID] = new std::thread(processReads,
+//                                   readsname,
 //                                   tresultFilename+std::to_string(threadID),//TODO:store name in dic?,
 //                                   lookuptable,
 //                                   translator,
@@ -197,7 +197,7 @@ int processSeqFile(string seqFilename,
 //    std::cerr << "thread " << threadID << " finished" << std::endl << std::flush;
 //  }
 //  delete[] threads;
-//  fclose(seqFile);
+//  fclose(reads);
 //
 //  /* collate thread iterim results */
 //  concatenateThreadResults(resultFilename, tresultFilename, threadNum, true);

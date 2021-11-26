@@ -24,7 +24,7 @@ int counts2flat(int argc, const char **argv, const Command *tool) {
 
   initialize();
   KmerTranslator *translator = new KmerTranslator(opt.spacedKmerPattern);
-  string seqFile = opt.seqFile;
+  string reads = opt.reads;
 
   // use precomputed counts and fill lookuptable
   string countFile = opt.countFile;

@@ -51,37 +51,39 @@ extern int counts2flat(int argc, const char **argv, const struct Command *tool);
 Options &opt = Options::getInstance();
 std::vector<struct Command> commands =
   {
+     /*** basic tools ***/
+
     {"correction", correction, &opt.correctionWorkflow, "correct sequencing errors",
       "identify reads with sequencing errors and correct them",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+      "--reads <fasta|q> [--counts <count.h5>] [options]",
       CORRECTOR
     },
   /*{"consensus", consensus, &opt.consensusWorkflow, "generate consensus reads ",
      "flip SNPs to the major allele to generate the consensus nucleotide sequence",
      "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-     "--seqFile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+     "--reads <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
      CONSENSUS
     }*/
     {"filter", filter, &opt.filterWorkflow, "filter chimeric reads",
-      "identify reads containing spurious nucleotide order as chimeras, indels, ... ",
+      "identify reads containing spurious nucleotide order",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+      " --reads <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       FILTER
     },
     {"abundance", abundanceEstimator, &opt.abundanceEstimatorWorkflow, "estimate abundance values",
       "Give for every read an estimated value for the abundance",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+      " --reads <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       ABUNDANCE_ESTIMATOR
     },
 
-    /* developer tools */
+    /*** developer tools ***/
 
     {"profile", profile, &opt.profileWorkflow, "print spaced k-mer count profiles (devtool)",
       "dev tool to write for every sequence the spaced k-mer count profile in a tab separated plain text file",
       "Annika Seidel <annika.seidel@mpibpc.mpg.de>",
-      " --seqfile <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+      " --reads <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
       PROFILE
     },
     {"counts2flat", counts2flat, &opt.counts2flatWorkflow, "print spaced k-mer lookup table (devtool)",
@@ -110,11 +112,10 @@ void printUsage(const int mode = SIMPLE) {
   usage << "available commands:\n";
   for (size_t j = 0; j < commands.size(); j++) {
     struct Command &t = commands[j];
-    usage << "  " + std::string(t.cmd) << "\t"\
- << t.descriptShort << "\n";
+    usage << "  " + std::string(t.cmd) << "\t"<< t.descriptShort << "\n";
   }
 
-  //TODO: add EXTENDED mode for dev tools, show when -h/--help is used
+  //TODO: add extra category for dev tools
 
   std::cerr << usage.str() << "\n";
 }
@@ -139,6 +140,7 @@ int main(int argc, const char *argv[]) {
     return (EXIT_FAILURE);
   }
 
-  Info(Info::INFO) << "execute " << tool_name << " tool: " << command->cmd << "\n";
-  EXIT(command->callerFunction(argc - 1, argv + 1, command));
+  Info(Info::INFO)  << tool_name << " Version: " << version << "\n";
+  Info(Info::INFO) << "Execute " << tool_name << " command: " << command->cmd << "\n\n";
+  EXIT(command->callerFunction(argc - 2, argv + 2, command));
 }

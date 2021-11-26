@@ -43,7 +43,7 @@ int abundanceEstimator(int argc, const char **argv, const Command *tool) {
 
   initialize();
   KmerTranslator *translator = new KmerTranslator(opt.spacedKmerPattern);
-  string seqFile = opt.seqFile;
+  string reads = opt.reads;
 
 
   LookupTableBase *lookuptable;
@@ -55,7 +55,7 @@ int abundanceEstimator(int argc, const char **argv, const Command *tool) {
     lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0);
   } else { // count k-mers itself and fill hash-lookuptable
 
-    lookuptable = buildHashTable(seqFile, *translator);
+    lookuptable = buildHashTable(reads, *translator);
   }
 
   if (lookuptable == NULL) {
@@ -67,9 +67,10 @@ int abundanceEstimator(int argc, const char **argv, const Command *tool) {
   AbundanceEstimatorArgs abundanceargs = {openFileOrDie("abundance", "w")};
 
   if (opt.threads == 1) {
-    exit_code = processSeqFile(seqFile, lookuptable, translator, abundanceEstimatationProcessor, &abundanceargs, opt.skip, NULL);
+    exit_code = processReads(reads, lookuptable, translator, abundanceEstimatationProcessor, &abundanceargs, opt.skip,
+                             NULL);
     if (exit_code != 0) {
-      Info(Info::ERROR) << "ERROR processing sequence file " << seqFile << "\n";
+      Info(Info::ERROR) << "ERROR processing sequence file " << reads << "\n";
     }
   }
 

@@ -16,7 +16,7 @@ LookupTableBase *buildLookuptable(string countFile, int countMode,
                                   const KmerTranslator &translator,
                                   uint32_t minCount);
 
-LookupTableBase *buildHashTable(string seqFile, const KmerTranslator &translator);
+LookupTableBase *buildHashTable(string reads, const KmerTranslator &translator);
 
 /*bool isValid(const Lookuptable &lookuptable,
               Partition<Count> &solidKmers,

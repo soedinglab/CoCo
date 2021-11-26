@@ -137,7 +137,7 @@ int correction(int argc, const char **argv, const Command *tool)
 
   initialize();
   KmerTranslator *translator = new KmerTranslator(opt.spacedKmerPattern);
-  string seqFile = opt.seqFile;
+  string reads = opt.reads;
 
 
   LookupTableBase *lookuptable;
@@ -150,7 +150,7 @@ int correction(int argc, const char **argv, const Command *tool)
     //TODO: change mincount if correction work properly
   } else { // count k-mers itself and fill hash-lookuptable
 
-    lookuptable = buildHashTable(seqFile, *translator);
+    lookuptable = buildHashTable(reads, *translator);
   }
 
   if (lookuptable == NULL) {
@@ -163,9 +163,9 @@ int correction(int argc, const char **argv, const Command *tool)
   if (opt.OP_OUTPREFIX.isSet)
     outprefix = opt.outprefix;
   else
-    outprefix = getFilename(seqFile);
+    outprefix = getFilename(reads);
 
-  string ext = ".fa"; //getFileExtension(seqFile);
+  string ext = ".fa"; //getFileExtension(reads);
   CorrectorArgs args;
   CorrectionStatistic statistic{0,0,0,0,0,0};
 
@@ -178,7 +178,7 @@ int correction(int argc, const char **argv, const Command *tool)
   }
 
   FILE *skipReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + "_skipped" + ext, "w");
-  int returnVal = processSeqFile(seqFile, lookuptable, translator, correctionProcessor, &args, opt.skip, skipReads );
+  int returnVal = processReads(reads, lookuptable, translator, correctionProcessor, &args, opt.skip, skipReads);
 
   // print statistic
   std::cout << "##########" << std::endl;
