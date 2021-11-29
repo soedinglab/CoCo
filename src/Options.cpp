@@ -63,8 +63,6 @@ Options::Options() :
   OP_ALIGNED(OP_ALIGNED_ID, "--aligned", "Aligned",
                "optimize abundance estimation for reads that span the same region (amplicon sequence data)",
                typeid(bool), (void *) &aligned, 0),
-  OP_DRY_RUN(OP_DRY_RUN_ID, "--dry-run", "Dry-run",
-             "perform a trial run that doesn't make any changes", typeid(bool), (void *) &dryRun, 0),
   OP_THREADS(OP_THREADS_ID, "--threads", "Number of threads", "number of threads, not supported yet", typeid(int), (void *) &threads, 0),
   OP_VERBOSE(OP_VERBOSE_ID, "--verbose", "Verbosity level", "verbosity level, 0: quiet 1: Errors, 2: +Warnings, 3: +Info, 4: +Debug",
              typeid(int), (void *) &verbose, 0),
@@ -98,7 +96,6 @@ Options::Options() :
   correctionWorkflow.push_back(&OP_MAX_CORR_NUM);
   correctionWorkflow.push_back(&OP_MAX_TRIM_LEN);
   correctionWorkflow.push_back(&OP_UPDATE_LOOKUPTABLE);
-  correctionWorkflow.push_back(&OP_DRY_RUN);
   correctionWorkflow.push_back(&OP_VERBOSE);
 
   // filter
@@ -163,7 +160,6 @@ void Options::setDefaults() {
 
   countMode = COUNT_MODE_SUM;
 
-  dryRun = false;
   threads = 1; //TODO
   verbose = Info::INFO;
 }
@@ -396,6 +392,8 @@ void Options::parseOptions(int argc, const char *argv[], const Command &command)
       }
     }
   }
+
+  //TODO: check outprefix 
 
 
   /*for (cocoOption *option: options) {

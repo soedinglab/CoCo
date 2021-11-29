@@ -220,7 +220,7 @@ unsigned int CountProfile::calcMedian(const std::vector<uint32_t> &positionsOfIn
 
 /*** advanced profile operations ***/
 
-int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool needMultipleKmers, unsigned int *correctedSubstitutions, bool dryRun) {
+int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance, bool needMultipleKmers, unsigned int *correctedSubstitutions) {
 
   unsigned short kmerSpan = this->translator->getSpan();
   unsigned short kmerWeight = translator->getWeight();
@@ -249,17 +249,14 @@ int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int co
       }
       foundErrors++;
 
-      if (dryRun) {
-        // error candidate positions
-        Info(Info::DEBUG) << "error\t" << seqinfo->name.c_str() << "\t" << idx << "\n";
-      }
+      // error candidate positions
+      //Info(Info::DEBUG) << "error\t" << seqinfo->name.c_str() << "\t" << idx << "\n";
+
     }
   }
   if (foundErrors == 0) {
     return ERROR_FREE;
   }
-  if (dryRun)
-    return NONE_CORRECTED;
 
   //  2. correct sequencing errors
   size_t correctedErrors = 0;

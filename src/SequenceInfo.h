@@ -7,7 +7,11 @@
 #include <stdlib.h>
 #include <iostream>
 
-enum outMode {AUTO, FASTA};
+#include "Info.h"
+#include "util.h"
+#include "filehandling.h"
+
+enum SeqInfoMode {AUTO, FASTA, FASTQ};
 
 using namespace std;
 typedef struct {
@@ -16,9 +20,28 @@ typedef struct {
 }
 SequenceInfo;
 
+inline SeqInfoMode getSeqMode(std::string filename) {
+  FILE *fp = openFileOrDie(filename, "r");
+  char c;
+  if (fscanf(fp,"%c", &c) != 1) {
+    Info(Info::ERROR) << "ERROR: Can not read from " << filename << "\n";
+    EXIT(EXIT_FAILURE);
+  }
+  SeqInfoMode mode;
+  if (c == '>')
+    mode = FASTA;
+  else if (c == '@')
+    mode = FASTQ;
+  else {
+    Info(Info::ERROR)  << "ERROR: Invalid first character found in " << filename << "expect '>' or '@'\n";
+    EXIT(EXIT_FAILURE);
+  }
 
+  fclose(fp);
+  return mode;
+}
 
-inline void sequenceInfo2FileEntry(SequenceInfo *seqinfo, FILE *fp, outMode mode=AUTO) {
+inline void sequenceInfo2FileEntry(SequenceInfo *seqinfo, FILE *fp, SeqInfoMode mode=AUTO) {
 
 
   fwrite(mode == AUTO ? &seqinfo->sep : ">", sizeof(char), 1, fp);

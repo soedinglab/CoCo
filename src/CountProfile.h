@@ -89,7 +89,7 @@ public:
   /* correction operations */
 
   int doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance,
-                               bool needMultipleKmers, unsigned int *correctedSubstitutions, bool dryRun);
+                               bool needMultipleKmers, unsigned int *correctedSubstitutions);
 
   bool doIndelCorrection(uint32_t *maxProfile, unsigned int threshold, double tolerance, bool trySubstitution,
                          unsigned int *correctedSubstitutions, unsigned int *correctedInsertions, unsigned int *correctedDeletions);

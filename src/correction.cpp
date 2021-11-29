@@ -25,15 +25,13 @@ typedef struct{
 }CorrectionStatistic;
 
 typedef struct {
-  bool dryRun;
   unsigned int threshold;
   double tolerance;
   int maxCorrNum;
   int maxTrimLen;
   bool updateLookup;
   CorrectionStatistic *statistic;
-  FILE *correctedReadsFasta;
-  FILE *errorCandidateReads;
+  FILE *correctedReads;
 } CorrectorArgs;
 
 
@@ -58,14 +56,14 @@ int correctionProcessor(CountProfile &countprofile, void *args)
 
   /* substitution correction using firstLastUniqueKmerCorrectionStrategy */
   do {
-    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, &(statistic.substitution_multikmer), currArgs->dryRun);
+    status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, true, &(statistic.substitution_multikmer));
 
     if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
       countprofile.update(updateLookup);
       delete[] maxProfile;
       maxProfile = countprofile.maximize();
     }
-  } while (!currArgs->dryRun && status == SOME_CORRECTED);
+  } while (status == SOME_CORRECTED);
 
   /* indel correction and edge substitution correction */
   bool changed = countprofile.doIndelCorrection(maxProfile, currArgs->threshold, currArgs->tolerance, true, &(statistic.substitution_independent),  &(statistic.insertion),  &(statistic.deletion));
@@ -79,14 +77,14 @@ int correctionProcessor(CountProfile &countprofile, void *args)
   if (status != ERROR_FREE) {
     do {
       status = countprofile.doSubstitutionCorrection(maxProfile, 0, currArgs->threshold, currArgs->tolerance, false,
-                                                     &(statistic.substitution_singlekmer), currArgs->dryRun);
+                                                     &(statistic.substitution_singlekmer));
 
       if (status == SOME_CORRECTED || status == ALL_CORRECTED) {
         countprofile.update(updateLookup);
         delete[] maxProfile;
         maxProfile = countprofile.maximize();
       }
-    } while (!currArgs->dryRun && status == SOME_CORRECTED);
+    } while (status == SOME_CORRECTED);
   }
 
   /* trimming */
@@ -113,14 +111,8 @@ int correctionProcessor(CountProfile &countprofile, void *args)
     currArgs->statistic->trimmed += statistic.trimmed;
   }
 
-  if (currArgs->dryRun) {
-    if (status != ERROR_FREE) {
-      fwrite(seqinfo->name.c_str(), sizeof(char), seqinfo->name.size(), currArgs->errorCandidateReads);
-      fwrite("\n", sizeof(char), 1, currArgs->errorCandidateReads);
-    }
-  } else {
-    sequenceInfo2FileEntry(seqinfo, currArgs->correctedReadsFasta, FASTA);
-  }
+  sequenceInfo2FileEntry(seqinfo, currArgs->correctedReads, AUTO);
+
 
   delete[] maxProfile;
   return 0;
@@ -131,18 +123,34 @@ int correction(int argc, const char **argv, const Command *tool)
 {
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);
-
   opt.printParameterSettings(*tool);
-  //TODO: print parameters
-  //TODO:check parameter and if files exists
 
   initialize();
   KmerTranslator *translator = new KmerTranslator(opt.spacedKmerPattern);
-  string reads = opt.reads;
 
+  vector<std::string> readFilenames;
 
+  if (opt.OP_READS.isSet)
+    readFilenames.push_back(opt.reads);
+  if (opt.OP_FORWARD_READS.isSet)
+    readFilenames.push_back(opt.forwardReads);
+  if (opt.OP_REVERSE_READS.isSet)
+    readFilenames.push_back(opt.reverseReads);
+
+  SeqInfoMode mode = AUTO;
+  for (string readFilename:readFilenames){
+    SeqInfoMode currMode = getSeqMode(readFilename);
+    if (mode == AUTO)
+      mode = currMode;
+    else if (currMode != mode) {
+      Info(Info::ERROR) << "ERROR: read files have inconsistent file formats\n";
+      return EXIT_FAILURE;
+    }
+  }
+  string ext = mode==FASTA?".fa":".fq";
+
+  Info(Info::INFO) << "Step 1: Generate lookuptable...\n";
   LookupTableBase *lookuptable;
-
   // use precomputed counts and fill lookuptable
   if (opt.OP_COUNT_FILE.isSet) {
 
@@ -151,7 +159,7 @@ int correction(int argc, const char **argv, const Command *tool)
     //TODO: change mincount if correction work properly
   } else { // count k-mers itself and fill hash-lookuptable
 
-    lookuptable = buildHashTable(reads, *translator);
+    lookuptable = buildHashTable(readFilenames, *translator);
   }
 
   if (lookuptable == NULL) {
@@ -160,34 +168,40 @@ int correction(int argc, const char **argv, const Command *tool)
     return EXIT_FAILURE;
   }
 
-  string outprefix;
-  if (opt.OP_OUTPREFIX.isSet)
-    outprefix = opt.outprefix;
-  else
-    outprefix = getFilename(reads);
-
-  string ext = ".fa"; //getFileExtension(reads);
   CorrectorArgs args;
   CorrectionStatistic statistic{0,0,0,0,0,0};
+  args = {(unsigned int) opt.threshold, opt.tolerance, opt.maxCorrNum, opt.maxTrimLen, opt.updateLookup, &statistic, NULL};
 
-  if (opt.dryRun){
-      args = {true, (unsigned int) opt.threshold, opt.tolerance, opt.maxCorrNum, opt.maxTrimLen, opt.updateLookup, &statistic, NULL, openFileOrDie(outprefix + ".coco_" + tool->cmd + ".txt", "w")};
-      Info(Info::INFO) << "Perform only a dry run without correction\n";
-  }
-  else {
-      args = {false, (unsigned int) opt.threshold, opt.tolerance, opt.maxCorrNum, opt.maxTrimLen, opt.updateLookup, &statistic, openFileOrDie(outprefix + ".coco_" + tool->cmd + ext, "w"), NULL};
-  }
-
-  FILE *skipReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + "_skipped" + ext, "w");
+  FILE *skipReads = openFileOrDie((opt.OP_OUTPREFIX.isSet?opt.outprefix:std::string("")) + ".skipped" + ext, "w");
   int returnVal=0;
-  if (!opt.reads.empty())
+  Info(Info::INFO) << "Step 2: sequencing error correction...\n";
+  if (!opt.reads.empty()) {
+    string outprefix = opt.OP_OUTPREFIX.isSet?opt.outprefix:getFilename(opt.reads);
+    //args.correctedReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + ".reads" + ext, "w");
+    args.correctedReads = openFileOrDie(outprefix + ".corr.reads" + ext, "w");
     returnVal = processReads(opt.reads, lookuptable, translator, correctionProcessor, &args, opt.skip, skipReads);
-  if(!opt.forwardReads.empty())
-    returnVal = processReads(opt.forwardReads, lookuptable, translator, correctionProcessor, &args, opt.skip, skipReads);
-  if(!opt.reverseReads.empty())
-    returnVal = processReads(opt.reverseReads, lookuptable, translator, correctionProcessor, &args, opt.skip, skipReads);
+    fclose(args.correctedReads);
+  }
+  if(!opt.forwardReads.empty()) {
+    string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.forwardReads);
+    args.correctedReads = openFileOrDie(outprefix + ".corr.1" + ext, "w");
+    returnVal = processReads(opt.forwardReads, lookuptable, translator, correctionProcessor, &args, opt.skip,
+                             skipReads);
+    fclose(args.correctedReads);
+  }
+  if(!opt.reverseReads.empty()) {
+    string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.reverseReads);
+    args.correctedReads = openFileOrDie(outprefix + ".corr.2" + ext, "w");
+    returnVal = processReads(opt.reverseReads, lookuptable, translator, correctionProcessor, &args, opt.skip,
+                             skipReads);
+    fclose(args.correctedReads);
+  }
+
+  if (skipReads)
+    fclose(skipReads);
+
   // print statistic
-  std::cout << "##########" << std::endl;
+  std::cout << "### COCO ERROR CORRECTION STATISTIC ###" << std::endl;
   std::cout << "corrections from multiKmer step (substitutions only): " << statistic.substitution_multikmer << std::endl;
   std::cout << "corrections from indel step (total): " << statistic.substitution_independent+statistic.insertion+statistic.deletion << std::endl;
   std::cout << "corrections from indel step (substitutions): " << statistic.substitution_independent << std::endl;
@@ -195,14 +209,6 @@ int correction(int argc, const char **argv, const Command *tool)
   std::cout << "corrections from indel step (deletions): " << statistic.deletion << std::endl;
   std::cout << "corrections from singleKmer step (substitutions only): " << statistic.substitution_singlekmer << std::endl;
   std::cout << "trimmed nucleotides: " << statistic.trimmed << std::endl;
-  std::cout << "##########" << std::endl;
-
-  if (skipReads)
-    fclose(skipReads);
-  if(args.errorCandidateReads)
-    fclose(args.errorCandidateReads);
-  if(args.correctedReadsFasta)
-    fclose(args.correctedReadsFasta);
 
   delete lookuptable;
   delete translator;

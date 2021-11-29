@@ -26,7 +26,7 @@ LookupTableBase *buildLookuptableIter(string countFile, int countMode,
 
   if (kmerSize != kmerSpan) {
     Info(Info::ERROR) << "ERROR: kmerSize " << kmerSize << " used in hdf5 file " << countFile.c_str() << " is not supported.\n"
-                                                                                                         "Please pre-compute kmer counts with k=41\n";
+                         "Please pre-compute kmer counts with k=41\n";
     return NULL;
   }
 
@@ -141,7 +141,12 @@ LookupTableBase *buildLookuptable(string countFile, int countMode,
 
 }
 
-LookupTableBase *buildHashTable(string reads, const KmerTranslator &translator) {
+LookupTableBase *buildHashTable(std::string readFilenames, const KmerTranslator &translator) {
+  vector<std::string> tmp = {readFilenames};
+  return(buildHashTable(tmp, translator));
+}
+
+LookupTableBase *buildHashTable(vector<std::string> &readFilenames, const KmerTranslator &translator) {
 
   /*Info(Info::WARNING) << "WARNING: counting kmers only on reads argument. "\
                          "Make sure the reads are not (pre)clustered! \n";
@@ -154,42 +159,45 @@ LookupTableBase *buildHashTable(string reads, const KmerTranslator &translator) 
   unsigned int kmerSpan = translator.getSpan();
   HashTable *hashtable = new HashTable();
 
-  FILE *kmerCountFile = openFileOrDie(reads, "r");
-  int fd = fileno(kmerCountFile);
-  kseq_t *seq = kseq_init(fd);
-  spacedKmerType spacedKmer = 0, mask = ((((spacedKmerType) 1) << (spacedKmerType) (kmerSpan * 2)) - 1);
-  packedKmerType x;
-
   Info(Info::INFO) << "count spaced k-mers...\n";
-  while (kseq_read(seq) >= 0) {
-    const size_t len = seq->seq.l;
-    const char *seqNuc = seq->seq.s;
-    SeqType seqStr;
-    seqStr.reserve(len);
+  for (std::string readFilename:readFilenames ) {
+    FILE *readFile = openFileOrDie(readFilename, "r");
+    int fd = fileno(readFile);
+    kseq_t *seq = kseq_init(fd);
+    spacedKmerType spacedKmer = 0, mask = ((((spacedKmerType) 1) << (spacedKmerType) (kmerSpan * 2)) - 1);
+    packedKmerType x;
 
-    if (len < kmerSpan)
-      continue;
+    Info(Info::INFO) << "...for " << readFilename << "\n";
+    while (kseq_read(seq) >= 0) {
+      const size_t len = seq->seq.l;
+      const char *seqNuc = seq->seq.s;
+      SeqType seqStr;
+      seqStr.reserve(len);
 
-    /* sequence to 2bit representation */
-    unsigned int l;
-    for (unsigned int pos = l = 0; pos < len; pos++) {
-      int c = res2int[(int) seqNuc[pos]];
-      if (c != -1) {
-        spacedKmer = (spacedKmer << 2 | c) & mask;
-        if (++l >= kmerSpan) {
-          x = translator.kmer2minPackedKmer(spacedKmer);
-          hashtable->increaseCount(x);
+      if (len < kmerSpan)
+        continue;
+
+      /* sequence to 2bit representation */
+      unsigned int l;
+      for (unsigned int pos = l = 0; pos < len; pos++) {
+        int c = res2int[(int) seqNuc[pos]];
+        if (c != -1) {
+          spacedKmer = (spacedKmer << 2 | c) & mask;
+          if (++l >= kmerSpan) {
+            x = translator.kmer2minPackedKmer(spacedKmer);
+            hashtable->increaseCount(x);
+          }
+        } else {
+          l = 0;
+          spacedKmer = 0;
+          x = 0;
         }
-      } else {
-        l = 0;
-        spacedKmer = 0;
-        x = 0;
       }
+      //TODO: add kmers with non informative N's ?
     }
-    //TODO: add kmers with non informative N's ?
+    kseq_destroy(seq);
+    fclose(readFile);
   }
-  kseq_destroy(seq);
-  fclose(kmerCountFile);
 
   Info(Info::INFO) << "...completed\n";
   return hashtable;

@@ -82,7 +82,6 @@ public:
 
   bool aligned;
   bool softFilter;
-  bool dryRun;
 
   std::vector<cocoOption*> empty;
   std::vector<cocoOption*> filterWorkflow;
@@ -108,7 +107,6 @@ public:
   OPTION(OP_DROP_LEVEL2)
   OPTION(OP_SOFT_FILTER)
   OPTION(OP_ALIGNED)
-  OPTION(OP_DRY_RUN)
   OPTION(OP_THREADS)
   OPTION(OP_VERBOSE)
   OPTION(OP_COUNT_MODE)
