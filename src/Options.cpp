@@ -9,6 +9,7 @@
 #include "Options.h"
 #include "Info.h"
 #include "util.h"
+#include "filehandling.h"
 
 
 Options *Options::instance = NULL;
@@ -16,16 +17,16 @@ Options *Options::instance = NULL;
 Options::Options() :
   OP_READS(OP_READS_ID, "--reads", "Unpaired Reads",
                "file with unpaired reads (fasta/fastq format)",
-               typeid(std::string), (void *) &reads, 0),
+               typeid(std::string), (void *) &reads, 1),
   OP_FORWARD_READS(OP_FORWARD_READS_ID, "-1", "Forward Reads",
               "file with forward paired-end reads (fasta/fastq format)",
-              typeid(std::string), (void *) &forwardReads, 0),
+              typeid(std::string), (void *) &forwardReads, 1),
   OP_REVERSE_READS(OP_REVERSE_READS_ID, "-2", "Reverse Reads",
               "file with reverse paired-end reads (fasta/fastq format)",
-              typeid(std::string), (void *) &reverseReads, 0),
+              typeid(std::string), (void *) &reverseReads, 1),
   OP_COUNT_FILE(OP_COUNT_FILE_ID, "--counts", "Count File",
                "pre computed kmer count file in hdf5 format (dsk output), Note: only supports 41-mers yet",
-               typeid(std::string), (void *) &countFile, COUNTS2FLAT),
+               typeid(std::string), (void *) &countFile, 1),
   OP_OUTPREFIX(OP_OUTPREFIX_ID, "--outprefix", "Outprefix",
                "prefix to use for resultfile(s)",
                typeid(std::string), (void *) &outprefix, 0),
@@ -294,7 +295,6 @@ void Options::parseOptions(int argc, const char *argv[], const Command &command)
     }
   }
 
-
   // parse other arguments
   for (int argIdx = 0; argIdx < argc; argIdx++) {
 
@@ -380,6 +380,7 @@ void Options::parseOptions(int argc, const char *argv[], const Command &command)
     }
   }
 
+  // required for all tools
   if(!((this->OP_READS.isSet)|(this->OP_FORWARD_READS.isSet && this->OP_REVERSE_READS.isSet))){
     Info(Info::ERROR) << "ERROR: Either " << this->OP_READS.name << " or " << this->OP_FORWARD_READS.name << " and "
                       << this->OP_REVERSE_READS.name << " must be set\n";
@@ -387,6 +388,17 @@ void Options::parseOptions(int argc, const char *argv[], const Command &command)
   }
 
   for (cocoOption *option: options) {
+    if (option->isSet && option->isFile) {
+      if (!fileExists(((std::string *) option->value)->c_str())) {
+        Info(Info::ERROR) << "ERROR: In Option " << option->name << " file '" \
+                          << *(std::string *) option->value << "' does not exist\n";
+        EXIT(EXIT_FAILURE);
+      }
+    }
+  }
+
+
+  /*for (cocoOption *option: options) {
     //Check if option is required for current tool
     if (command.id & option->required) {
       //If required and not set -> Error
@@ -396,7 +408,7 @@ void Options::parseOptions(int argc, const char *argv[], const Command &command)
         EXIT(EXIT_FAILURE);
       }
     }
-  }
+  }*/
 
   Info::setVerboseLevel(verbose);
 

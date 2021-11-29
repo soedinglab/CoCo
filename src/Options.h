@@ -21,12 +21,13 @@ struct cocoOption {
   const std::type_info &type;
   void *value;
   bool isSet;
-  unsigned long required;
+  bool isFile;
+  //unsigned long required;
 
   cocoOption(int uid, const char *n, const char *dp,
              const char *descr, const std::type_info &ty,
-             void *val, unsigned long required) :
-    name(n), uniqid(uid), display(dp), description(descr), type(ty), value(val), isSet(false), required(required) {}
+             void *val, bool isFile) :
+    name(n), uniqid(uid), display(dp), description(descr), type(ty), value(val), isSet(false), isFile(isFile) {}
 };
 
 

@@ -15,6 +15,8 @@ void _mkdir(const char *dir, mode_t mode = S_IRWXU | S_IRWXG | S_IROTH);
 
 void _mkdir(std::string &dir, mode_t= S_IRWXU | S_IRWXG | S_IROTH);
 
+bool fileExists(const char* fileName);
+
 FILE *openFileOrDie(std::string fileName, const char *mode);
 
 FILE *openFileOrDie(const char *fileName, const char *mode);

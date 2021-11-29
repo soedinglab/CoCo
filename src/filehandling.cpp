@@ -27,6 +27,10 @@ void _mkdir(string &dir, mode_t) {
   _mkdir(dir.c_str());
 }
 
+bool fileExists(const char* fileName) {
+  struct stat st;
+  return stat(fileName, &st) == 0;
+}
 
 FILE *openFileOrDie(std::string fileName, const char *mode) {
   return openFileOrDie(fileName.c_str(), mode);
