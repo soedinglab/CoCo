@@ -49,6 +49,7 @@ int counts2flat(int argc, const char **argv, const Command *tool) {
   lookuptable->iterateOverAll(fp);
 
   fclose(fp);
+  opt.deleteInstance();
   delete lookuptable;
   delete translator;
 

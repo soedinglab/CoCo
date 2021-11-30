@@ -203,6 +203,7 @@ int filter(int argc, const char **argv, const Command *tool)
   fclose(filterargs.wobblyReads);
   fclose(filterargs.cleanedReads);
 
+  opt.deleteInstance();
   delete lookuptable;
   delete translator;
 

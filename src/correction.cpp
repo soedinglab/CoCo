@@ -176,7 +176,7 @@ int correction(int argc, const char **argv, const Command *tool)
 
   FILE *skipReads = openFileOrDie((opt.OP_OUTPREFIX.isSet?opt.outprefix:(std::string("coco_") + tool->cmd)) + ".skipped" + ext, "w");
   int returnVal=0;
-  Info(Info::INFO) << "Step 2: sequencing error correction...\n";
+  Info(Info::INFO) << "Step 2: Sequencing error correction...\n";
   if (!opt.reads.empty()) {
     string outprefix = opt.OP_OUTPREFIX.isSet?opt.outprefix:getFilename(opt.reads);
     //args.correctedReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + ".reads" + ext, "w");
@@ -212,6 +212,7 @@ int correction(int argc, const char **argv, const Command *tool)
   std::cout << "corrections from singleKmer step (substitutions only): " << statistic.substitution_singlekmer << std::endl;
   std::cout << "trimmed nucleotides: " << statistic.trimmed << std::endl;
 
+  opt.deleteInstance();
   delete lookuptable;
   delete translator;
 

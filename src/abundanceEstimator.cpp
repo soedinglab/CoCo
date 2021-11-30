@@ -77,6 +77,7 @@ int abundanceEstimator(int argc, const char **argv, const Command *tool) {
 
 
   fclose(abundanceargs.abundanceFile);
+  opt.deleteInstance();
   delete lookuptable;
   delete translator;
 

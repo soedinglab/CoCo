@@ -47,6 +47,10 @@ public:
     new Options;
   }
 
+  static void deleteInstance() {
+    delete instance;
+  }
+
   void parseOptions(int argc, const char *argv[], const Command &command);
 
   void printParameterSettings(const Command &command);

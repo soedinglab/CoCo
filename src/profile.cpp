@@ -76,6 +76,7 @@ int profile(int argc, const char **argv, const Command *tool) {
   ProfileArgs profileargs = {openFileOrDie(outprefix + ".profiles", "w")};
   processReads(reads, lookuptable, translator, showProfile, &profileargs, opt.skip, NULL);
   fclose(profileargs.profileFile);
+  opt.deleteInstance();
 
   return EXIT_SUCCESS;
 }
