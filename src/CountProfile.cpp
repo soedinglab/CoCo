@@ -329,21 +329,26 @@ bool CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshol
         unsigned int deletionPos = UINT_MAX, insertionPos = UINT_MAX, substitutionPos = UINT_MAX;
         int resToAdd = -1;
 
-        // set position to correct
-        if (idx == profile_length) {// no rise was found, drops with 0 < dropLen <= kmerSpan to end
+        // set positions to correct
+        if (idx == profile_length) {
+          // reach read end but no rise was found, drops with 0 < dropLen <= kmerSpan at the end
           deletionPos = idx - dropLen + kmerSpan - 1;
           insertionPos = idx - dropLen + kmerSpan - 1;
           substitutionPos = idx - dropLen + kmerSpan - 1;
 
-        } else if (idx == dropLen || dropLen >= kmerSpan - 1) {
-          //  * drops with 0 < dropLen <= kmerSpan from start
-          //  * drops kmerSpan-1 <= dropLen <= kmerSpan within the read
+        } else if (idx == dropLen) {
+          // drops with 0 < dropLen <= kmerSpan from start
           deletionPos = idx ;
           insertionPos = idx - 1;
-          if (idx==dropLen)
-            substitutionPos = idx-1;
+          substitutionPos = idx-1;
 
+        } else if (dropLen >= kmerSpan - 1) {
+          // drops kmerSpan-1 <= dropLen <= kmerSpan within the read
+          if (dropLen == kmerSpan -1)
+            deletionPos = idx;
+          insertionPos = idx - 1;
         }
+
 
         // edge case for substitution error
         if(trySubstitution && (substitutionPos!=UINT_MAX)) {
