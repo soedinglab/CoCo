@@ -167,7 +167,7 @@ LookupTableBase *buildHashTable(vector<std::string> &readFilenames, const KmerTr
     spacedKmerType spacedKmer = 0, mask = ((((spacedKmerType) 1) << (spacedKmerType) (kmerSpan * 2)) - 1);
     packedKmerType x;
 
-    Info(Info::INFO) << "...for " << readFilename << "\n";
+    Info(Info::INFO) << "...for input file " << readFilename << "\n";
     while (kseq_read(seq) >= 0) {
       const size_t len = seq->seq.l;
       const char *seqNuc = seq->seq.s;

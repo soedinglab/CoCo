@@ -28,7 +28,7 @@ KmerTranslator::KmerTranslator(std::string spacedKmerPattern) {
   }
 
   if (spacedKmerPattern[0] != '1' || spacedKmerPattern[span - 1] != '1') {
-    Info(Info::INFO) << "Error: at least first and last position in spacedKmerPattern must 1\n";
+    Info(Info::INFO) << "Error: First and last position in spacedKmerPattern must 1\n";
     EXIT(EXIT_FAILURE);
   }
 

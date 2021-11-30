@@ -41,6 +41,7 @@ int correctionProcessor(CountProfile &countprofile, void *args)
   CorrectorArgs *currArgs = (CorrectorArgs *) args;
   SequenceInfo *seqinfo = countprofile.getSeqInfo();
   string sequence = seqinfo->seq;
+  string qual = seqinfo->qual;
 
   /* estimate coverage value */
   //unsigned int covEst = countprofile.calcXquantile(0.67);
@@ -98,7 +99,8 @@ int correctionProcessor(CountProfile &countprofile, void *args)
      statistic.insertion + statistic.deletion + statistic.trimmed) > currArgs->maxCorrNum){
     //revert corrections because too many corrections were applied (strain flipping?)
 
-    seqinfo->seq=sequence;
+    seqinfo->seq = sequence;
+    seqinfo->qual = qual;
     //countprofile.update(updateLookup);
   } else{
 
@@ -172,7 +174,7 @@ int correction(int argc, const char **argv, const Command *tool)
   CorrectionStatistic statistic{0,0,0,0,0,0};
   args = {(unsigned int) opt.threshold, opt.tolerance, opt.maxCorrNum, opt.maxTrimLen, opt.updateLookup, &statistic, NULL};
 
-  FILE *skipReads = openFileOrDie((opt.OP_OUTPREFIX.isSet?opt.outprefix:std::string("")) + ".skipped" + ext, "w");
+  FILE *skipReads = openFileOrDie((opt.OP_OUTPREFIX.isSet?opt.outprefix:(std::string("coco_") + tool->cmd)) + ".skipped" + ext, "w");
   int returnVal=0;
   Info(Info::INFO) << "Step 2: sequencing error correction...\n";
   if (!opt.reads.empty()) {

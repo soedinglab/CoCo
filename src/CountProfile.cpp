@@ -283,6 +283,9 @@ int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, unsigned int co
                         << "\t" << seqinfo->seq[errorPositions[idx]] << "\t" << int2res[mutationTarget] << "\n";
       seqinfo->seq[errorPositions[idx]] = int2res[mutationTarget];
       correctedErrors++;
+      if(!seqinfo->qual.empty()) {
+        seqinfo->qual[errorPositions[idx]] = getAvgQual(seqinfo->qual, errorPositions[idx]);
+      }
     }
   }
 
@@ -311,6 +314,7 @@ bool CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshol
   unsigned int dropLen = 0;
   int offset = 0;
   string sequence = seqinfo->seq;
+  string qual = seqinfo->qual;
   // search for drops in count profile
   for (size_t idx = 0; idx <= this->profile_length; idx++) {
     if (idx < profile_length && this->profile[idx].count <= threshold + neighborhoodTolerance[idx]) {
@@ -346,6 +350,9 @@ bool CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshol
           resToSub = this->edgeSubstitutionCorrection(substitutionPos, threshold, tolerance, neighborhoodTolerance);
           if (resToSub >= 0) {
             sequence[substitutionPos + offset] = int2res[resToSub];
+            if(!qual.empty()) {
+              qual[substitutionPos + offset] = getAvgQual(qual, substitutionPos + offset);
+            }
             changed=true;
             (*correctedSubstitutions) +=1;
             continue;
@@ -369,15 +376,23 @@ bool CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshol
         if (insertion_approved && !deletion_approved) {
           // final elimination of insertion error
           sequence.erase(sequence.begin() + offset + insertionPos);
+          if(!qual.empty()) {
+            qual.erase(qual.begin() + offset + insertionPos);
+          }
           changed=true;
           offset -= 1;
           (*correctedInsertions) +=1;
         } else if (deletion_approved && !insertion_approved) {
           // final elimination of deletion error
           sequence.insert(deletionPos + offset, 1, int2res[resToAdd]);
+          if(!qual.empty()) {
+            qual.insert(deletionPos + offset, 1, 33);
+            qual[deletionPos + offset] = getAvgQual(qual, deletionPos + offset);
+          }
           changed=true;
           offset += 1;
           (*correctedDeletions) +=1;
+
         }
         //else if (insertion_approved && deletion_approved){ => both approved => ambigious choice => no correction}
         //else{ no approved => no correction }
@@ -397,6 +412,7 @@ bool CountProfile::doIndelCorrection(uint32_t *maxProfile, unsigned int threshol
     //else outside drop
   }
   seqinfo->seq = sequence;
+  seqinfo->qual = qual;
 
   return changed;
 }
@@ -411,17 +427,23 @@ bool CountProfile::doTrimming(uint32_t *maxProfile, unsigned int threshold, doub
 
   unsigned int dropLen = 0;
   string sequence = seqinfo->seq;
+  string qual = seqinfo->qual;
   // look for non corrected drops at start or end of the profile
   for (size_t idx = 0; idx <= this->profile_length; idx++) {
     if (idx < profile_length && this->profile[idx].count <= threshold + neighborhoodTolerance[idx]) {
       dropLen++;
     } else if (dropLen > 0) {
       if ((idx <= maxTrimLen || idx == this->profile_length) && dropLen <= maxTrimLen) {
-        if (idx == this->profile_length)
-          sequence.erase(sequence.end()-dropLen, sequence.end());
-        else
-          sequence.erase(sequence.begin(), sequence.begin()+dropLen);
-
+        if (idx == this->profile_length) {
+          sequence.erase(sequence.end() - dropLen, sequence.end());
+          if (!qual.empty())
+            qual.erase(qual.end() - dropLen, qual.end());
+        }
+        else {
+          sequence.erase(sequence.begin(), sequence.begin() + dropLen);
+          if (!qual.empty())
+            qual.erase(qual.begin(), qual.begin() + dropLen);
+        }
         changed = true;
         (*trimmedCounter) += dropLen;
       }
@@ -430,6 +452,7 @@ bool CountProfile::doTrimming(uint32_t *maxProfile, unsigned int threshold, doub
     //else outside drop
   }
   seqinfo->seq = sequence;
+  seqinfo->qual = qual;
 
   return changed;
 }

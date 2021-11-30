@@ -60,4 +60,22 @@ inline void sequenceInfo2FileEntry(SequenceInfo *seqinfo, FILE *fp, SeqInfoMode 
   }
 }
 
+inline char getAvgQual(std::string qual, unsigned int pos) {
+
+  int qval = 0, count = 0;
+  if(!qual.empty()) {
+    if (pos > 0) {
+      qval += qual[pos - 1];
+      count++;
+    }
+    if (pos < qual.length()-1) {
+      qval += qual[pos + 1];
+      count++;
+    }
+    return (char) qval/count;
+  }
+
+  return 33; //error value, phred 33
+}
+
 #endif //SEQUENCEINFO_H

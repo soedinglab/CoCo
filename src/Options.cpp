@@ -143,6 +143,8 @@ void Options::setDefaults() {
   forwardReads = "";
   reverseReads = "";
 
+  outprefix="";
+
   spacedKmerPattern="11110111111011011101010111011011111101111";
   skip = 10;
 
