@@ -5,6 +5,7 @@
 #include <limits.h>
 #include <string.h>
 #include <assert.h>
+#include <libgen.h>
 
 #include "Options.h"
 #include "Info.h"
@@ -25,8 +26,11 @@ Options::Options() :
               "file with reverse paired-end reads (fasta/fastq format)",
               typeid(std::string), (void *) &reverseReads, 1),
   OP_COUNT_FILE(OP_COUNT_FILE_ID, "--counts", "Count File",
-               "pre computed kmer count file in hdf5 format (dsk output), Note: only supports 41-mers yet",
+               "pre computed solid kmer count file in hdf5 format (dsk output), Note: only supports 41-mers yet",
                typeid(std::string), (void *) &countFile, 1),
+  OP_OUTDIR(OP_OUTDIR_ID, "--outdir", "Outdir",
+               "output directory",
+               typeid(std::string), (void *) &outdir, 0),
   OP_OUTPREFIX(OP_OUTPREFIX_ID, "--outprefix", "Outprefix",
                "prefix to use for resultfile(s)",
                typeid(std::string), (void *) &outprefix, 0),
@@ -45,7 +49,7 @@ Options::Options() :
                "maximal number of corrections performed per read, changes are discarded otherwise",
                typeid(int), (void *) &maxCorrNum, 0),
   OP_MAX_TRIM_LEN(OP_MAX_TRIM_LEN_ID, "--max-trim-len", "Max number of trimmed nucleotides",
-               "maximal number of nucleotides trimmed from the beginning or end of a read if correction was possible",
+               "maximal number of nucleotides trimmed from the beginning or end of a read if detected error could not be corrected",
                typeid(int), (void *) &maxTrimLen, 0),
   OP_UPDATE_LOOKUPTABLE(OP_UPDATE_LOOKUPTABLE_ID, "--update-lookup", "Update lookup table",
                "update counts in lookuptable after a sequence is corrected\n"\
@@ -88,6 +92,7 @@ Options::Options() :
   correctionWorkflow.push_back(&OP_READS);
   correctionWorkflow.push_back(&OP_COUNT_FILE);
   correctionWorkflow.push_back(&OP_COUNT_MODE);
+  correctionWorkflow.push_back(&OP_OUTDIR);
   correctionWorkflow.push_back(&OP_OUTPREFIX);
   correctionWorkflow.push_back(&OP_SPACED_KMER_PATTERN);
   correctionWorkflow.push_back(&OP_SKIP);
@@ -144,6 +149,7 @@ void Options::setDefaults() {
   reverseReads = "";
 
   outprefix="";
+  outdir="coco_out/";
 
   spacedKmerPattern="11110111111011011101010111011011111101111";
   skip = 10;
@@ -272,7 +278,7 @@ void Options::printParameterSettings(const Command &command) {
 
     settings << paramString << "\n";
   }
-  std::cout << settings.str() << "\n";
+  Info(Info::INFO) << settings.str() << "\n";
 }
 
 void Options::parseOptions(int argc, const char *argv[], const Command &command) {
@@ -395,7 +401,28 @@ void Options::parseOptions(int argc, const char *argv[], const Command &command)
     }
   }
 
-  //TODO: check outprefix 
+  if(outdir.length() > 0) {
+    if (outdir[outdir.length() - 1] != '/')
+      outdir += "/";
+
+    if (directoryExists(outdir.c_str()) == false) {
+      if (_mkdir(outdir) == false) {
+        Info(Info::ERROR) << "ERROR: Failed to create output directory " << outdir << "\n";
+        EXIT(EXIT_FAILURE);
+      }
+    }
+  }
+
+  if (this->OP_OUTPREFIX.isSet) {
+    char tmp[1024];
+    strcpy(tmp, outprefix.c_str());
+    if (strcmp(dirname(tmp), ".") != 0) {
+      Info(Info::ERROR) << "ERROR: Value for option " << this->OP_OUTPREFIX.name << " is a path, please use "
+                        << this->OP_OUTDIR.name << " to set a directory\n";
+      EXIT(EXIT_FAILURE);
+    }
+  }
+
 
 
   /*for (cocoOption *option: options) {

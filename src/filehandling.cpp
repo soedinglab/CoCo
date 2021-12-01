@@ -3,8 +3,8 @@
 #include "util.h"
 #include "Info.h"
 
-void _mkdir(const char *dir, mode_t mode) {
-  char tmp[256];
+bool _mkdir(const char *dir, mode_t mode) {
+  char tmp[1024];
   char *p = NULL;
   size_t len;
 
@@ -15,21 +15,31 @@ void _mkdir(const char *dir, mode_t mode) {
   for (p = tmp + 1; *p; p++) {
     if (*p == '/') {
       *p = 0;
-      mkdir(tmp, mode);
+      if(mkdir(tmp, mode) != 0) {
+        return false;
+      }
       *p = '/';
     }
   }
-  mkdir(tmp, mode);
+  if(mkdir(tmp, mode) != 0) {
+    return false;
+  }
+  return true;
 }
 
-void _mkdir(string &dir, mode_t) {
-  std::cout << "creating dir " << dir << std::endl << std::flush;
-  _mkdir(dir.c_str());
+bool _mkdir(string &dir, mode_t) {
+  Info(Info::INFO) << "Creating dir " << dir << "\n";
+  return _mkdir(dir.c_str());
 }
 
 bool fileExists(const char* fileName) {
   struct stat st;
   return stat(fileName, &st) == 0;
+}
+
+bool directoryExists(const char* dirName) {
+  struct stat st;
+  return stat(dirName, &st) == 0 && S_ISDIR(st.st_mode);
 }
 
 FILE *openFileOrDie(std::string fileName, const char *mode) {

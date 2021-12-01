@@ -174,26 +174,26 @@ int correction(int argc, const char **argv, const Command *tool)
   CorrectionStatistic statistic{0,0,0,0,0,0};
   args = {(unsigned int) opt.threshold, opt.tolerance, opt.maxCorrNum, opt.maxTrimLen, opt.updateLookup, &statistic, NULL};
 
-  FILE *skipReads = openFileOrDie((opt.OP_OUTPREFIX.isSet?opt.outprefix:(std::string("coco_") + tool->cmd)) + ".skipped" + ext, "w");
+  FILE *skipReads = openFileOrDie(opt.outdir + (opt.OP_OUTPREFIX.isSet?opt.outprefix:(std::string("coco_") + tool->cmd)) + ".skipped" + ext, "w");
   int returnVal=0;
   Info(Info::INFO) << "Step 2: Sequencing error correction...\n";
   if (!opt.reads.empty()) {
     string outprefix = opt.OP_OUTPREFIX.isSet?opt.outprefix:getFilename(opt.reads);
     //args.correctedReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + ".reads" + ext, "w");
-    args.correctedReads = openFileOrDie(outprefix + ".corr.reads" + ext, "w");
+    args.correctedReads = openFileOrDie(opt.outdir + outprefix + ".corr.reads" + ext, "w");
     returnVal = processReads(opt.reads, lookuptable, translator, correctionProcessor, &args, opt.skip, skipReads);
     fclose(args.correctedReads);
   }
   if(!opt.forwardReads.empty()) {
     string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.forwardReads);
-    args.correctedReads = openFileOrDie(outprefix + ".corr.1" + ext, "w");
+    args.correctedReads = openFileOrDie(opt.outdir + outprefix + ".corr.1" + ext, "w");
     returnVal = processReads(opt.forwardReads, lookuptable, translator, correctionProcessor, &args, opt.skip,
                              skipReads);
     fclose(args.correctedReads);
   }
   if(!opt.reverseReads.empty()) {
     string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.reverseReads);
-    args.correctedReads = openFileOrDie(outprefix + ".corr.2" + ext, "w");
+    args.correctedReads = openFileOrDie(opt.outdir + outprefix + ".corr.2" + ext, "w");
     returnVal = processReads(opt.reverseReads, lookuptable, translator, correctionProcessor, &args, opt.skip,
                              skipReads);
     fclose(args.correctedReads);

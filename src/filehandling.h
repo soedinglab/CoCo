@@ -11,11 +11,13 @@
 
 using namespace std;
 
-void _mkdir(const char *dir, mode_t mode = S_IRWXU | S_IRWXG | S_IROTH);
+bool _mkdir(const char *dir, mode_t mode = S_IRWXU | S_IRWXG | S_IROTH);
 
-void _mkdir(std::string &dir, mode_t= S_IRWXU | S_IRWXG | S_IROTH);
+bool _mkdir(std::string &dir, mode_t= S_IRWXU | S_IRWXG | S_IROTH);
 
 bool fileExists(const char* fileName);
+
+bool directoryExists(const char* dirName);
 
 FILE *openFileOrDie(std::string fileName, const char *mode);
 

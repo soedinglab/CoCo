@@ -64,6 +64,7 @@ public:
   std::string forwardReads;
   std::string reverseReads;
   std::string countFile;
+  std::string outdir;
   std::string outprefix;
 
   std::string spacedKmerPattern;
@@ -99,6 +100,7 @@ public:
   OPTION(OP_FORWARD_READS)
   OPTION(OP_REVERSE_READS)
   OPTION(OP_COUNT_FILE)
+  OPTION(OP_OUTDIR)
   OPTION(OP_OUTPREFIX)
   OPTION(OP_SPACED_KMER_PATTERN)
   OPTION(OP_SKIP)

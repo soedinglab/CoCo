@@ -56,7 +56,7 @@ LookupTableBase *buildLookuptableIter(string countFile, int countMode,
     // shift grid value to grid start positions
     lookuptable->setupIndexGridTable();
 
-    Info(Info::INFO) << "...fill lookuptable\n";
+    Info(Info::INFO) << "...fill lookuptable with spaced k-mer count pairs\n";
     // add elements, increase grid values in doing so
     for (it->first(); !it->isDone(); it->next()) {
       const Count &count = it->item();
@@ -86,9 +86,6 @@ LookupTableBase *buildLookuptable(string countFile, int countMode,
                                   uint32_t minCount) {
 
 
-
-
-  Info(Info::INFO) << "create lookuptable...\n";
   unsigned int logIndexSize, logOffsetSize;
   translator.getBestSplit(logIndexSize, logOffsetSize );
   // create lookuptable
