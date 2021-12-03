@@ -88,23 +88,23 @@ public:
 
   /* correction operations */
 
-  int doSubstitutionCorrection(uint32_t *maxProfile, unsigned int covEst, unsigned int threshold, double tolerance,
-                               bool needMultipleKmers, unsigned int *correctedSubstitutions);
+  int doSubstitutionCorrection(uint32_t *maxProfile, double threshold, unsigned int pseudocount,
+                               unsigned int lowerbound, bool needMultipleKmers, bool updateLookup, unsigned int *correctedSubstitutions);
 
-  bool doIndelCorrection(uint32_t *maxProfile, unsigned int threshold, double tolerance, bool trySubstitution,
-                         unsigned int *correctedSubstitutions, unsigned int *correctedInsertions, unsigned int *correctedDeletions);
+  bool doIndelCorrection(uint32_t *maxProfile, double threshold, unsigned int pseudocount, unsigned int lowerbound, bool trySubstitution,
+                         bool updateLookup, unsigned int *correctedSubstitutions, unsigned int *correctedInsertions, unsigned int *correctedDeletions);
 
-  bool doTrimming(uint32_t *maxProfile, unsigned int threshold, double tolerance, unsigned int maxTrimLen, unsigned int *trimmedCounter);
+  bool doTrimming(uint32_t *maxProfile, double threshold, unsigned int pseudocount, unsigned int lowerbound,
+                  unsigned int maxTrimLen, bool updateLookup, unsigned int *trimmedCounter);
 
   int firstLastUniqueKmerCorrectionStrategy(unsigned int substitutionStart, unsigned int firstUniqueKmerStart,
-                                          unsigned int lastUniqueKmerStart, unsigned int threshold,
-                                          uint32_t *neighborhoodTolerance);
+                                            unsigned int lastUniqueKmerStart, uint32_t *neighborhoodTolerance);
 
-  int edgeSubstitutionCorrection(unsigned int errorPos, unsigned int threshold, double tolerance, uint32_t *neighborhoodTolerance);
+  int edgeSubstitutionCorrection(unsigned int errorPos, uint32_t *neighborhoodTolerance);
 
-  bool tryInsertionCorrection(unsigned int insertionStart, unsigned int insertionLen, unsigned int threshold, uint32_t *neighborhoodTolerance);
+  bool tryInsertionCorrection(unsigned int insertionStart, unsigned int insertionLen, uint32_t *neighborhoodTolerance);
 
-  int tryDeletionCorrection(unsigned int deletionPos, unsigned int threshold, uint32_t *neighborhoodTolerance);
+  int tryDeletionCorrection(unsigned int deletionPos, uint32_t *neighborhoodTolerance);
 
   /* filter operations */
 

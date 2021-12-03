@@ -73,8 +73,9 @@ public:
   int countMode;
   int skip;
 
-  double tolerance;
-  int threshold;
+  double threshold;
+  int pseudocount;
+  int lowerBound;
   int maxTrimLen;
   int maxCorrNum;
   bool updateLookup;
@@ -105,7 +106,8 @@ public:
   OPTION(OP_SPACED_KMER_PATTERN)
   OPTION(OP_SKIP)
   OPTION(OP_THRESHOLD)
-  OPTION(OP_TOLERANCE)
+  OPTION(OP_PSEUDOCOUNT)
+  OPTION(OP_LOWER_BOUND)
   OPTION(OP_MAX_CORR_NUM)
   OPTION(OP_MAX_TRIM_LEN)
   OPTION(OP_UPDATE_LOOKUPTABLE)

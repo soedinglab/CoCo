@@ -168,7 +168,7 @@ int filter(int argc, const char **argv, const Command *tool)
 
     if (shrinkedPlainPositions.size() < 2 * translator->getSpan()) {
       Info(Info::WARNING) << "WARNING: the optimization for coverage estimation (set by --aligned paramter) can not be " \
-                           "performed, because less than 2*k positions have counts smaller than the calculated threshold "\
+                           "performed, because less than 2*k positions have counts smaller than the calculated pseudocount "\
                            "for shared counts. The average profile is probably to spiky to optimize the coverage, " \
                            "estimation.\n";
       shrinkedPlainPositions.clear();

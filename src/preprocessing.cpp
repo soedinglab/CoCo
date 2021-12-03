@@ -221,7 +221,7 @@ bool isValid(const LookupTableBase &lookuptable,
 
     //std::cout << lookupCount << "\t" << count.abundance << std::endl;
 
-    // abundance < threshold:
+    // abundance < pseudocount:
     // kmer should not exist in lookuptable, except different kmers match to
     // the same packedKmer by using spacemask
     if (count.abundance < threshold && lookupCount != 0 && lookupCount < threshold) {
@@ -229,7 +229,7 @@ bool isValid(const LookupTableBase &lookuptable,
       Info(Info::ERROR)  << "ERROR: count value " << lookupCount
                          << "found for packed kmer "
                          << packedKmer << "generated from " << kmer
-                         << " is smaller than threshold" << threshold << "\n";
+                         << " is smaller than pseudocount" << threshold << "\n";
       return false;
     }
 

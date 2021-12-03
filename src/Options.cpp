@@ -17,7 +17,7 @@ Options *Options::instance = NULL;
 
 Options::Options() :
   OP_READS(OP_READS_ID, "--reads", "Unpaired Reads",
-               "file with unpaired reads (fasta/fastq format)",
+               "file with unpaired/single/merged reads (fasta/fastq format)",
                typeid(std::string), (void *) &reads, 1),
   OP_FORWARD_READS(OP_FORWARD_READS_ID, "-1", "Forward Reads",
               "file with forward paired-end reads (fasta/fastq format)",
@@ -40,16 +40,19 @@ Options::Options() :
   OP_SKIP(OP_SKIP_ID,"--skip", "skip", "skip sequences with less than this many k-mers",
                typeid(int), (void*) &skip, 0),
   OP_THRESHOLD(OP_THRESHOLD_ID, "--threshold", "Threshold",
-               "untrusted count threshold",
-               typeid(int), (void *) &threshold, 0),
-  OP_TOLERANCE(OP_TOLERANCE_ID, "--tolerance", "Tolerance",
-               "relative neighborhood count added to threshold value",
-               typeid(double), (void *) &tolerance, 0),
+               "drop pseudocount relative to neighborhood counts",
+               typeid(double), (void *) &threshold, 0),
+  OP_PSEUDOCOUNT(OP_PSEUDOCOUNT_ID, "--pseudocount", "Pseudocount",
+               "untrusted count added to the pseudocount parameter",
+               typeid(int), (void *) &pseudocount, 0),
+  OP_LOWER_BOUND(OP_LOWER_BOUND_ID, "--lowerbound", "Lower bound",
+                 "lower bound for neighborhood counts to be considered",
+                 typeid(int), (void *) &lowerBound, 0),
   OP_MAX_CORR_NUM(OP_MAX_CORR_NUM_ID, "--max-corr-num", "Max number of correction per read",
                "maximal number of corrections performed per read, changes are discarded otherwise",
                typeid(int), (void *) &maxCorrNum, 0),
   OP_MAX_TRIM_LEN(OP_MAX_TRIM_LEN_ID, "--max-trim-len", "Max number of trimmed nucleotides",
-               "maximal number of nucleotides trimmed from the beginning or end of a read if detected error could not be corrected",
+               "maximal number of nucleotides trimmed from the beginning or end of a read if error could not be corrected",
                typeid(int), (void *) &maxTrimLen, 0),
   OP_UPDATE_LOOKUPTABLE(OP_UPDATE_LOOKUPTABLE_ID, "--update-lookup", "Update lookup table",
                "update counts in lookuptable after a sequence is corrected\n"\
@@ -97,7 +100,8 @@ Options::Options() :
   correctionWorkflow.push_back(&OP_SPACED_KMER_PATTERN);
   correctionWorkflow.push_back(&OP_SKIP);
   correctionWorkflow.push_back(&OP_THRESHOLD);
-  correctionWorkflow.push_back(&OP_TOLERANCE);
+  correctionWorkflow.push_back(&OP_PSEUDOCOUNT);
+  correctionWorkflow.push_back(&OP_LOWER_BOUND);
   correctionWorkflow.push_back(&OP_MAX_CORR_NUM);
   correctionWorkflow.push_back(&OP_MAX_TRIM_LEN);
   correctionWorkflow.push_back(&OP_UPDATE_LOOKUPTABLE);
@@ -154,8 +158,9 @@ void Options::setDefaults() {
   spacedKmerPattern="11110111111011011101010111011011111101111";
   skip = 10;
 
-  threshold = 3;
-  tolerance = 0.01;
+  pseudocount = 1;
+  threshold = 0.01;
+  lowerBound = 5;
   maxTrimLen = 0;
   maxCorrNum = INT_MAX;
   updateLookup = false;
