@@ -72,7 +72,7 @@ inline char getAvgQual(std::string qual, unsigned int pos) {
       qval += qual[pos + 1];
       count++;
     }
-    return (char) qval/count;
+    return (char) (qval/count);
   }
 
   return 33; //error value, phred 33

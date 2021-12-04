@@ -13,10 +13,9 @@
 int processReads(string readsname,
                  LookupTableBase *lookuptable,
                  const KmerTranslator *translator,
-                 int (*processCountProfile)(CountProfile &, void *),
+                 int (*processCountProfile)(CountProfile &, void *, bool),
                  void *processArgs,
                  int skip,
-                 FILE* skipReadFile = NULL,
                  bool silent = false,
                  size_t chunkStart = 0,
                  size_t chunkEnd = std::numeric_limits<uint64_t>::max());

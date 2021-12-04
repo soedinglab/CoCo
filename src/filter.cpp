@@ -27,8 +27,9 @@ typedef struct {
   bool maskOnlyDropEdges;
 } FilterArgs;
 
-int filterProcessor(CountProfile &countprofile, void *filterargs)
+int filterProcessor(CountProfile &countprofile, void *filterargs, bool skip)
 {
+  // TODO: skip logic
 
   FilterArgs *currFilterArgs = (FilterArgs *) filterargs;
   SequenceInfo *seqinfo = countprofile.getSeqInfo();
@@ -77,8 +78,9 @@ typedef struct{
   std::vector<uint64_t> summedCounts;
 } ProfileStatistic;
 
-int sumCounts(CountProfile &countprofile, void *stat)
+int sumCounts(CountProfile &countprofile, void *stat, bool skip)
 {
+  //TODO: skip
   unsigned int len = countprofile.getProfileLen();
   if (len > ((ProfileStatistic *) stat)->maxProfileLen) {
       ((ProfileStatistic *) stat)->maxProfileLen = len;
@@ -196,7 +198,7 @@ int filter(int argc, const char **argv, const Command *tool)
                            opt.dropLevel1, opt.dropLevel2, shrinkedPlainPositions, maskOnlyDropEdges};
 
   FILE *skipReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + "_skipped" + ext, "w");
-  int returnVal = processReads(reads, lookuptable, translator, filterProcessor, &filterargs, opt.skip, skipReads);
+  int returnVal = processReads(reads, lookuptable, translator, filterProcessor, &filterargs, opt.skip);
 
   fclose(skipReads);
   fclose(filterargs.filterReads);

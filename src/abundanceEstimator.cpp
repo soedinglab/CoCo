@@ -21,7 +21,7 @@ typedef struct {
 } AbundanceEstimatorArgs;
 
 
-int abundanceEstimatationProcessor(CountProfile &countprofile, void *abundanceargs) {
+int abundanceEstimatationProcessor(CountProfile &countprofile, void *abundanceargs, bool skip) {
   // estimate abundance value
   // TODO
   return 0;
@@ -67,8 +67,7 @@ int abundanceEstimator(int argc, const char **argv, const Command *tool) {
   AbundanceEstimatorArgs abundanceargs = {openFileOrDie("abundance", "w")};
 
   if (opt.threads == 1) {
-    exit_code = processReads(reads, lookuptable, translator, abundanceEstimatationProcessor, &abundanceargs, opt.skip,
-                             NULL);
+    exit_code = processReads(reads, lookuptable, translator, abundanceEstimatationProcessor, &abundanceargs, opt.skip);
     if (exit_code != 0) {
       Info(Info::ERROR) << "ERROR processing sequence file " << reads << "\n";
     }

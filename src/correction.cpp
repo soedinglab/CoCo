@@ -36,11 +36,17 @@ typedef struct {
 } CorrectorArgs;
 
 
-int correctionProcessor(CountProfile &countprofile, void *args)
+int correctionProcessor(CountProfile &countprofile, void *args, bool skip)
 {
-
   CorrectorArgs *currArgs = (CorrectorArgs *) args;
   SequenceInfo *seqinfo = countprofile.getSeqInfo();
+
+  if (skip) {
+    /* sequence is too short for correction just write sequence to the outputfile without doing anything */
+    Info(Info::DEBUG) << "WARNING: sequence " << seqinfo->name << " is too short, it'll be skipped\n";
+    sequenceInfo2FileEntry(seqinfo, currArgs->correctedReads, AUTO);
+    return 0;
+  }
   string sequence = seqinfo->seq;
   string qual = seqinfo->qual;
 
@@ -172,33 +178,27 @@ int correction(int argc, const char **argv, const Command *tool)
   CorrectionStatistic statistic{0,0,0,0,0,0};
   args = {opt.threshold, (unsigned int) opt.pseudocount, opt.lowerBound, opt.maxCorrNum, opt.maxTrimLen, opt.updateLookup, &statistic, NULL};
 
-  FILE *skipReads = openFileOrDie(opt.outdir + (opt.OP_OUTPREFIX.isSet?opt.outprefix:(std::string("coco_") + tool->cmd)) + ".skipped.txt", "w");
   int returnVal=0;
   Info(Info::INFO) << "Step 2: Sequencing error correction...\n";
   if (!opt.reads.empty()) {
     string outprefix = opt.OP_OUTPREFIX.isSet?opt.outprefix:getFilename(opt.reads);
     //args.correctedReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + ".reads" + ext, "w");
     args.correctedReads = openFileOrDie(opt.outdir + outprefix + ".corr.reads" + ext, "w");
-    returnVal = processReads(opt.reads, lookuptable, translator, correctionProcessor, &args, opt.skip, skipReads);
+    returnVal = processReads(opt.reads, lookuptable, translator, correctionProcessor, &args, opt.skip);
     fclose(args.correctedReads);
   }
   if(!opt.forwardReads.empty()) {
     string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.forwardReads);
     args.correctedReads = openFileOrDie(opt.outdir + outprefix + ".corr.1" + ext, "w");
-    returnVal = processReads(opt.forwardReads, lookuptable, translator, correctionProcessor, &args, opt.skip,
-                             skipReads);
+    returnVal = processReads(opt.forwardReads, lookuptable, translator, correctionProcessor, &args, opt.skip);
     fclose(args.correctedReads);
   }
   if(!opt.reverseReads.empty()) {
     string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.reverseReads);
     args.correctedReads = openFileOrDie(opt.outdir + outprefix + ".corr.2" + ext, "w");
-    returnVal = processReads(opt.reverseReads, lookuptable, translator, correctionProcessor, &args, opt.skip,
-                             skipReads);
+    returnVal = processReads(opt.reverseReads, lookuptable, translator, correctionProcessor, &args, opt.skip);
     fclose(args.correctedReads);
   }
-
-  if (skipReads)
-    fclose(skipReads);
 
   // print statistic
   std::cout << "### COCO ERROR CORRECTION STATISTIC ###" << std::endl;

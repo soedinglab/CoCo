@@ -18,10 +18,9 @@ KSEQ_INIT(int, read)
 int processReads(string readsname,
                  LookupTableBase *lookuptable,
                  const KmerTranslator *translator,
-                 int (*processCountProfile)(CountProfile &, void *),
+                 int (*processCountProfile)(CountProfile &, void *, bool),
                  void *processArgs,
                  int skip,
-                 FILE *skipReadFile,
                  bool silent,
                  size_t chunkStart,
                  size_t chunkEnd)
@@ -50,16 +49,14 @@ int processReads(string readsname,
 
     unsigned int kmerSpan = translator->getSpan();
     if (len < skip + kmerSpan) {
-      if (skipReadFile)
-        sequenceInfo2FileEntry(seqinfo, skipReadFile);
-      else
-        Info(Info::WARNING) << "WARNING: sequence " << seqName << " is too short, it'll be skipped\n";
-      continue;
-    }
+      /* use function pointer for to skip sequence */
+      processCountProfile(countprofile, processArgs, true);
+    } else {
 
-    countprofile.fill(seqinfo, len);
-    /* use function pointer for what to do with profile */
-    processCountProfile(countprofile, processArgs);
+      countprofile.fill(seqinfo, len);
+      /* use function pointer for what to do with profile */
+      processCountProfile(countprofile, processArgs, false);
+    }
 
     delete seqinfo;
     if (lseek(fd, 0, SEEK_CUR) > chunkEnd)

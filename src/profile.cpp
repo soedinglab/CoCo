@@ -21,8 +21,10 @@ typedef struct {
 } ProfileArgs;
 
 
-int showProfile(CountProfile &countprofile, void *profileargs) {
+int showProfile(CountProfile &countprofile, void *profileargs, bool skip) {
 
+  if (skip)
+    return 0;
   FILE *fp = ((ProfileArgs *) profileargs)->profileFile;
   SequenceInfo *seqinfo = countprofile.getSeqInfo();
 
