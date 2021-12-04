@@ -1,4 +1,4 @@
-// Written by Annika Seidel <annika.seidel@mpibpc.mpg.de> and
+// Written by Annika Jochheim <annika.jochheim@mpibpc.mpg.de> and
 // Martin Steinegger <themartinsteinegger@gmail.com>
 
 #ifndef LOOKUPTABLE_H

@@ -1,4 +1,4 @@
-//Written by Annika Seidel <annika.seidel@mpibpc.mpg.de>
+//Written by Annika Jochheim <annika.jochheim@mpibpc.mpg.de>
 
 #ifndef SEQUENCEINFO_H
 #define SEQUENCEINFO_H
