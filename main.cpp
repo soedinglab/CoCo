@@ -22,8 +22,8 @@
 
 const char *tool_name = "CoCo";
 const char *tool_introduction = "CoCo is an open-source software suite for "\
-                                "different COnsensus COmputation applications "\
-                                "on short reads and contigs";
+                                "different COnsensus COrrection applications "\
+                                "using spaced k-mer count profiles of short reads or contigs";
 
 const char *main_author = "Annika Jochheim (annika.jochheim@mpibpc.mpg.de)";
 

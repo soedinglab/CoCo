@@ -42,7 +42,7 @@ bool directoryExists(const char* dirName) {
   return stat(dirName, &st) == 0 && S_ISDIR(st.st_mode);
 }
 
-FILE *openFileOrDie(std::string fileName, const char *mode) {
+FILE *openFileOrDie(const std::string &fileName, const char *mode) {
   return openFileOrDie(fileName.c_str(), mode);
 }
 
@@ -58,17 +58,17 @@ FILE *openFileOrDie(const char *fileName, const char *mode) {
   return file;
 }
 
-string getFileExtension(string wholeFilePath) {
-  string ext = "";
-  size_t lastdot = wholeFilePath.find_last_of(".");
+string getFileExtension(const string &wholeFilePath) {
+  string ext;
+  size_t lastdot = wholeFilePath.find_last_of('.');
   if (lastdot != std::string::npos)
     ext = wholeFilePath.substr(lastdot, wholeFilePath.size());
   return (ext);
 }
 
-string getFilename(string wholeFilePath) {
+string getFilename(const string &wholeFilePath) {
   string filename = wholeFilePath;
-  size_t lastdot = filename.find_last_of(".");
+  size_t lastdot = filename.find_last_of('.');
   if (lastdot != std::string::npos)
     filename = filename.substr(0, lastdot);
 

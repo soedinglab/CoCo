@@ -98,13 +98,13 @@ public:
                   unsigned int maxTrimLen, bool updateLookup, unsigned int *trimmedCounter);
 
   int firstLastUniqueKmerCorrectionStrategy(unsigned int substitutionStart, unsigned int firstUniqueKmerStart,
-                                            unsigned int lastUniqueKmerStart, uint32_t *neighborhoodTolerance);
+                                            unsigned int lastUniqueKmerStart, const uint32_t *neighborhoodTolerance);
 
   int edgeSubstitutionCorrection(unsigned int errorPos, uint32_t *neighborhoodTolerance);
 
-  bool tryInsertionCorrection(unsigned int insertionStart, unsigned int insertionLen, uint32_t *neighborhoodTolerance);
+  bool tryInsertionCorrection(unsigned int insertionStart, unsigned int insertionLen, const uint32_t *neighborhoodTolerance);
 
-  int tryDeletionCorrection(unsigned int deletionPos, uint32_t *neighborhoodTolerance);
+  int tryDeletionCorrection(unsigned int deletionPos, const uint32_t *neighborhoodTolerance);
 
   /* filter operations */
 

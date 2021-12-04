@@ -48,7 +48,7 @@ private:
 
 public:
 
-  Lookuptable() {};
+  Lookuptable() = default;
 
   Lookuptable(size_t nbItems, int countMode);
 

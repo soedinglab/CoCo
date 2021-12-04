@@ -1,6 +1,4 @@
-//
 // Written by Annika Jochheim <annika.jochheim@mpibpc.mpg.de>
-//
 
 #include <string>
 #include <iostream>
@@ -24,7 +22,7 @@ public:
 
   explicit Info( int level ) : level(level) {};
 
-  ~Info() {};
+  ~Info() = default;
 
   static void setVerboseLevel (int i);
 

@@ -1,10 +1,8 @@
 // Written by Annika Jochheim <annika.jochheim@mpibpc.mpg.de>
 #include <iostream>
 #include <sstream>
-#include <getopt.h>
-#include <limits.h>
-#include <string.h>
-#include <assert.h>
+#include <climits>
+#include <cstring>
 #include <libgen.h>
 
 #include "Options.h"
@@ -196,14 +194,13 @@ void printToolUsage(const Command &command, const int FLAG) {
 
     size_t frontParamWidth = 2;
     maxParamWidth+=6;
-      size_t descriptionStart = 0;
-      std::string paramString;
+    std::string paramString;
     for (size_t idx = 0; idx < options.size(); idx++) {
         paramString.clear();
       paramString += std::string(frontParamWidth, ' ') + options[idx]->name +
                      std::string(maxParamWidth < strlen(options[idx]->name)? 1 : maxParamWidth- strlen(options[idx]->name), ' ');
 
-      descriptionStart = paramString.length();
+      size_t descriptionStart = paramString.length();
       char *descr = strdup(options[idx]->description);
       char *ptr = strtok(descr, "\n");
       paramString += std::string(ptr);

@@ -8,7 +8,7 @@
 
 class LookupTableBase {
 public:
-  virtual ~LookupTableBase() {};
+  virtual ~LookupTableBase() = default;
   virtual unsigned int getCount(const packedKmerType kmer) const = 0;
   virtual void iterateOverAll(FILE* fp) const = 0;
   virtual bool decreaseCount(packedKmerType kmer) = 0;

@@ -3,7 +3,6 @@
 #ifndef PREPROCESSING
 #define PREPROCESSING
 
-
 #include <gatb/gatb_core.hpp>
 #include "LookuptableBase.h"
 #include "KmerTranslator.h"
@@ -12,8 +11,7 @@
 typedef Kmer<>::Count Count;
 
 
-LookupTableBase *buildLookuptable(string countFile, int countMode,
-                                  const KmerTranslator &translator,
+LookupTableBase *buildLookuptable(const string &countFile, int countMode, const KmerTranslator &translator,
                                   uint32_t minCount);
 
 LookupTableBase *buildHashTable(std::string readFilenames, const KmerTranslator &translator);

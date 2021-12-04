@@ -29,11 +29,11 @@ static void calcNeighborhoodTolerance(uint32_t *neighborhoodTolerance, uint32_t 
 
     if (max >= lowerbound) {
       // round(threshold*neighborhood)+pseudocount
-      neighborhoodTolerance[idx] = (unsigned int)(threshold * max + 0.5) + pseudocount;
+      neighborhoodTolerance[idx] = lround(threshold * max) + pseudocount;
     } else
       neighborhoodTolerance[idx] = 0;
   }
-};
+}
 
 
 
@@ -43,7 +43,8 @@ CountProfile::CountProfile(const KmerTranslator *translator, LookupTableBase *lo
   this->profile = NULL;
   this->profile_length = 0;
   this->profile_length_alloc = 0;
-  ambigCorr=0;
+  this->seqinfo = NULL;
+  this->ambigCorr=0;
 }
 
 CountProfile::~CountProfile() {
@@ -368,7 +369,7 @@ bool CountProfile::doIndelCorrection(uint32_t *maxProfile, double threshold, uns
           insertion_approved = this->tryInsertionCorrection(insertionPos, 1, neighborhoodTolerance);
         // try deletion correction
         if (deletionPos != UINT_MAX && dropLen != kmerSpan) {
-          int resToAdd = this->tryDeletionCorrection(deletionPos, neighborhoodTolerance);
+          resToAdd = this->tryDeletionCorrection(deletionPos, neighborhoodTolerance);
           if (resToAdd >= 0)
             deletion_approved = true;
           else if (resToAdd == -2){
@@ -473,7 +474,7 @@ bool CountProfile::doTrimming(uint32_t *maxProfile, double threshold, unsigned i
 }
 
 int CountProfile::firstLastUniqueKmerCorrectionStrategy(unsigned int errorPos, unsigned int firstUniqueKmerStart,
-                                                        unsigned int lastUniqueKmerStart, uint32_t *neighborhoodTolerance) {
+                                                        unsigned int lastUniqueKmerStart, const uint32_t *neighborhoodTolerance) {
   int mutationTarget = -1;
   char current_res = seqinfo->seq[errorPos];
   packedKmerType firstUniqueKmer = 0, lastUniqueKmer = 0;
@@ -548,7 +549,7 @@ int CountProfile::edgeSubstitutionCorrection(unsigned int substitutionStart, uin
 
 }
 
-bool CountProfile::tryInsertionCorrection(unsigned int insertionStart, unsigned int insertionLen, uint32_t *neighborhoodTolerance){
+bool CountProfile::tryInsertionCorrection(unsigned int insertionStart, unsigned int insertionLen, const uint32_t *neighborhoodTolerance){
 
   // try to fix insertion by deleting nucleotides from insertionStart to insertionStart+1
 
@@ -614,7 +615,7 @@ bool CountProfile::tryInsertionCorrection(unsigned int insertionStart, unsigned 
   return false;
 }
 
-int CountProfile::tryDeletionCorrection(unsigned int deletionPos, uint32_t *neighborhoodTolerance){
+int CountProfile::tryDeletionCorrection(unsigned int deletionPos, const uint32_t *neighborhoodTolerance){
 
   // try to fix deletion by inserting a nucleotide at deletionPos
 

@@ -1,8 +1,8 @@
 // Written by Annika Jochheim <annika.jochheim@mpibpc.mpg.de>
 
-#include <assert.h>
+#include <cassert>
 #include <iostream>
-#include <string.h>
+#include <cstring>
 #include "Lookuptable.h"
 
 #include "Info.h"

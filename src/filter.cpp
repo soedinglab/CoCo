@@ -1,7 +1,6 @@
 // Written by Annika Jochheim <annika.jochheim@mpibpc.mpg.de>
 
 #include <cstdio>
-#include <stdio.h>
 #include <fcntl.h>
 #include <stdexcept>
 

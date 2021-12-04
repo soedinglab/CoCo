@@ -10,7 +10,7 @@
 #include "util.h"
 
 
-int processReads(string readsname,
+int processReads(const string &readsname,
                  LookupTableBase *lookuptable,
                  const KmerTranslator *translator,
                  int (*processCountProfile)(CountProfile &, void *, bool),

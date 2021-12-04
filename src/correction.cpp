@@ -1,7 +1,6 @@
 // Written by Annika Jochheim <annika.jochheim@mpibpc.mpg.de>
 
 #include <cstdio>
-#include <stdio.h>
 #include <fcntl.h>
 #include <stdexcept>
 
@@ -201,14 +200,14 @@ int correction(int argc, const char **argv, const Command *tool)
   }
 
   // print statistic
-  std::cout << "### COCO ERROR CORRECTION STATISTIC ###" << std::endl;
-  std::cout << "substitution corrections (multi kmer step): " << statistic.substitution_multikmer << std::endl;
-  std::cout << "substitution corrections (single kmer step): " << statistic.substitution_singlekmer + statistic.substitution_on_edge << std::endl;
-  std::cout << "insertion corrections: " << statistic.insertion << std::endl;
-  std::cout << "deletion corrections: " << statistic.deletion << std::endl;
-  std::cout << "trimmed nucleotides: " << statistic.trimmed << std::endl;
+  Info(Info::INFO) << "### COCO ERROR CORRECTION STATISTIC ###\n";
+  Info(Info::INFO) << "substitution corrections (multi kmer step): " << statistic.substitution_multikmer << "\n";
+  Info(Info::INFO) << "substitution corrections (single kmer step): " << statistic.substitution_singlekmer + statistic.substitution_on_edge << "\n";
+  Info(Info::INFO) << "insertion corrections: " << statistic.insertion << "\n";
+  Info(Info::INFO) << "deletion corrections: " << statistic.deletion << "\n";
+  Info(Info::INFO) << "trimmed nucleotides: " << statistic.trimmed << "\n";
 
-  opt.deleteInstance();
+  Options::deleteInstance();
   delete lookuptable;
   delete translator;
 

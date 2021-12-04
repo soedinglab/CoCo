@@ -19,7 +19,7 @@ bool fileExists(const char* fileName);
 
 bool directoryExists(const char* dirName);
 
-FILE *openFileOrDie(std::string fileName, const char *mode);
+FILE *openFileOrDie(const std::string &fileName, const char *mode);
 
 FILE *openFileOrDie(const char *fileName, const char *mode);
 

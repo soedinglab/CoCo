@@ -11,8 +11,7 @@ KSEQ_INIT(int, read)
 
 
 template<unsigned int LOGINDEX, unsigned int LOGOFFSET>
-LookupTableBase *buildLookuptableIter(string countFile, int countMode,
-                                      const KmerTranslator &translator,
+LookupTableBase *buildLookuptableIter(const string &countFile, int countMode, const KmerTranslator &translator,
                                       uint32_t minCount){
 
   /* get dsk kmer-count storage */
@@ -81,10 +80,8 @@ LookupTableBase *buildLookuptableIter(string countFile, int countMode,
   return lookuptable;
 }
 
-LookupTableBase *buildLookuptable(string countFile, int countMode,
-                                  const KmerTranslator &translator,
+LookupTableBase *buildLookuptable(const string &countFile, int countMode, const KmerTranslator &translator,
                                   uint32_t minCount) {
-
 
   unsigned int logIndexSize, logOffsetSize;
   translator.getBestSplit(logIndexSize, logOffsetSize );
@@ -157,7 +154,7 @@ LookupTableBase *buildHashTable(vector<std::string> &readFilenames, const KmerTr
   HashTable *hashtable = new HashTable();
 
   Info(Info::INFO) << "count spaced k-mers...\n";
-  for (std::string readFilename:readFilenames ) {
+  for (const std::string &readFilename:readFilenames ) {
     FILE *readFile = openFileOrDie(readFilename, "r");
     int fd = fileno(readFile);
     kseq_t *seq = kseq_init(fd);
@@ -190,7 +187,6 @@ LookupTableBase *buildHashTable(vector<std::string> &readFilenames, const KmerTr
           x = 0;
         }
       }
-      //TODO: add kmers with non informative N's ?
     }
     kseq_destroy(seq);
     fclose(readFile);
@@ -218,8 +214,6 @@ bool isValid(const LookupTableBase &lookuptable,
 
     unsigned int lookupCount = lookuptable.getCount(packedKmer);
     std::string kmer = model.toString(count.value);
-
-    //std::cout << lookupCount << "\t" << count.abundance << std::endl;
 
     // abundance < pseudocount:
     // kmer should not exist in lookuptable, except different kmers match to

@@ -127,7 +127,7 @@ protected:
 
   static Options *instance;
 
-  virtual ~Options() {};
+  virtual ~Options() = default;
 
 private:
   Options(Options const &);

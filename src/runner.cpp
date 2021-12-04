@@ -8,14 +8,13 @@
 #include "KmerTranslator.h"
 #include "kseq.h"
 #include "LookuptableBase.h"
-#include "util.h"
 #include "Info.h"
 
-#define SEQ_BUFSIZE 4096
+//#define SEQ_BUFSIZE 4096
 
 KSEQ_INIT(int, read)
 
-int processReads(string readsname,
+int processReads(const string &readsname,
                  LookupTableBase *lookuptable,
                  const KmerTranslator *translator,
                  int (*processCountProfile)(CountProfile &, void *, bool),

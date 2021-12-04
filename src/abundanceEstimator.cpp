@@ -2,7 +2,6 @@
 #include <cstdio>
 #include <fcntl.h>
 #include <stdexcept>
-#include <thread>
 #include <vector>
 
 #include "Command.h"

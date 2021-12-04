@@ -15,7 +15,6 @@
 #include "runner.h"
 #include "filehandling.h"
 
-
 typedef struct {
   FILE *profileFile;
 } ProfileArgs;
@@ -30,7 +29,7 @@ int showProfile(CountProfile &countprofile, void *profileargs, bool skip) {
 
   fwrite("#", sizeof(char), 1, fp);
   fwrite(seqinfo->name.c_str(), sizeof(char), seqinfo->name.size(), fp);
-  if (seqinfo->comment.size() > 0) {
+  if (!(seqinfo->comment.empty())) {
     fwrite(" ", sizeof(char), 1, fp);
     fwrite(seqinfo->comment.c_str(), sizeof(char), seqinfo->comment.size(), fp);
   }
@@ -76,9 +75,9 @@ int profile(int argc, const char **argv, const Command *tool) {
     outprefix = getFilename(reads);
 
   ProfileArgs profileargs = {openFileOrDie(outprefix + ".profiles", "w")};
-  processReads(reads, lookuptable, translator, showProfile, &profileargs, opt.skip, NULL);
+  processReads(reads, lookuptable, translator, showProfile, &profileargs, opt.skip, false);
   fclose(profileargs.profileFile);
-  opt.deleteInstance();
+  Options::deleteInstance();
 
   return EXIT_SUCCESS;
 }

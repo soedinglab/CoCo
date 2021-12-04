@@ -3,7 +3,7 @@
 #ifndef UINT128
 #define UINT128
 
-#include <stdint.h>
+#include <cstdint>
 #include <gatb/gatb_core.hpp>
 
 #include <gatb/tools/math/LargeInt.hpp>

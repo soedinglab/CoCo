@@ -3,8 +3,8 @@
 #ifndef SEQUENCEINFO_H
 #define SEQUENCEINFO_H
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
 
 #include "Info.h"
