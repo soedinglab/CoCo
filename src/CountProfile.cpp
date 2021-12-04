@@ -131,7 +131,7 @@ void CountProfile::fill(SequenceInfo *seqinfo, size_t length) {
 
 void CountProfile::showProfile(FILE *fp) const {
   for (size_t idx = 0; idx < profile_length; idx++) {
-    fprintf(fp, "%u\t%u\n", idx, profile[idx].count);
+    fprintf(fp, "%lu\t%u\n", idx, profile[idx].count);
   }
 }
 
@@ -141,7 +141,7 @@ void CountProfile::showMaximzedProfile(FILE *fp) const {
   unsigned short kmerSpan = translator->getSpan();
 
   for (size_t idx = 0; idx < profile_length + kmerSpan - 1; idx++) {
-    fprintf(fp, "%u\t%u\n", idx, maxProfile[idx]);
+    fprintf(fp, "%lu\t%u\n", idx, maxProfile[idx]);
   }
   delete[] maxProfile;
 }
@@ -307,7 +307,6 @@ int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, double threshol
 bool CountProfile::doIndelCorrection(uint32_t *maxProfile, double threshold, unsigned int pseudocount, unsigned int lowerbound, bool trySubstitution,
                                      bool updateLookup, unsigned int *correctedSubstitutions, unsigned int *correctedInsertions, unsigned int *correctedDeletions){
   unsigned short kmerSpan = this->translator->getSpan();
-  unsigned short kmerWeight = translator->getWeight();
   unsigned int maxProfileLength = profile_length + kmerSpan - 1;
   uint32_t neighborhoodTolerance[maxProfileLength];
   calcNeighborhoodTolerance(neighborhoodTolerance, maxProfile, maxProfileLength, kmerSpan, threshold, pseudocount, lowerbound);
@@ -342,9 +341,9 @@ bool CountProfile::doIndelCorrection(uint32_t *maxProfile, double threshold, uns
           insertionPos = idx - 1;
           substitutionPos = idx-1;
 
-        } else if (dropLen >= kmerSpan - 1) {
+        } else if (dropLen >= (unsigned int) kmerSpan - 1) {
           // drops kmerSpan-1 <= dropLen <= kmerSpan within the read
-          if (dropLen == kmerSpan -1)
+          if (dropLen == (unsigned int) kmerSpan -1)
             deletionPos = idx;
           insertionPos = idx - 1;
         }
@@ -388,7 +387,7 @@ bool CountProfile::doIndelCorrection(uint32_t *maxProfile, double threshold, uns
           changed=true;
           offset -= 1;
           (*correctedInsertions) += 1;
-        } else if (deletion_approved && !insertion_approved) {
+        } else if (deletion_approved && !insertion_approved && resToAdd >= 0) {
           // final elimination of deletion error
           sequence.insert(deletionPos + offset, 1, int2res[resToAdd]);
           if(!qual.empty()) {
@@ -441,7 +440,7 @@ bool CountProfile::doTrimming(uint32_t *maxProfile, double threshold, unsigned i
 
 
   // look for non corrected drops at start or end of the profile
-  for (int idx = 0; idx < this->profile_length && this->profile[idx].count <= neighborhoodTolerance[idx]; idx++) {
+  for (unsigned int idx = 0; idx < this->profile_length && this->profile[idx].count <= neighborhoodTolerance[idx]; idx++) {
       dropLen++;
   }
   if(dropLen > 0 && dropLen <= maxTrimLen) {
@@ -453,7 +452,7 @@ bool CountProfile::doTrimming(uint32_t *maxProfile, double threshold, unsigned i
   }
 
   dropLen = 0;
-  for (int idx = this->profile_length-1; idx >= 0 && this->profile[idx].count <= neighborhoodTolerance[idx]; idx--) {
+  for (unsigned int idx = this->profile_length; idx > 0 && this->profile[idx-1].count <= neighborhoodTolerance[idx-1]; idx--) {
     dropLen++;
   }
   if(dropLen > 0 && dropLen <= maxTrimLen ) {

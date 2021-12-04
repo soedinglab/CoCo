@@ -36,12 +36,13 @@ int processReads(string readsname,
 
   CountProfile countprofile(translator, lookuptable);
 
-  fseek(reads, chunkStart, SEEK_SET);
+  if(chunkStart > 0)
+    fseek(reads, chunkStart, SEEK_SET);
+
   /* iterate over every single fasta/fastq entry  */
   while (kseq_read(seq) >= 0) {
 
     const size_t len = seq->seq.l;
-    const char *seqName = seq->name.s;
 
     /* fill profile */
     SequenceInfo *seqinfo = new SequenceInfo{seq->name.s, seq->comment.l!=0 ? string(seq->comment.s) : string(""), seq->seq.s,
@@ -59,8 +60,17 @@ int processReads(string readsname,
     }
 
     delete seqinfo;
-    if (lseek(fd, 0, SEEK_CUR) > chunkEnd)
-      break;
+    if(chunkEnd != std::numeric_limits<uint64_t>::max()) {
+      off_t posInFile = lseek(fd, 0, SEEK_CUR);
+      if (posInFile > 0 && (size_t) posInFile > chunkEnd)
+        break;
+      else if(posInFile < 0){
+        Info(Info::ERROR) << "IO-ERROR in processing file " << readsname << "\n";
+        kseq_destroy(seq);
+        fclose(reads);
+        return EXIT_FAILURE;
+      }
+    }
   }
   kseq_destroy(seq);
   fclose(reads);
