@@ -4,7 +4,7 @@
 
 char int2res[alphabetSize];
 char int2rev[alphabetSize];
-int res2int['Z' + 1];
+int res2int['z' + 1];
 
 void initialize() {
   int2res[0] = 'A'; // T
@@ -21,5 +21,6 @@ void initialize() {
   }
   for (unsigned int i = 0; i < alphabetSize; ++i) {
     res2int[(int) int2res[i]] = i;
+    res2int[(int) (int2res[i]+32)] = i;
   }
 }
