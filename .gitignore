@@ -38,3 +38,5 @@ build/
 *.files
 *.includes
 *.user
+
+.idea/

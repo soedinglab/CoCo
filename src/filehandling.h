@@ -23,10 +23,9 @@ FILE *openFileOrDie(const std::string &fileName, const char *mode);
 
 FILE *openFileOrDie(const char *fileName, const char *mode);
 
+string getFilename(const string &wholeFilePath);
 
-string getFilename(string wholeFilePath);
-
-string getFileExtension(string wholeFilePath);
+string getFileExtension(const string &wholeFilePath);
 
 vector<std::string> *getFileList(const char *fileListFilename);
 
