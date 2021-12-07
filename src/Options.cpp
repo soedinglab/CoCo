@@ -145,6 +145,7 @@ Options::Options() :
   //counts2flat
   counts2flatWorkflow.push_back(&OP_COUNT_FILE);
   counts2flatWorkflow.push_back(&OP_COUNT_MODE);
+  counts2flatWorkflow.push_back(&OP_OUTDIR);
   counts2flatWorkflow.push_back(&OP_OUTPREFIX);
   counts2flatWorkflow.push_back(&OP_SPACED_KMER_PATTERN);
 
@@ -392,11 +393,16 @@ void Options::parseOptions(int argc, const char *argv[], const Command &command)
     }
   }
 
-  // required for all tools
-  if(!((this->OP_READS.isSet)|(this->OP_FORWARD_READS.isSet && this->OP_REVERSE_READS.isSet))){
+  // required for all tools except counts2flat
+  if(command.id!=COUNTS2FLAT && (!((this->OP_READS.isSet)|(this->OP_FORWARD_READS.isSet && this->OP_REVERSE_READS.isSet)))){
     Info(Info::ERROR) << "ERROR: Either " << this->OP_READS.name << " or " << this->OP_FORWARD_READS.name << " and "
                       << this->OP_REVERSE_READS.name << " must be set\n";
     EXIT(EXIT_FAILURE);
+  } else if (command.id==COUNTS2FLAT) {
+    if(!this->OP_COUNT_FILE.isSet) {
+      Info(Info::ERROR) << "ERROR: " << this->OP_COUNT_FILE.name << " must be set\n";
+      EXIT(EXIT_FAILURE);
+    }
   }
 
   for (cocoOption *option: options) {

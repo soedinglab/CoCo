@@ -15,22 +15,27 @@
 #include "Lookuptable.h"
 
 int counts2flat(int argc, const char **argv, const Command *tool) {
+
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);
-
-  //TODO: print parameters
-  //TODO:check parameter and if files exists
+  opt.printParameterSettings(*tool);
 
   initialize();
   KmerTranslator *translator = new KmerTranslator(opt.spacedKmerPattern);
   string reads = opt.reads;
 
   // use precomputed counts and fill lookuptable
-  string countFile = opt.countFile;
+  Info(Info::INFO) << "Step 1: Generate lookuptable...\n";
+  LookupTableBase *lookuptable;
+  string countFile;
 
-
-  LookupTableBase* lookuptable =  buildLookuptable(countFile, opt.countMode, *translator, 0);
-  //TODO: change mincount if correction work properly
+  if (opt.OP_COUNT_FILE.isSet) {
+    countFile = opt.countFile;
+    lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0);
+  } else {
+    Info(Info::ERROR) << "ERROR: Missing count file\n";
+    return EXIT_FAILURE;
+  }
 
   if (lookuptable == NULL) {
 
@@ -44,10 +49,10 @@ int counts2flat(int argc, const char **argv, const Command *tool) {
   else
     outprefix = getFilename(countFile);
 
-  FILE* fp = openFileOrDie(outprefix + ".coco_" + tool->cmd + ".tsv", "w");
+  FILE* fp = openFileOrDie(opt.outdir + outprefix + ".counts2flat.tsv", "w");
   lookuptable->iterateOverAll(fp);
-
   fclose(fp);
+
   Options::deleteInstance();
   delete lookuptable;
   delete translator;
