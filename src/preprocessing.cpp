@@ -72,7 +72,7 @@ LookupTableBase *buildLookuptableIter(const string &countFile, int countMode, co
 
     Info(Info::INFO) << "...completed\n";
 
-#ifdef DEBUG
+#ifdef CDEBUG
     if(!isValid(*lookuptable, solidKmers, model, translator, minCount))
       return NULL;
 #endif
@@ -197,7 +197,7 @@ LookupTableBase *buildHashTable(vector<std::string> &readFilenames, const KmerTr
 }
 
 
-//DEBUG
+//CDEBUG
 bool isValid(const LookupTableBase &lookuptable,
              Partition<Count> &solidKmers,
              Kmer<>::ModelCanonical &model,

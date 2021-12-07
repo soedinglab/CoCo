@@ -49,6 +49,8 @@ int processReads(const string &readsname,
 
     unsigned int kmerSpan = translator->getSpan();
     if (len < skip + kmerSpan) {
+
+      countprofile.setSeqInfo(seqinfo);
       /* use function pointer for to skip sequence */
       processCountProfile(countprofile, processArgs, true);
     } else {

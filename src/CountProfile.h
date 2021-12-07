@@ -56,6 +56,10 @@ public:
 
   void update(bool updateLookupTable=false);
 
+  /* setter */
+  //set seqinfo, but do not update countprofile, mark this by profile_length=0
+  void setSeqInfo(SequenceInfo *seqinfo);
+
   /* getter */
   const char *getSeqName() { return (seqinfo->name.c_str()); }
 

@@ -43,7 +43,7 @@ int filterProcessor(CountProfile &countprofile, void *filterargs, bool skip)
     covEst = countprofile.calcXquantile(0.67, currFilterArgs->shrinkedPlainPositions);
   }
 
-  Info(Info::DEBUG) << seqinfo->name << "\t" << covEst << "\n";
+  Info(Info::CDEBUG) << seqinfo->name << "\t" << covEst << "\n";
 
   uint32_t *maxProfile = countprofile.maximize();
 

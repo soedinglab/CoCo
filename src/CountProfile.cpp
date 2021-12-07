@@ -113,6 +113,14 @@ void CountProfile::update(bool updateLookuptable){
 
 }
 
+void CountProfile::setSeqInfo(SequenceInfo *seqinfo) {
+  assert(this->lookuptable != NULL);
+  assert(this->translator != NULL);
+
+  this->seqinfo = seqinfo;
+  this->profile_length = 0;
+}
+
 void CountProfile::fill(SequenceInfo *seqinfo, size_t length) {
   assert(this->lookuptable != NULL);
   assert(this->translator != NULL);
@@ -280,7 +288,7 @@ int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, double threshol
                                                                lastUniqueKmerStart, neighborhoodTolerance);
     // do correction
     if (mutationTarget >= 0) {
-      Info(Info::DEBUG) << "corrected\t" << seqinfo->name.c_str() << "\t" << errorPositions[idx]
+      Info(Info::CDEBUG) << "corrected\t" << seqinfo->name.c_str() << "\t" << errorPositions[idx]
                         << "\t" << seqinfo->seq[errorPositions[idx]] << "\t" << int2res[mutationTarget] << "\n";
       seqinfo->seq[errorPositions[idx]] = int2res[mutationTarget];
       correctedErrors++;

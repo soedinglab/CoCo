@@ -13,10 +13,11 @@ private:
   std::string buffer;
 
 public:
+
   static const int ERROR = 1;
   static const int WARNING = 2;
   static const int INFO = 3;
-  static const int DEBUG = 4;
+  static const int CDEBUG = 4;
 
   static int verboseLevel;
 

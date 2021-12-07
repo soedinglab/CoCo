@@ -42,7 +42,7 @@ int correctionProcessor(CountProfile &countprofile, void *args, bool skip)
 
   if (skip) {
     /* sequence is too short for correction just write sequence to the outputfile without doing anything */
-    Info(Info::DEBUG) << "WARNING: sequence " << seqinfo->name << " is too short, it'll be skipped\n";
+    Info(Info::CDEBUG) << "WARNING: sequence " << seqinfo->name << " is too short, it'll be skipped\n";
     sequenceInfo2FileEntry(seqinfo, currArgs->correctedReads, AUTO);
     return 0;
   }
@@ -51,7 +51,7 @@ int correctionProcessor(CountProfile &countprofile, void *args, bool skip)
 
   /* estimate coverage value */
   //unsigned int covEst = countprofile.calcXquantile(0.67);
-  //Info(Info::DEBUG) << seqinfo->name << "\t" << covEst << "\n";
+  //Info(Info::CDEBUG) << seqinfo->name << "\t" << covEst << "\n";
 
   bool updateLookup = currArgs->updateLookup;
   int status = ERROR_FREE;
@@ -156,14 +156,13 @@ int correction(int argc, const char **argv, const Command *tool)
 
   Info(Info::INFO) << "Step 1: Generate lookuptable...\n";
   LookupTableBase *lookuptable;
+
   // use precomputed counts and fill lookuptable
   if (opt.OP_COUNT_FILE.isSet) {
-
     string countFile = opt.countFile;
     lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0);
     //TODO: change mincount if correction work properly
   } else { // count k-mers itself and fill hash-lookuptable
-
     lookuptable = buildHashTable(readFilenames, *translator);
   }
 
@@ -177,40 +176,43 @@ int correction(int argc, const char **argv, const Command *tool)
   CorrectionStatistic statistic{0,0,0,0,0,0};
   args = {opt.threshold, (unsigned int) opt.pseudocount, opt.lowerBound, opt.maxCorrNum, opt.maxTrimLen, opt.updateLookup, &statistic, NULL};
 
-  int returnVal=0;
+  int exit_code = 0;
   Info(Info::INFO) << "Step 2: Sequencing error correction...\n";
   if (!opt.reads.empty()) {
     string outprefix = opt.OP_OUTPREFIX.isSet?opt.outprefix:getFilename(opt.reads);
     //args.correctedReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + ".reads" + ext, "w");
     args.correctedReads = openFileOrDie(opt.outdir + outprefix + ".corr.reads" + ext, "w");
-    returnVal = processReads(opt.reads, lookuptable, translator, correctionProcessor, &args, opt.skip);
+    exit_code = processReads(opt.reads, lookuptable, translator, correctionProcessor, &args, opt.skip);
     fclose(args.correctedReads);
   }
-  if(!opt.forwardReads.empty()) {
+  if(exit_code == 0 && !opt.forwardReads.empty()) {
     string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.forwardReads);
     args.correctedReads = openFileOrDie(opt.outdir + outprefix + ".corr.1" + ext, "w");
-    returnVal = processReads(opt.forwardReads, lookuptable, translator, correctionProcessor, &args, opt.skip);
+    exit_code = processReads(opt.forwardReads, lookuptable, translator, correctionProcessor, &args, opt.skip);
     fclose(args.correctedReads);
   }
-  if(!opt.reverseReads.empty()) {
+  if(exit_code == 0 && !opt.reverseReads.empty()) {
     string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.reverseReads);
     args.correctedReads = openFileOrDie(opt.outdir + outprefix + ".corr.2" + ext, "w");
-    returnVal = processReads(opt.reverseReads, lookuptable, translator, correctionProcessor, &args, opt.skip);
+    exit_code = processReads(opt.reverseReads, lookuptable, translator, correctionProcessor, &args, opt.skip);
     fclose(args.correctedReads);
   }
 
-  // print statistic
-  Info(Info::INFO) << "### COCO ERROR CORRECTION STATISTIC ###\n";
-  Info(Info::INFO) << "substitution corrections (multi kmer step): " << statistic.substitution_multikmer << "\n";
-  Info(Info::INFO) << "substitution corrections (single kmer step): " << statistic.substitution_singlekmer + statistic.substitution_on_edge << "\n";
-  Info(Info::INFO) << "insertion corrections: " << statistic.insertion << "\n";
-  Info(Info::INFO) << "deletion corrections: " << statistic.deletion << "\n";
-  Info(Info::INFO) << "trimmed nucleotides: " << statistic.trimmed << "\n";
+  if (exit_code == 0) {
+    // print statistic
+    Info(Info::INFO) << "### COCO ERROR CORRECTION STATISTIC ###\n";
+    Info(Info::INFO) << "substitution corrections (multi kmer step): " << statistic.substitution_multikmer << "\n";
+    Info(Info::INFO) << "substitution corrections (single kmer step): "
+                     << statistic.substitution_singlekmer + statistic.substitution_on_edge << "\n";
+    Info(Info::INFO) << "insertion corrections: " << statistic.insertion << "\n";
+    Info(Info::INFO) << "deletion corrections: " << statistic.deletion << "\n";
+    Info(Info::INFO) << "trimmed nucleotides: " << statistic.trimmed << "\n";
+  }
 
   Options::deleteInstance();
   delete lookuptable;
   delete translator;
 
-  return returnVal;
+  return exit_code;
 }
 
