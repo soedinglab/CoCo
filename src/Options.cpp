@@ -121,10 +121,11 @@ Options::Options() :
   //abundanceEstimator
   abundanceEstimatorWorkflow.push_back(&OP_READS);
   abundanceEstimatorWorkflow.push_back(&OP_COUNT_FILE);
+  abundanceEstimatorWorkflow.push_back(&OP_COUNT_MODE);
+  abundanceEstimatorWorkflow.push_back(&OP_OUTDIR);
   abundanceEstimatorWorkflow.push_back(&OP_OUTPREFIX);
   abundanceEstimatorWorkflow.push_back(&OP_SPACED_KMER_PATTERN);
   abundanceEstimatorWorkflow.push_back(&OP_SKIP);
-  abundanceEstimatorWorkflow.push_back(&OP_COUNT_MODE);
   abundanceEstimatorWorkflow.push_back(&OP_VERBOSE);
 
   //profile

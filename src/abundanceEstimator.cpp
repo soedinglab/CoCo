@@ -20,61 +20,89 @@ typedef struct {
 } AbundanceEstimatorArgs;
 
 
-int abundanceEstimatationProcessor(CountProfile &countprofile, void *abundanceargs, bool skip) {
-  // estimate abundance value
-  // TODO
+int abundanceEstimatationProcessor(CountProfile &countprofile, void *args, bool skip) {
+  // estimate abundance value as 67% quantile
+  double quantile = 0.67;
+
+  AbundanceEstimatorArgs *currArgs = (AbundanceEstimatorArgs *) args;
+  SequenceInfo *seqinfo = countprofile.getSeqInfo();
+
+  if (skip) {
+    /* sequence is too short for abundance estimation just write sequence to the outputfile without doing anything */
+    Info(Info::CDEBUG) << "WARNING: sequence " << seqinfo->name << " is too short, it'll be skipped\n";
+    fprintf(currArgs->abundanceFile, "%s\t-\n", (seqinfo->name).c_str());
+    return 0;
+  }
+
+  unsigned int est = countprofile.calcXquantile(quantile);
+  fprintf(currArgs->abundanceFile, "%s\t%u\n", (seqinfo->name).c_str(), est);
   return 0;
 }
 
 
 int abundanceEstimator(int argc, const char **argv, const Command *tool) {
 
-  Info(Info::ERROR) << " Not implemented yet\n";
-  return EXIT_SUCCESS;
-
-  int exit_code = 0;
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);
-
-  //TODO: print parameters
-
-  // TODO:check parameter and if files exists
+  opt.printParameterSettings(*tool);
 
   initialize();
   KmerTranslator *translator = new KmerTranslator(opt.spacedKmerPattern);
-  string reads = opt.reads;
 
+  vector<std::string> readFilenames;
 
+  if (opt.OP_READS.isSet)
+    readFilenames.push_back(opt.reads);
+  if (opt.OP_FORWARD_READS.isSet)
+    readFilenames.push_back(opt.forwardReads);
+  if (opt.OP_REVERSE_READS.isSet)
+    readFilenames.push_back(opt.reverseReads);
+
+  Info(Info::INFO) << "Step 1: Generate lookuptable...\n";
   LookupTableBase *lookuptable;
 
   // use precomputed counts and fill lookuptable
   if (opt.OP_COUNT_FILE.isSet) {
-
     string countFile = opt.countFile;
     lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0);
   } else { // count k-mers itself and fill hash-lookuptable
-
-    lookuptable = buildHashTable(reads, *translator);
+    lookuptable = buildHashTable(readFilenames, *translator);
   }
 
   if (lookuptable == NULL) {
 
-    Info(Info::ERROR) <<"Generating lookuptable failed\n";
+    Info(Info::ERROR) << "ERROR: Generating lookuptable failed\n";
     return EXIT_FAILURE;
   }
 
-  AbundanceEstimatorArgs abundanceargs = {openFileOrDie("abundance", "w")};
 
+  AbundanceEstimatorArgs args = {NULL};
+
+  int exit_code = 0;
+  Info(Info::INFO) << "Step 2: Abundance estimation...\n";
   if (opt.threads == 1) {
-    exit_code = processReads(reads, lookuptable, translator, abundanceEstimatationProcessor, &abundanceargs, opt.skip);
-    if (exit_code != 0) {
-      Info(Info::ERROR) << "ERROR processing sequence file " << reads << "\n";
+    if (!opt.reads.empty()) {
+      string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.reads);
+      args.abundanceFile = openFileOrDie(opt.outdir + outprefix + ".abundance.reads.tsv", "w");
+      exit_code = processReads(opt.reads, lookuptable, translator, abundanceEstimatationProcessor, &args, opt.skip);
     }
+    if(exit_code == 0 && !opt.forwardReads.empty()) {
+      string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.forwardReads);
+      args.abundanceFile = openFileOrDie(opt.outdir + outprefix + ".abundance.1.tsv", "w");
+      exit_code = processReads(opt.forwardReads, lookuptable, translator, abundanceEstimatationProcessor, &args, opt.skip);
+    }
+    if(exit_code == 0 && !opt.reverseReads.empty()) {
+      string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.reverseReads);
+      args.abundanceFile = openFileOrDie(opt.outdir + outprefix + ".abundance.2.tsv", "w");
+      exit_code = processReads(opt.reverseReads, lookuptable, translator, abundanceEstimatationProcessor, &args, opt.skip);
+    }
+  } else {
+    // not implemented yet
+    assert(false); //should never reach that line
+    exit_code = -1;
   }
 
-
-
-  fclose(abundanceargs.abundanceFile);
+  fclose(args.abundanceFile);
   opt.deleteInstance();
   delete lookuptable;
   delete translator;
