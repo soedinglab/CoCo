@@ -119,6 +119,8 @@ Options::Options() :
   filterWorkflow.push_back(&OP_VERBOSE);
 
   //abundanceEstimator
+  abundanceEstimatorWorkflow.push_back(&OP_FORWARD_READS);
+  abundanceEstimatorWorkflow.push_back(&OP_REVERSE_READS);
   abundanceEstimatorWorkflow.push_back(&OP_READS);
   abundanceEstimatorWorkflow.push_back(&OP_COUNT_FILE);
   abundanceEstimatorWorkflow.push_back(&OP_COUNT_MODE);
@@ -129,12 +131,15 @@ Options::Options() :
   abundanceEstimatorWorkflow.push_back(&OP_VERBOSE);
 
   //profile
+  profileWorkflow.push_back(&OP_FORWARD_READS);
+  profileWorkflow.push_back(&OP_REVERSE_READS);
   profileWorkflow.push_back(&OP_READS);
   profileWorkflow.push_back(&OP_COUNT_FILE);
+  profileWorkflow.push_back(&OP_COUNT_MODE);
+  profileWorkflow.push_back(&OP_OUTDIR);
   profileWorkflow.push_back(&OP_OUTPREFIX);
   profileWorkflow.push_back(&OP_SPACED_KMER_PATTERN);
   profileWorkflow.push_back(&OP_SKIP);
-  profileWorkflow.push_back(&OP_COUNT_MODE);
   profileWorkflow.push_back(&OP_VERBOSE);
 
   //counts2flat

@@ -65,7 +65,7 @@ std::vector<struct Command> commands =
     {"abundance", abundanceEstimator, &opt.abundanceEstimatorWorkflow, "estimate abundance values",
       "Give for every read an estimated value for the abundance",
       "Annika Jochheim <annika.jochheim@mpibpc.mpg.de>",
-      " --reads <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+      "  -1 <fasta|q> -2 <fasta|q> | --reads <fasta|q> [--counts <count.h5>] [options]",
       ABUNDANCE_ESTIMATOR
     },
 
@@ -74,7 +74,7 @@ std::vector<struct Command> commands =
     {"profile", profile, &opt.profileWorkflow, "print spaced k-mer count profiles (devtool)",
       "dev tool to write for every sequence the spaced k-mer count profile in a tab separated plain text file",
       "Annika Jochheim <annika.jochheim@mpibpc.mpg.de>",
-      " --reads <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+      "  -1 <fasta|q> -2 <fasta|q> | --reads <fasta|q> [--counts <count.h5>] [options]",
       PROFILE
     },
     {"counts2flat", counts2flat, &opt.counts2flatWorkflow, "print spaced k-mer lookup table (devtool)",

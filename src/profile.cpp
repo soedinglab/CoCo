@@ -24,6 +24,7 @@ int showProfile(CountProfile &countprofile, void *profileargs, bool skip) {
 
   if (skip)
     return 0;
+
   FILE *fp = ((ProfileArgs *) profileargs)->profileFile;
   SequenceInfo *seqinfo = countprofile.getSeqInfo();
 
@@ -43,23 +44,29 @@ int profile(int argc, const char **argv, const Command *tool) {
 
   Options &opt = Options::getInstance();
   opt.parseOptions(argc, argv, *tool);
-
-  // TODO:check parameter and if files exists
+  opt.printParameterSettings(*tool);
 
   initialize();
   KmerTranslator *translator = new KmerTranslator(opt.spacedKmerPattern);
-  string reads = opt.reads;
 
+  vector<std::string> readFilenames;
+
+  if (opt.OP_READS.isSet)
+    readFilenames.push_back(opt.reads);
+  if (opt.OP_FORWARD_READS.isSet)
+    readFilenames.push_back(opt.forwardReads);
+  if (opt.OP_REVERSE_READS.isSet)
+    readFilenames.push_back(opt.reverseReads);
+
+  Info(Info::INFO) << "Step 1: Generate lookuptable...\n";
   LookupTableBase *lookuptable;
 
   // use precomputed counts and fill lookuptable
   if (opt.OP_COUNT_FILE.isSet) {
-
     string countFile = opt.countFile;
     lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0);
   } else { // count k-mers itself and fill hash-lookuptable
-
-    lookuptable = buildHashTable(reads, *translator);
+    lookuptable = buildHashTable(readFilenames, *translator);
   }
 
   if (lookuptable == NULL) {
@@ -68,17 +75,39 @@ int profile(int argc, const char **argv, const Command *tool) {
     return EXIT_FAILURE;
   }
 
-  string outprefix;
-  if (opt.OP_OUTPREFIX.isSet)
-    outprefix = opt.outprefix;
-  else
-    outprefix = getFilename(reads);
+  ProfileArgs args = {NULL};
 
-  ProfileArgs profileargs = {openFileOrDie(outprefix + ".profiles", "w")};
-  processReads(reads, lookuptable, translator, showProfile, &profileargs, opt.skip, false);
-  fclose(profileargs.profileFile);
-  Options::deleteInstance();
+  int exit_code = 0;
+  Info(Info::INFO) << "Step 2: Print profiles...\n";
+  if (opt.threads == 1) {
+    if (!opt.reads.empty()) {
+      string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.reads);
+      args.profileFile = openFileOrDie(opt.outdir + outprefix + ".profile.reads.txt", "w");
+      exit_code = processReads(opt.reads, lookuptable, translator, showProfile, &args, opt.skip);
+      fclose(args.profileFile);
+    }
+    if(exit_code == 0 && !opt.forwardReads.empty()) {
+      string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.forwardReads);
+      args.profileFile = openFileOrDie(opt.outdir + outprefix + ".profile.1.txt", "w");
+      exit_code = processReads(opt.forwardReads, lookuptable, translator, showProfile, &args, opt.skip);
+      fclose(args.profileFile);
+    }
+    if(exit_code == 0 && !opt.reverseReads.empty()) {
+      string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.reverseReads);
+      args.profileFile = openFileOrDie(opt.outdir + outprefix + ".profile.2.txt", "w");
+      exit_code = processReads(opt.reverseReads, lookuptable, translator, showProfile, &args, opt.skip);
+      fclose(args.profileFile);
+    }
+  } else {
+    // not implemented yet
+    assert(false); //should never reach that line
+    exit_code = -1;
+  }
 
-  return EXIT_SUCCESS;
+  opt.deleteInstance();
+  delete lookuptable;
+  delete translator;
+
+  return exit_code;
 }
 

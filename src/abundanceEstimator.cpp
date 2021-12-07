@@ -85,16 +85,19 @@ int abundanceEstimator(int argc, const char **argv, const Command *tool) {
       string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.reads);
       args.abundanceFile = openFileOrDie(opt.outdir + outprefix + ".abundance.reads.tsv", "w");
       exit_code = processReads(opt.reads, lookuptable, translator, abundanceEstimatationProcessor, &args, opt.skip);
+      fclose(args.abundanceFile);
     }
     if(exit_code == 0 && !opt.forwardReads.empty()) {
       string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.forwardReads);
       args.abundanceFile = openFileOrDie(opt.outdir + outprefix + ".abundance.1.tsv", "w");
       exit_code = processReads(opt.forwardReads, lookuptable, translator, abundanceEstimatationProcessor, &args, opt.skip);
+      fclose(args.abundanceFile);
     }
     if(exit_code == 0 && !opt.reverseReads.empty()) {
       string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.reverseReads);
       args.abundanceFile = openFileOrDie(opt.outdir + outprefix + ".abundance.2.tsv", "w");
       exit_code = processReads(opt.reverseReads, lookuptable, translator, abundanceEstimatationProcessor, &args, opt.skip);
+      fclose(args.abundanceFile);
     }
   } else {
     // not implemented yet
@@ -102,7 +105,6 @@ int abundanceEstimator(int argc, const char **argv, const Command *tool) {
     exit_code = -1;
   }
 
-  fclose(args.abundanceFile);
   opt.deleteInstance();
   delete lookuptable;
   delete translator;
