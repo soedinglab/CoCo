@@ -38,7 +38,7 @@ Options::Options() :
   OP_SKIP(OP_SKIP_ID,"--skip", "skip", "skip sequences with less than this many k-mers",
                typeid(int), (void*) &skip, 0),
   OP_THRESHOLD(OP_THRESHOLD_ID, "--threshold", "Threshold",
-               "drop pseudocount relative to neighborhood counts",
+               "percent drop threshold relative to neighborhood counts",
                typeid(double), (void *) &threshold, 0),
   OP_PSEUDOCOUNT(OP_PSEUDOCOUNT_ID, "--pseudocount", "Pseudocount",
                "untrusted count added to the pseudocount parameter",
@@ -106,16 +106,16 @@ Options::Options() :
   correctionWorkflow.push_back(&OP_VERBOSE);
 
   // filter
+  filterWorkflow.push_back(&OP_FORWARD_READS);
+  filterWorkflow.push_back(&OP_REVERSE_READS);
   filterWorkflow.push_back(&OP_READS);
   filterWorkflow.push_back(&OP_COUNT_FILE);
+  filterWorkflow.push_back(&OP_COUNT_MODE);
+  filterWorkflow.push_back(&OP_OUTDIR);
   filterWorkflow.push_back(&OP_OUTPREFIX);
   filterWorkflow.push_back(&OP_SPACED_KMER_PATTERN);
   filterWorkflow.push_back(&OP_SKIP);
-  filterWorkflow.push_back(&OP_DROP_LEVEL1);
-  filterWorkflow.push_back(&OP_DROP_LEVEL2);
-  filterWorkflow.push_back(&OP_ALIGNED);
-  filterWorkflow.push_back(&OP_SOFT_FILTER);
-  filterWorkflow.push_back(&OP_COUNT_MODE);
+  filterWorkflow.push_back(&OP_THRESHOLD);
   filterWorkflow.push_back(&OP_VERBOSE);
 
   //abundanceEstimator

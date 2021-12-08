@@ -67,6 +67,22 @@ unsigned short KmerTranslator::getWeight() const {
   return weight;
 }
 
+unsigned short KmerTranslator::getLongestBlock() const {
+
+  unsigned short blockCounter = 0, maxBlockCounter = 0;
+
+  for (size_t idx = 0; idx < this->span; idx++) {
+    if(_inverse_mask_array[idx]!= UCHAR_MAX)
+      blockCounter++;
+    else
+      blockCounter = 0;
+
+    if(blockCounter > maxBlockCounter)
+      maxBlockCounter = blockCounter;
+  }
+  return maxBlockCounter;
+}
+
 packedKmerType KmerTranslator::kmer2packedKmer(const spacedKmerType kmer) const {
 
   packedKmerType packedKmer = 0;

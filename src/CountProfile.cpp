@@ -6,7 +6,7 @@
 #include "Info.h"
 #include "kmer.h"
 
-#define WINDOW_SIZE 4
+#define WINDOW_SIZE 5
 
 static void calcNeighborhoodTolerance(uint32_t *neighborhoodTolerance, uint32_t *maxProfile, unsigned int maxProfileLength,
                                       unsigned short kmerSpan, double threshold, unsigned int pseudocount, unsigned int lowerbound)
@@ -121,16 +121,16 @@ void CountProfile::setSeqInfo(SequenceInfo *seqinfo) {
   this->profile_length = 0;
 }
 
-void CountProfile::fill(SequenceInfo *seqinfo, size_t length) {
+void CountProfile::fill(SequenceInfo *seqinfo) {
   assert(this->lookuptable != NULL);
   assert(this->translator != NULL);
 
   unsigned short kmerSpan = translator->getSpan();
   //unsigned short kmerWeight = translator->getWeight();
 
-  assert(length >= kmerSpan);
+  assert(seqinfo->seq.length() >= kmerSpan);
   this->seqinfo = seqinfo;
-  this->profile_length = length - kmerSpan + 1;
+  this->profile_length = seqinfo->seq.length() - kmerSpan + 1;
 
 
   this->update(false);
@@ -701,6 +701,56 @@ int CountProfile::tryDeletionCorrection(unsigned int deletionPos, const uint32_t
     }
   }
   return mutationTarget;
+}
+
+bool CountProfile::checkForSpuriousTransitionDropsWithWindowNew(double threshold)
+{
+  unsigned short longestBlock = translator->getLongestBlock();
+  unsigned short windowSize = std::max(longestBlock+1, WINDOW_SIZE);
+  unsigned int span = translator->getSpan();
+  std::vector<unsigned int> precidingWindow; precidingWindow.reserve(windowSize);
+  std::vector<unsigned int> successiveWindow; successiveWindow.reserve(windowSize);
+  int dropstart = 0, dropend;
+
+  for (size_t idx = 0; idx < windowSize; idx++) {
+    precidingWindow.push_back(this->profile[idx+windowSize].count);
+    successiveWindow.push_back(this->profile[idx].count);
+  }
+  for (size_t idx = windowSize-1; idx < profile_length-windowSize; idx++){
+
+    successiveWindow.erase(successiveWindow.begin());
+    successiveWindow.push_back(this->profile[idx].count);
+    precidingWindow.erase(precidingWindow.begin());
+    precidingWindow.push_back(this->profile[idx+windowSize].count);
+
+    unsigned int precidingWindow_max = *(std::max_element(precidingWindow.begin(), precidingWindow.end()));
+    unsigned int precidingWindow_min = *(std::min_element(precidingWindow.begin(), precidingWindow.end()));
+
+    unsigned int successiveWindow_max = *(std::max_element(successiveWindow.begin(), successiveWindow.end()));
+    unsigned int successiveWindow_min = *(std::min_element(successiveWindow.begin(), successiveWindow.end()));
+
+    if(precidingWindow_max == 0 || precidingWindow_min == 0 || successiveWindow_max == 0 || successiveWindow_min == 0)
+      continue;
+
+    if((double)precidingWindow_max/(double)successiveWindow_min < threshold) {
+      // drop start
+      dropstart = idx + 1;
+    }
+    if((double)successiveWindow_max/(double)precidingWindow_min < threshold) {
+      // drop end
+      dropend = idx;
+      if (dropstart >=0 && dropend-dropstart+1 < span) {
+        //std::cout << "found spurious drop" << std::endl;
+        return true;
+      }
+      dropstart = -1;
+    }
+  }
+  if (dropstart >=0 && profile_length-dropstart < span) {
+    return true;
+  }
+
+  return false;
 }
 
 bool CountProfile::checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst,

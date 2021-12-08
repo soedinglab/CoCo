@@ -52,7 +52,7 @@ public:
   ~CountProfile();
 
   /* create and store count profiles */
-  void fill(SequenceInfo *seq, size_t length);
+  void fill(SequenceInfo *seq);
 
   void update(bool updateLookupTable=false);
 
@@ -111,6 +111,8 @@ public:
   int tryDeletionCorrection(unsigned int deletionPos, const uint32_t *neighborhoodTolerance);
 
   /* filter operations */
+
+  bool checkForSpuriousTransitionDropsWithWindowNew(double threshold);
 
   bool checkForSpuriousTransitionDropsWithWindow(uint32_t *maxProfile, unsigned int covEst, double localPercDrop, \
                                                  double globalPercDrop, bool maskOnlyDropEdges=true);

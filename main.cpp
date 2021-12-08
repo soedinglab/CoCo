@@ -59,7 +59,7 @@ std::vector<struct Command> commands =
     {"filter", filter, &opt.filterWorkflow, "filter chimeric reads",
       "identify reads containing spurious nucleotide order",
       "Annika Jochheim <annika.jochheim@mpibpc.mpg.de>",
-      " --reads <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
+      " -1 <fasta|q> -2 <fasta|q> | --reads <fasta|q> [--counts <count.h5>] [options]",
       FILTER
     },
     {"abundance", abundanceEstimator, &opt.abundanceEstimatorWorkflow, "estimate abundance values",

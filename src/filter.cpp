@@ -17,56 +17,53 @@
 #define FREQUENT_COUNT_BANDWIDTH 0.2
 
 typedef struct {
-  FILE *filterReads;
-  FILE *cleanedReads;
+  FILE *filterReads1;
+  FILE *filterReads2;
+  double threshold;
+  /*FILE *cleanedReads;
   FILE *wobblyReads;
   double dropLevel1;
   double dropLevel2;
   std::vector<uint32_t> shrinkedPlainPositions;
-  bool maskOnlyDropEdges;
+  bool maskOnlyDropEdges;*/
 } FilterArgs;
 
 int filterProcessor(CountProfile &countprofile, void *filterargs, bool skip)
 {
-  // TODO: skip logic
+  if(skip) {
+    sequenceInfo2FileEntry(countprofile.getSeqInfo(), ((FilterArgs *) filterargs)->filterReads1);
+  }
 
   FilterArgs *currFilterArgs = (FilterArgs *) filterargs;
-  SequenceInfo *seqinfo = countprofile.getSeqInfo();
 
-  /* estimate coverage value */
-  unsigned int covEst;
-  if(currFilterArgs->shrinkedPlainPositions.empty()){
+  bool status = countprofile.checkForSpuriousTransitionDropsWithWindowNew(currFilterArgs->threshold);
 
-    covEst = countprofile.calcMedian();
-  } else {
+  if (status == false)
+    sequenceInfo2FileEntry(countprofile.getSeqInfo(), ((FilterArgs *) filterargs)->filterReads1);
 
-    covEst = countprofile.calcXquantile(0.67, currFilterArgs->shrinkedPlainPositions);
+  return 0;
+}
+
+int filterProcessorPaired(CountProfile &r1_countprofile, CountProfile &r2_countprofile, void *filterargs, bool skip)
+{
+
+  if(skip) {
+    sequenceInfo2FileEntry(r1_countprofile.getSeqInfo(), ((FilterArgs *) filterargs)->filterReads1);
+    sequenceInfo2FileEntry(r2_countprofile.getSeqInfo(), ((FilterArgs *) filterargs)->filterReads2);
   }
 
-  Info(Info::CDEBUG) << seqinfo->name << "\t" << covEst << "\n";
+  FilterArgs *currFilterArgs = (FilterArgs *) filterargs;
 
-  uint32_t *maxProfile = countprofile.maximize();
+  bool status1, status2;
+  status1 = r1_countprofile.checkForSpuriousTransitionDropsWithWindowNew(currFilterArgs->threshold);
+  if (status1 == false)
+   status2 = r2_countprofile.checkForSpuriousTransitionDropsWithWindowNew(currFilterArgs->threshold);
 
-
-
-  if(covEst <= SIGNIFICANT_LEVEL_DIFF) {
-    delete[] maxProfile;
-    sequenceInfo2FileEntry(seqinfo, ((FilterArgs *) filterargs)->wobblyReads);
-    return 0;
+  if (status1 == false && status2 == false) {
+    // no spurious transition drop was found in both paired reads
+    sequenceInfo2FileEntry(r1_countprofile.getSeqInfo(), ((FilterArgs *) filterargs)->filterReads1);
+    sequenceInfo2FileEntry(r2_countprofile.getSeqInfo(), ((FilterArgs *) filterargs)->filterReads2);
   }
-
-  float dropLevel1 = ((FilterArgs *) filterargs)->dropLevel1;
-  float dropLevel2 = ((FilterArgs *) filterargs)->dropLevel2;
-  bool maskOnlyDropEdges = ((FilterArgs *) filterargs)->maskOnlyDropEdges;
-  bool filter = countprofile.checkForSpuriousTransitionDropsWithWindow(maxProfile, covEst, dropLevel1, dropLevel2, maskOnlyDropEdges);
-  delete[] maxProfile;
-
-
-  if (filter)
-    sequenceInfo2FileEntry(seqinfo, ((FilterArgs *) filterargs)->filterReads);
-  else
-    sequenceInfo2FileEntry(seqinfo, ((FilterArgs *) filterargs)->cleanedReads);
-
   return 0;
 }
 
@@ -98,35 +95,47 @@ int sumCounts(CountProfile &countprofile, void *stat, bool skip)
 int filter(int argc, const char **argv, const Command *tool)
 {
   Options &opt = Options::getInstance();
+  // overwrite threshold parameter
+  opt.OP_THRESHOLD.description="percent drop threshold between two successive windows";
+  opt.threshold = 0.1;
+
   opt.parseOptions(argc, argv, *tool);
-
-  //TODO: print parameters
-
-  //TODO:check parameter and if files exists
-  if (opt.OP_DROP_LEVEL1.isSet && (opt.dropLevel1 < 0 || opt.dropLevel1 > 0.33)){
-      Info(Info::ERROR) << "ERROR: found invalid argument for " << opt.OP_DROP_LEVEL1.name << " (valid range: 0-0.33)\n";
-      return EXIT_FAILURE;
-  }
-  if (opt.OP_DROP_LEVEL2.isSet && (opt.dropLevel2 < 0 || opt.dropLevel2 > 0.33)){
-      Info(Info::ERROR) << "ERROR: found invalid argument for " << opt.OP_DROP_LEVEL2.name << " (valid range: 0-0.33)\n";
-      return EXIT_FAILURE;
-  }
+  opt.printParameterSettings(*tool);
 
   initialize();
   KmerTranslator *translator = new KmerTranslator(opt.spacedKmerPattern);
-  string reads = opt.reads;
 
+  vector<std::string> readFilenames;
 
+  if (opt.OP_READS.isSet)
+    readFilenames.push_back(opt.reads);
+  if (opt.OP_FORWARD_READS.isSet)
+    readFilenames.push_back(opt.forwardReads);
+  if (opt.OP_REVERSE_READS.isSet)
+    readFilenames.push_back(opt.reverseReads);
+
+  SeqInfoMode mode = AUTO;
+  for (string readFilename:readFilenames){
+    SeqInfoMode currMode = getSeqMode(readFilename);
+    if (mode == AUTO)
+      mode = currMode;
+    else if (currMode != mode) {
+      Info(Info::ERROR) << "ERROR: read files have inconsistent file formats\n";
+      return EXIT_FAILURE;
+    }
+  }
+  string ext = mode==FASTA?".fa":".fq";
+
+  Info(Info::INFO) << "Step 1: Generate lookuptable...\n";
   LookupTableBase *lookuptable;
 
   // use precomputed counts and fill lookuptable
   if (opt.OP_COUNT_FILE.isSet) {
-
     string countFile = opt.countFile;
     lookuptable = buildLookuptable(countFile, opt.countMode, *translator, 0);
+    //TODO: change mincount if correction work properly
   } else { // count k-mers itself and fill hash-lookuptable
-
-    lookuptable = buildHashTable(reads, *translator);
+    lookuptable = buildHashTable(readFilenames, *translator);
   }
 
   if (lookuptable == NULL) {
@@ -135,80 +144,33 @@ int filter(int argc, const char **argv, const Command *tool)
     return EXIT_FAILURE;
   }
 
-  vector<uint32_t> shrinkedPlainPositions{};
-  if (opt.OP_ALIGNED.isSet) {
+  FilterArgs args;
+  args = {NULL, NULL, opt.threshold};
 
-    Info(Info::INFO) << "prepare for optimized coverage estimation\n";
-
-    ProfileStatistic stat = {0, 0, 0, std::vector<uint64_t>{}};
-
-    processReads(reads, lookuptable, translator, sumCounts, &stat, true);
-
-    vector<uint64_t> summedCountsSorted = stat.summedCounts;
-    summedCountsSorted.resize(stat.minProfileLen);
-    sort(summedCountsSorted.begin(), summedCountsSorted.end());
-
-    unsigned int windowSize = FREQUENT_COUNT_WINDOWSIZE;
-    double maxDensity = 0, maxDenseCount = 0;
-    for (size_t idx = 0; idx < summedCountsSorted.size() - windowSize; idx++) {
-      double density =
-        (double) windowSize / ((double) (summedCountsSorted[idx + windowSize] - summedCountsSorted[idx] + 1));
-      if (density > maxDensity) {
-        maxDensity = density;
-        maxDenseCount = (summedCountsSorted[idx + windowSize] + summedCountsSorted[idx]) / 2;
-      }
-    }
-
-    double bandwidth = FREQUENT_COUNT_BANDWIDTH;
-    uint64_t sharedCountThr = maxDenseCount + bandwidth * maxDenseCount + 1;
-
-    for (size_t idx = 0; idx < stat.summedCounts.size(); idx++) {
-      if (stat.summedCounts[idx] <= sharedCountThr)
-        shrinkedPlainPositions.push_back(idx);
-    }
-
-    if (shrinkedPlainPositions.size() < 2 * translator->getSpan()) {
-      Info(Info::WARNING) << "WARNING: the optimization for coverage estimation (set by --aligned paramter) can not be " \
-                           "performed, because less than 2*k positions have counts smaller than the calculated pseudocount "\
-                           "for shared counts. The average profile is probably to spiky to optimize the coverage, " \
-                           "estimation.\n";
-      shrinkedPlainPositions.clear();
-      /*shrinkedPlainPositions.reserve(stat.summedCounts.size());
-      for (size_t idx = 0; idx < stat.summedCounts.size(); idx++) {
-        shrinkedPlainPositions.push_back(idx);
-      }*/
-    }
+  int exit_code = 0;
+  Info(Info::INFO) << "Step 2: Filter chimeric reads...\n";
+  if (!opt.reads.empty()) {
+    string outprefix = opt.OP_OUTPREFIX.isSet?opt.outprefix:getFilename(opt.reads);
+    args.filterReads1 = openFileOrDie(opt.outdir + outprefix + ".filter.reads" + ext, "w");
+    exit_code = processReads(opt.reads, lookuptable, translator, filterProcessor, &args, opt.skip);
+    fclose(args.filterReads1);
+  }
+  if(exit_code == 0 && !opt.forwardReads.empty() && !opt.reverseReads.empty()) {
+    string outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.forwardReads);
+    args.filterReads1 = openFileOrDie(opt.outdir + outprefix + ".filter.1" + ext, "w");
+    outprefix = opt.OP_OUTPREFIX.isSet ? opt.outprefix : getFilename(opt.reverseReads);
+    args.filterReads2 = openFileOrDie(opt.outdir + outprefix + ".filter.2" + ext, "w");
+    exit_code = processPairedReads(opt.forwardReads, opt.reverseReads, lookuptable, translator, filterProcessorPaired, &args, opt.skip);
+    fclose(args.filterReads1);
+    fclose(args.filterReads2);
   }
 
-  bool maskOnlyDropEdges = true;
-  if (opt.softFilter)
-    maskOnlyDropEdges = false;
 
-  string outprefix;
-  if (opt.OP_OUTPREFIX.isSet)
-    outprefix = opt.outprefix;
-  else
-    outprefix = getFilename(reads);
-
-  string ext = getFileExtension(reads);
-  FilterArgs filterargs = {openFileOrDie(outprefix + ".coco_" + tool->cmd + ".spurious" + ext, "w"),
-                           openFileOrDie(outprefix + ".coco_" + tool->cmd + ".cleaned" + ext, "w"),
-                           openFileOrDie(outprefix + ".coco_" + tool->cmd + ".wobbly" + ext, "w"),
-                           opt.dropLevel1, opt.dropLevel2, shrinkedPlainPositions, maskOnlyDropEdges};
-
-  FILE *skipReads = openFileOrDie(outprefix + ".coco_" + tool->cmd + "_skipped" + ext, "w");
-  int returnVal = processReads(reads, lookuptable, translator, filterProcessor, &filterargs, opt.skip);
-
-  fclose(skipReads);
-  fclose(filterargs.filterReads);
-  fclose(filterargs.wobblyReads);
-  fclose(filterargs.cleanedReads);
-
-  opt.deleteInstance();
+  Options::deleteInstance();
   delete lookuptable;
   delete translator;
 
-  return returnVal;
+  return exit_code;
 }
 
 

@@ -29,6 +29,8 @@ public:
 
   unsigned short getWeight() const;
 
+  unsigned short getLongestBlock() const;
+
   void getBestSplit(unsigned int &logIndexSize, unsigned int &logOffsetSize) const;
 
   friend class CountProfile;
