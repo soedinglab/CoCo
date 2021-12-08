@@ -26,7 +26,7 @@ int processReads(const string &readsname,
 {
 
   if (!silent)
-    Info(Info::INFO) << "process reads from file " << readsname << "...\n";
+    Info(Info::INFO) << "...process reads from file " << readsname << "\n";
   FILE *reads = openFileOrDie(readsname, "r");
 
   //TODO: check what happens if one thread have problems with a file, kill whole process then
@@ -38,24 +38,28 @@ int processReads(const string &readsname,
   if(chunkStart > 0)
     fseek(reads, chunkStart, SEEK_SET);
 
+  int res =0 ;
   /* iterate over every single fasta/fastq entry  */
-  while (kseq_read(seq) >= 0) {
+  while ((res = kseq_read(seq)) >= 0) {
 
-    const size_t len = seq->seq.l;
+    if (seq->seq.l == 0) {
+      Info(Info::ERROR) << "ERROR: Invalid sequence record found\n";
+      return EXIT_FAILURE;
+    }
 
     /* fill profile */
     SequenceInfo *seqinfo = new SequenceInfo{seq->name.s, seq->comment.l!=0 ? string(seq->comment.s) : string(""), seq->seq.s,
                                              seq->qual.s!=NULL ? string(seq->qual.s) : string(""), seq->qual.s!=NULL ? '@':'>'};
 
     unsigned int kmerSpan = translator->getSpan();
-    if (len < skip + kmerSpan) {
+    if (seq->seq.l < skip + kmerSpan) {
 
       countprofile.setSeqInfo(seqinfo);
       /* use function pointer for to skip sequence */
       processCountProfile(countprofile, processArgs, true);
     } else {
 
-      countprofile.fill(seqinfo, len);
+      countprofile.fill(seqinfo);
       /* use function pointer for what to do with profile */
       processCountProfile(countprofile, processArgs, false);
     }
@@ -73,10 +77,92 @@ int processReads(const string &readsname,
       }
     }
   }
+
+  if (res == -2) {
+    Info(Info::ERROR) << "ERROR: Invalid sequence record found in " << readsname << "\n";
+    return EXIT_FAILURE;
+  }
+
   kseq_destroy(seq);
   fclose(reads);
   if (!silent)
     Info(Info::INFO) << "...completed\n";
+  return EXIT_SUCCESS;
+}
+
+int processPairedReads(const string &forwardReads,
+                       const string &reverseReads,
+                       LookupTableBase *lookuptable,
+                       const KmerTranslator *translator,
+                       int (*processCountProfile)(CountProfile &, CountProfile &,void *, bool),
+                       void *processArgs,
+                       int skip)
+{
+
+  Info(Info::INFO) << "...process paired reads from files " << forwardReads << " and " << reverseReads << "\n";
+  FILE *forwardReadsFile = openFileOrDie(forwardReads, "r");
+  FILE *reverseReadsFile = openFileOrDie(reverseReads, "r");
+
+  int fd1 = fileno(forwardReadsFile);
+  kseq_t *r1 = kseq_init(fd1);
+  int fd2 = fileno(reverseReadsFile);
+  kseq_t *r2 = kseq_init(fd2);
+
+  CountProfile r1_countprofile(translator, lookuptable);
+  CountProfile r2_countprofile(translator, lookuptable);
+
+  int res1=0, res2=0, count=0;
+  /* iterate over every single fasta/fastq entry  */
+  while (((res1 = kseq_read(r1)) >= 0) && ((res2 = kseq_read(r2)) >= 0)) {
+
+    count++;
+    const size_t len1 = r1->seq.l;
+
+    if (r1->seq.l == 0 || r2->seq.l == 0) {
+      Info(Info::ERROR) << "ERROR: Invalid sequence record found when processing paired reads\n";
+      return EXIT_FAILURE;
+    }
+
+    /* fill profile */
+    SequenceInfo *r1_seqinfo = new SequenceInfo{r1->name.s, r1->comment.l!=0 ? string(r1->comment.s) : string(""), r1->seq.s,
+                                                r1->qual.s!=NULL ? string(r1->qual.s) : string(""), r1->qual.s!=NULL ? '@':'>'};
+    SequenceInfo *r2_seqinfo = new SequenceInfo{r2->name.s, r2->comment.l!=0 ? string(r2->comment.s) : string(""), r2->seq.s,
+                                                r2->qual.s!=NULL ? string(r2->qual.s) : string(""), r2->qual.s!=NULL ? '@':'>'};
+
+
+    unsigned int kmerSpan = translator->getSpan();
+    if (r1->seq.l < skip + kmerSpan || r2->seq.l < skip + kmerSpan) {
+
+      r1_countprofile.setSeqInfo(r1_seqinfo);
+      r2_countprofile.setSeqInfo(r2_seqinfo);
+
+      /* use function pointer for to skip sequence */
+      processCountProfile(r1_countprofile, r2_countprofile, processArgs, true);
+    } else {
+
+      r1_countprofile.fill(r1_seqinfo);
+      r2_countprofile.fill(r2_seqinfo);
+      /* use function pointer for what to do with profile */
+      processCountProfile(r1_countprofile, r2_countprofile, processArgs, false);
+    }
+
+    delete r1_seqinfo;
+    delete r2_seqinfo;
+
+  }
+
+  if (res1 == -2 || res2 == -2) {
+    Info(Info::ERROR) << "ERROR: Invalid sequence record found when processing paired reads\n";
+    return EXIT_FAILURE;
+  }
+
+  kseq_destroy(r1);
+  kseq_destroy(r2);
+
+  fclose(forwardReadsFile);
+  fclose(reverseReadsFile);
+
+  Info(Info::INFO) << "...completed\n";
   return EXIT_SUCCESS;
 }
 

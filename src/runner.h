@@ -20,6 +20,14 @@ int processReads(const string &readsname,
                  size_t chunkStart = 0,
                  size_t chunkEnd = std::numeric_limits<uint64_t>::max());
 
+int processPairedReads(const string &forwardReads,
+                       const string &reverseReads,
+                       LookupTableBase *lookuptable,
+                       const KmerTranslator *translator,
+                       int (*processCountProfile)(CountProfile &, CountProfile &, void *, bool),
+                       void *processArgs,
+                       int skip);
+
 /*int processreadsParallel(string readsname,
                            string resultFilename,
                            const LookupTableBase* lookuptable,
