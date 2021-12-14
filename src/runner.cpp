@@ -9,10 +9,9 @@
 #include "kseq.h"
 #include "LookuptableBase.h"
 #include "Info.h"
-
+#include "KSeqWrapper.h"
 //#define SEQ_BUFSIZE 4096
 
-KSEQ_INIT(int, read)
 
 int processReads(const string &readsname,
                  LookupTableBase *lookuptable,
@@ -20,39 +19,32 @@ int processReads(const string &readsname,
                  int (*processCountProfile)(CountProfile &, void *, bool),
                  void *processArgs,
                  int skip,
-                 bool silent,
-                 size_t chunkStart,
-                 size_t chunkEnd)
+                 bool silent)
 {
 
   if (!silent)
     Info(Info::INFO) << "...process reads from file " << readsname << "\n";
-  FILE *reads = openFileOrDie(readsname, "r");
 
-  //TODO: check what happens if one thread have problems with a file, kill whole process then
-  int fd = fileno(reads);
-  kseq_t *seq = kseq_init(fd);
 
+  KSeqWrapper* kseqReader = KSeqFactory(readsname.c_str());
   CountProfile countprofile(translator, lookuptable);
 
-  if(chunkStart > 0)
-    fseek(reads, chunkStart, SEEK_SET);
-
-  int res =0 ;
   /* iterate over every single fasta/fastq entry  */
-  while ((res = kseq_read(seq)) >= 0) {
-
-    if (seq->seq.l == 0) {
+  while(kseqReader->ReadEntry()) {
+    const KSeqWrapper::KSeqEntry &seq = kseqReader->entry;
+    if (seq.sequence.l == 0) {
       Info(Info::ERROR) << "ERROR: Invalid sequence record found\n";
       return EXIT_FAILURE;
     }
 
     /* fill profile */
-    SequenceInfo *seqinfo = new SequenceInfo{seq->name.s, seq->comment.l!=0 ? string(seq->comment.s) : string(""), seq->seq.s,
-                                             seq->qual.s!=NULL ? string(seq->qual.s) : string(""), seq->qual.s!=NULL ? '@':'>'};
+    SequenceInfo *seqinfo = new SequenceInfo{seq.name.s,
+                                    seq.comment.l!=0 ? string(seq.comment.s) : string(""),
+                                             seq.sequence.s,seq.qual.s!=NULL ? string(seq.qual.s) : string(""),
+                                        seq.qual.s!=NULL ? '@':'>'};
 
     unsigned int kmerSpan = translator->getSpan();
-    if (seq->seq.l < skip + kmerSpan) {
+    if (seq.sequence.l < skip + kmerSpan) {
 
       countprofile.setSeqInfo(seqinfo);
       /* use function pointer for to skip sequence */
@@ -65,26 +57,8 @@ int processReads(const string &readsname,
     }
 
     delete seqinfo;
-    if(chunkEnd != std::numeric_limits<uint64_t>::max()) {
-      off_t posInFile = lseek(fd, 0, SEEK_CUR);
-      if (posInFile > 0 && (size_t) posInFile > chunkEnd)
-        break;
-      else if(posInFile < 0){
-        Info(Info::ERROR) << "IO-ERROR in processing file " << readsname << "\n";
-        kseq_destroy(seq);
-        fclose(reads);
-        return EXIT_FAILURE;
-      }
-    }
   }
-
-  if (res == -2) {
-    Info(Info::ERROR) << "ERROR: Invalid sequence record found in " << readsname << "\n";
-    return EXIT_FAILURE;
-  }
-
-  kseq_destroy(seq);
-  fclose(reads);
+  delete kseqReader;
   if (!silent)
     Info(Info::INFO) << "...completed\n";
   return EXIT_SUCCESS;
@@ -100,38 +74,39 @@ int processPairedReads(const string &forwardReads,
 {
 
   Info(Info::INFO) << "...process paired reads from files " << forwardReads << " and " << reverseReads << "\n";
-  FILE *forwardReadsFile = openFileOrDie(forwardReads, "r");
-  FILE *reverseReadsFile = openFileOrDie(reverseReads, "r");
 
-  int fd1 = fileno(forwardReadsFile);
-  kseq_t *r1 = kseq_init(fd1);
-  int fd2 = fileno(reverseReadsFile);
-  kseq_t *r2 = kseq_init(fd2);
+  KSeqWrapper* r1_kseq = KSeqFactory(forwardReads.c_str());
+  KSeqWrapper* r2_kseq = KSeqFactory(reverseReads.c_str());
 
   CountProfile r1_countprofile(translator, lookuptable);
   CountProfile r2_countprofile(translator, lookuptable);
 
   int res1=0, res2=0, count=0;
+  KSeqWrapper::KSeqEntry *r1;
+  KSeqWrapper::KSeqEntry *r2;
   /* iterate over every single fasta/fastq entry  */
-  while (((res1 = kseq_read(r1)) >= 0) && ((res2 = kseq_read(r2)) >= 0)) {
+  while (r1_kseq->ReadEntry() && r2_kseq->ReadEntry()) {
 
+    const KSeqWrapper::KSeqEntry &r1 = r1_kseq->entry;
+    const KSeqWrapper::KSeqEntry &r2 = r2_kseq->entry;
     count++;
-    const size_t len1 = r1->seq.l;
 
-    if (r1->seq.l == 0 || r2->seq.l == 0) {
+    const size_t len1 = r1.sequence.l;
+
+    if (r1.sequence.l == 0 || r2.sequence.l == 0) {
       Info(Info::ERROR) << "ERROR: Invalid sequence record found when processing paired reads\n";
       return EXIT_FAILURE;
     }
 
     /* fill profile */
-    SequenceInfo *r1_seqinfo = new SequenceInfo{r1->name.s, r1->comment.l!=0 ? string(r1->comment.s) : string(""), r1->seq.s,
-                                                r1->qual.s!=NULL ? string(r1->qual.s) : string(""), r1->qual.s!=NULL ? '@':'>'};
-    SequenceInfo *r2_seqinfo = new SequenceInfo{r2->name.s, r2->comment.l!=0 ? string(r2->comment.s) : string(""), r2->seq.s,
-                                                r2->qual.s!=NULL ? string(r2->qual.s) : string(""), r2->qual.s!=NULL ? '@':'>'};
+    SequenceInfo *r1_seqinfo = new SequenceInfo{r1.name.s, r1.comment.l!=0 ? string(r1.comment.s) : string(""), r1.sequence.s,
+                                                r1.qual.s!=NULL ? string(r1.qual.s) : string(""), r1.qual.s!=NULL ? '@':'>'};
+    SequenceInfo *r2_seqinfo = new SequenceInfo{r2.name.s, r2.comment.l!=0 ? string(r2.comment.s) : string(""), r2.sequence.s,
+                                                r2.qual.s!=NULL ? string(r2.qual.s) : string(""), r2.qual.s!=NULL ? '@':'>'};
 
 
     unsigned int kmerSpan = translator->getSpan();
-    if (r1->seq.l < skip + kmerSpan || r2->seq.l < skip + kmerSpan) {
+    if (r1.sequence.l < skip + kmerSpan || r2.sequence.l < skip + kmerSpan) {
 
       r1_countprofile.setSeqInfo(r1_seqinfo);
       r2_countprofile.setSeqInfo(r2_seqinfo);
@@ -151,16 +126,8 @@ int processPairedReads(const string &forwardReads,
 
   }
 
-  if (res1 == -2 || res2 == -2) {
-    Info(Info::ERROR) << "ERROR: Invalid sequence record found when processing paired reads\n";
-    return EXIT_FAILURE;
-  }
-
-  kseq_destroy(r1);
-  kseq_destroy(r2);
-
-  fclose(forwardReadsFile);
-  fclose(reverseReadsFile);
+  delete r1_kseq;
+  delete r2_kseq;
 
   Info(Info::INFO) << "...completed\n";
   return EXIT_SUCCESS;

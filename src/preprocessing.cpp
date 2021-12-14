@@ -6,8 +6,7 @@
 #include "filehandling.h"
 #include "kseq.h"
 #include "Info.h"
-
-KSEQ_INIT(int, read)
+#include "KSeqWrapper.h"
 
 
 template<unsigned int LOGINDEX, unsigned int LOGOFFSET>
@@ -155,16 +154,17 @@ LookupTableBase *buildHashTable(vector<std::string> &readFilenames, const KmerTr
 
   Info(Info::INFO) << "count spaced k-mers...\n";
   for (const std::string &readFilename:readFilenames ) {
-    FILE *readFile = openFileOrDie(readFilename, "r");
-    int fd = fileno(readFile);
-    kseq_t *seq = kseq_init(fd);
+
+    KSeqWrapper *kseqReader = KSeqFactory(readFilename.c_str());
+
     spacedKmerType spacedKmer = 0, mask = ((((spacedKmerType) 1) << (spacedKmerType) (kmerSpan * 2)) - 1);
     packedKmerType x;
 
     Info(Info::INFO) << "...for input file " << readFilename << "\n";
-    while (kseq_read(seq) >= 0) {
-      const size_t len = seq->seq.l;
-      const char *seqNuc = seq->seq.s;
+    while (kseqReader->ReadEntry()) {
+      const KSeqWrapper::KSeqEntry &seq = kseqReader->entry;
+      const size_t len = seq.sequence.l;
+      const char *seqNuc = seq.sequence.s;
       SeqType seqStr;
       seqStr.reserve(len);
 
@@ -188,8 +188,7 @@ LookupTableBase *buildHashTable(vector<std::string> &readFilenames, const KmerTr
         }
       }
     }
-    kseq_destroy(seq);
-    fclose(readFile);
+    delete kseqReader;
   }
 
   Info(Info::INFO) << "...completed\n";

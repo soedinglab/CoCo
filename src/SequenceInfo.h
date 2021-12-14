@@ -10,7 +10,7 @@
 #include "Info.h"
 #include "util.h"
 #include "filehandling.h"
-
+#include "KSeqWrapper.h"
 enum SeqInfoMode {AUTO, FASTA, FASTQ};
 
 using namespace std;
@@ -21,23 +21,26 @@ typedef struct {
 SequenceInfo;
 
 inline SeqInfoMode getSeqMode(std::string filename) {
-  FILE *fp = openFileOrDie(filename, "r");
-  char c;
-  if (fscanf(fp,"%c", &c) != 1) {
+
+  KSeqWrapper *kseqReader = KSeqFactory(filename.c_str());
+
+
+  if (!kseqReader->ReadEntry()) {
     Info(Info::ERROR) << "ERROR: Can not read from " << filename << "\n";
     EXIT(EXIT_FAILURE);
   }
+  const KSeqWrapper::KSeqEntry &seq = kseqReader->entry;
   SeqInfoMode mode;
-  if (c == '>')
+  if (seq.qual.l == 0)
     mode = FASTA;
-  else if (c == '@')
+  else if (seq.qual.l == seq.sequence.l)
     mode = FASTQ;
   else {
-    Info(Info::ERROR)  << "ERROR: Invalid first character found in " << filename << "expect '>' or '@'\n";
+    Info(Info::ERROR)  << "ERROR: Invalid first entry found in " << filename << "\n";
     EXIT(EXIT_FAILURE);
   }
 
-  fclose(fp);
+  delete kseqReader;
   return mode;
 }
 

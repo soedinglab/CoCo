@@ -3,6 +3,7 @@
 #include "util.h"
 #include "Info.h"
 
+
 bool _mkdir(const char *dir, mode_t mode) {
   char tmp[1024];
   char *p = NULL;
@@ -87,4 +88,26 @@ vector<string> *getFileList(const char *fileListFilename) {
   return fileList;
 }
 
+bool endsWith(const std::string &suffix, const std::string &str){
+  if (str.length() < suffix.length()) {
+    return false;
+  }
 
+  return (!str.compare(str.length() - suffix.length(), suffix.length(), suffix));
+}
+
+
+#ifdef HAVE_ZLIB
+#include <zlib.h>
+gzFile openGZFileOrDie(const char *fileName, const char *mode) {
+
+  gzFile file;
+  file = gzopen(fileName, mode);
+  if (file == NULL) {
+    Info(Info::ERROR) << "ERROR: opening failed for file " << fileName << "\n";
+    perror(fileName);
+    EXIT(EXIT_FAILURE);
+  }
+  return file;
+}
+#endif

@@ -17,6 +17,7 @@ set(coco_header_files
         ${CMAKE_CURRENT_SOURCE_DIR}/runner.h
         ${CMAKE_CURRENT_SOURCE_DIR}/filehandling.h
         ${CMAKE_CURRENT_SOURCE_DIR}/SequenceInfo.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/KSeqWrapper.h
         PARENT_SCOPE
         )
 
@@ -39,6 +40,7 @@ set(coco_source_files
         ${CMAKE_CURRENT_SOURCE_DIR}/runner.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/preprocessing.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/filehandling.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/KSeqWrapper.cpp
         PARENT_SCOPE
         )
 

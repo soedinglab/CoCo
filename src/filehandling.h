@@ -29,5 +29,6 @@ string getFileExtension(const string &wholeFilePath);
 
 vector<std::string> *getFileList(const char *fileListFilename);
 
+bool endsWith(const std::string &suffix, const std::string &str);
 
 #endif // FILEHANDLING_H

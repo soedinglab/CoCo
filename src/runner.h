@@ -16,9 +16,7 @@ int processReads(const string &readsname,
                  int (*processCountProfile)(CountProfile &, void *, bool),
                  void *processArgs,
                  int skip,
-                 bool silent = false,
-                 size_t chunkStart = 0,
-                 size_t chunkEnd = std::numeric_limits<uint64_t>::max());
+                 bool silent = false);
 
 int processPairedReads(const string &forwardReads,
                        const string &reverseReads,
