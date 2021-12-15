@@ -32,6 +32,7 @@ int filterProcessor(CountProfile &countprofile, void *filterargs, bool skip)
 {
   if(skip) {
     sequenceInfo2FileEntry(countprofile.getSeqInfo(), ((FilterArgs *) filterargs)->filterReads1);
+    return 0;
   }
 
   FilterArgs *currFilterArgs = (FilterArgs *) filterargs;
@@ -50,6 +51,7 @@ int filterProcessorPaired(CountProfile &r1_countprofile, CountProfile &r2_countp
   if(skip) {
     sequenceInfo2FileEntry(r1_countprofile.getSeqInfo(), ((FilterArgs *) filterargs)->filterReads1);
     sequenceInfo2FileEntry(r2_countprofile.getSeqInfo(), ((FilterArgs *) filterargs)->filterReads2);
+    return 0;
   }
 
   FilterArgs *currFilterArgs = (FilterArgs *) filterargs;

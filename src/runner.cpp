@@ -39,15 +39,15 @@ int processReads(const string &readsname,
 
     /* fill profile */
     SequenceInfo *seqinfo = new SequenceInfo{seq.name.s,
-                                    seq.comment.l!=0 ? string(seq.comment.s) : string(""),
+                                             seq.comment.l!=0 ? string(seq.comment.s) : string(""),
                                              seq.sequence.s,seq.qual.s!=NULL ? string(seq.qual.s) : string(""),
-                                        seq.qual.s!=NULL ? '@':'>'};
+                                             seq.qual.s!=NULL ? '@':'>'};
 
     unsigned int kmerSpan = translator->getSpan();
     if (seq.sequence.l < skip + kmerSpan) {
 
       countprofile.setSeqInfo(seqinfo);
-      /* use function pointer for to skip sequence */
+      /* use function pointer to handle skip case */
       processCountProfile(countprofile, processArgs, true);
     } else {
 
