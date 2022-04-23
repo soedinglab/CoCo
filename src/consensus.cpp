@@ -1,4 +1,4 @@
-// Written by Annika Jochheim <annika.jochheim@mpibpc.mpg.de>
+// Written by Annika Jochheim <annika.jochheim@mpinat.mpg.de>
 #include <stdlib.h>
 #include "Command.h"
 #include "Info.h"

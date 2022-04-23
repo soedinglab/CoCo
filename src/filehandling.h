@@ -1,4 +1,4 @@
-// Written by Annika Jochheim <annika.jochheim@mpibpc.mpg.de>
+// Written by Annika Jochheim <annika.jochheim@mpinat.mpg.de>
 #ifndef FILEHANDLING_H
 #define FILEHANDLING_H
 

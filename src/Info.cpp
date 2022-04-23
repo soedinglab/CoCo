@@ -1,5 +1,5 @@
 //
-// Written by Annika Jochheim <annika.jochheim@mpibpc.mpg.de>
+// Written by Annika Jochheim <annika.jochheim@mpinat.mpg.de>
 //
 
 #include "Info.h"

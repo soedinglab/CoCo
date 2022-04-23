@@ -1,4 +1,4 @@
-//Written by Annika Jochheim <annika.jochheim@mpibpc.mpg.de>
+//Written by Annika Jochheim <annika.jochheim@mpinat.mpg.de>
 
 #include <algorithm>
 #include <cstring>
@@ -25,7 +25,7 @@ const char *tool_introduction = "CoCo is an open-source software suite for "\
                                 "different COnsensus COrrection applications "\
                                 "using spaced k-mer count profiles of short reads or contigs";
 
-const char *main_author = "Annika Jochheim (annika.jochheim@mpibpc.mpg.de)";
+const char *main_author = "Annika Jochheim (annika.jochheim@mpinat.mpg.de)";
 
 extern int correction(int argc, const char **argv, const struct Command *tool);
 
@@ -46,25 +46,25 @@ std::vector<struct Command> commands =
 
     {"correction", correction, &opt.correctionWorkflow, "correct sequencing errors",
       "identify reads with sequencing errors and correct them",
-      "Annika Jochheim <annika.jochheim@mpibpc.mpg.de>",
+      "Annika Jochheim <annika.jochheim@mpinat.mpg.de>",
       " -1 <fasta|q> -2 <fasta|q> | --reads <fasta|q> [--counts <count.h5>] [options]",
       CORRECTOR
     },
   /*{"consensus", consensus, &opt.consensusWorkflow, "generate consensus reads ",
      "flip SNPs to the major allele to generate the consensus nucleotide sequence",
-     "Annika Jochheim <annika.jochheim@mpibpc.mpg.de>",
+     "Annika Jochheim <annika.jochheim@mpinat.mpg.de>",
      "--reads <fastaFile> [--counts <count.h5>] [--outprefix <string>] [options]",
      CONSENSUS
     }*/
     {"filter", filter, &opt.filterWorkflow, "filter chimeric reads",
       "identify reads containing spurious nucleotide order",
-      "Annika Jochheim <annika.jochheim@mpibpc.mpg.de>",
+      "Annika Jochheim <annika.jochheim@mpinat.mpg.de>",
       " -1 <fasta|q> -2 <fasta|q> | --reads <fasta|q> [--counts <count.h5>] [options]",
       FILTER
     },
     {"abundance", abundanceEstimator, &opt.abundanceEstimatorWorkflow, "estimate abundance values",
       "Give for every read an estimated value for the abundance",
-      "Annika Jochheim <annika.jochheim@mpibpc.mpg.de>",
+      "Annika Jochheim <annika.jochheim@mpinat.mpg.de>",
       "  -1 <fasta|q> -2 <fasta|q> | --reads <fasta|q> [--counts <count.h5>] [options]",
       ABUNDANCE_ESTIMATOR
     },
@@ -73,13 +73,13 @@ std::vector<struct Command> commands =
 
     {"profile", profile, &opt.profileWorkflow, "print spaced k-mer count profiles (devtool)",
       "dev tool to write for every sequence the spaced k-mer count profile in a tab separated plain text file",
-      "Annika Jochheim <annika.jochheim@mpibpc.mpg.de>",
+      "Annika Jochheim <annika.jochheim@mpinat.mpg.de>",
       "  -1 <fasta|q> -2 <fasta|q> | --reads <fasta|q> [--counts <count.h5>] [options]",
       PROFILE
     },
     {"counts2flat", counts2flat, &opt.counts2flatWorkflow, "print spaced k-mer lookup table (devtool)",
      "transform continous kmers to spaced kmers and print spaced k-mers and counts as stored in lookuptable",
-     "Annika Jochheim <annika.jochheim@mpibpc.mpg.de>",
+     "Annika Jochheim <annika.jochheim@mpinat.mpg.de>",
      " --counts <count.h5>] [--outprefix <string>] [options]",
       COUNTS2FLAT
     }
