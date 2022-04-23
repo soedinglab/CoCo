@@ -275,7 +275,7 @@ int CountProfile::doSubstitutionCorrection(uint32_t *maxProfile, double threshol
     unsigned int end = errorPositions[idx] < profile_length ? errorPositions[idx] : profile_length - 1;
     unsigned int firstUniqueKmerStart = UINT_MAX, lastUniqueKmerStart = 0;
     for (size_t jdx = start; jdx <= end; jdx++) {
-      if ((affectedPostions[jdx] > 0) && ((affectedPostions[jdx] & ((uint64_t)1 << idx)) == affectedPostions[jdx])) {
+      if ((affectedPostions[jdx] > 0) && (affectedPostions[jdx] == ((uint64_t)1 << idx))) {
         firstUniqueKmerStart = std::min(firstUniqueKmerStart, (unsigned int) jdx);
         lastUniqueKmerStart = std::max(lastUniqueKmerStart, (unsigned int) jdx);
       }
