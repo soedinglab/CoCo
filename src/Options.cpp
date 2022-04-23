@@ -167,7 +167,7 @@ void Options::setDefaults() {
   threshold = 0.01;
   lowerBound = 5;
   maxTrimLen = 0;
-  maxCorrNum = INT_MAX;
+  maxCorrNum = 10;
   updateLookup = false;
 
   dropLevel1 = 0.33;
