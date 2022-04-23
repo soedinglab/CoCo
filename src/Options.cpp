@@ -24,7 +24,7 @@ Options::Options() :
               "file with reverse paired-end reads (fasta/fastq format)",
               typeid(std::string), (void *) &reverseReads, 1),
   OP_COUNT_FILE(OP_COUNT_FILE_ID, "--counts", "Count File",
-               "pre computed solid kmer count file in hdf5 format (dsk output), Note: only supports 41-mers yet",
+               "pre computed solid kmer count file in hdf5 format (dsk output)",
                typeid(std::string), (void *) &countFile, 1),
   OP_OUTDIR(OP_OUTDIR_ID, "--outdir", "Outdir",
                "output directory",
